@@ -33,7 +33,7 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
       allItems: [],
       currentLists: [],
       isLoadingFresh: false,
-      isLoadingNewData: false
+      isLoadingNewData: false,
     };
   }
 
@@ -42,7 +42,7 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
     return (
       <React.Fragment>
         <LocalStorageWrapper<HnItem[]>
-          dataDidUpdate={allItems =>
+          dataDidUpdate={(allItems) =>
             this.processDataFromLocalStorage(allItems, this.state.currentLists)
           }
           activeItem={this.state.allItems}
@@ -50,7 +50,7 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
         />
 
         <LocalStorageWrapper<DataList[]>
-          dataDidUpdate={currentLists =>
+          dataDidUpdate={(currentLists) =>
             this.processDataFromLocalStorage(this.state.allItems, currentLists)
           }
           activeItem={this.state.currentLists}
@@ -61,7 +61,7 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
   }
 
   async getStoryData(id: number) {
-    let item = this.state.allItems.find(c => c.id === id);
+    let item = this.state.allItems.find((c) => c.id === id);
     if (item !== undefined) {
       return item;
     }
@@ -106,7 +106,7 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
       day: HnListSource.Day,
       week: HnListSource.Week,
       month: HnListSource.Month,
-      front: HnListSource.Front
+      front: HnListSource.Front,
     };
 
     const source = pageToSourceMapping[page];
@@ -116,7 +116,7 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
       return [];
     }
 
-    const idsToLoad = this.state.currentLists.find(c => c.key === source);
+    const idsToLoad = this.state.currentLists.find((c) => c.key === source);
 
     if (idsToLoad === undefined) {
       // TODO: this needs to fire off an update
@@ -126,8 +126,12 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
     }
 
     const dataOut = idsToLoad.stories
-      .map(id => this.state.allItems.find(c => c.id === id))
-      .filter(c => c !== undefined) as HnItem[];
+      .map((id) => this.state.allItems.find((c) => c.id === id))
+      .filter((c) => c !== undefined) as HnItem[];
+
+    if (source !== HnListSource.Front) {
+      _.sortBy(dataOut, (c) => -c.score);
+    }
 
     return dataOut;
   }
@@ -168,7 +172,7 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
 
     if (activeList !== HnListSource.Front) {
       // flip score to get descending
-      data = _.sortBy<HnItem>(data, c => -c.score);
+      data = _.sortBy<HnItem>(data, (c) => -c.score);
     }
 
     // TODO: do not reload data on mount... use a button
@@ -203,7 +207,10 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
 
     if (allItems === undefined || allLists === undefined) {
       if (!this.state.isLoadingFresh) {
-        console.log("local storage is empty, loading fresh data based on active page", this.props.loadFreshSource);
+        console.log(
+          "local storage is empty, loading fresh data based on active page",
+          this.props.loadFreshSource
+        );
         this.setState({ isLoadingFresh: true });
         this.loadData(this.props.loadFreshSource);
       }
@@ -212,10 +219,10 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
 
     // iterate the lists
 
-    allLists.forEach(list => {
+    allLists.forEach((list) => {
       const items = list.stories
-        .map(id => allItems.find(c => c.id === id))
-        .filter(c => c !== undefined) as HnItem[];
+        .map((id) => allItems.find((c) => c.id === id))
+        .filter((c) => c !== undefined) as HnItem[];
 
       this.props.provideNewItems(items, list.key);
     });
@@ -231,16 +238,16 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
     }
 
     // replace the list with the new IDs
-    const newList = data.map(c => c.id);
+    const newList = data.map((c) => c.id);
 
     const newDataList = _.cloneDeep(this.state.currentLists);
 
-    let listToUpdate = newDataList.find(c => c.key === listType);
+    let listToUpdate = newDataList.find((c) => c.key === listType);
 
     if (listToUpdate === undefined) {
       newDataList.push({
         key: listType,
-        stories: newList
+        stories: newList,
       });
     } else {
       listToUpdate.stories = newList;
@@ -252,9 +259,9 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
 
     const storiesToReturn: HnItem[] = [];
 
-    data.forEach(newStory => {
+    data.forEach((newStory) => {
       const existingStoryIndex = newAllItems.findIndex(
-        c => c.id === newStory.id
+        (c) => c.id === newStory.id
       );
 
       // add the story if it is new
