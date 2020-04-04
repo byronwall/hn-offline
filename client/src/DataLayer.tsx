@@ -125,12 +125,12 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
       return [];
     }
 
-    const dataOut = idsToLoad.stories
+    let dataOut = idsToLoad.stories
       .map((id) => this.state.allItems.find((c) => c.id === id))
       .filter((c) => c !== undefined) as HnItem[];
 
     if (source !== HnListSource.Front) {
-      _.sortBy(dataOut, (c) => -c.score);
+      dataOut = _.sortBy(dataOut, (c) => -c.score);
     }
 
     return dataOut;
