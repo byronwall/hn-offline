@@ -48,7 +48,7 @@ class _App extends React.Component<AppPageProps, AppState> {
       allItems: [],
       activeList: HnListSource.Front,
       error: undefined,
-      isLoading: false
+      isLoading: false,
     };
 
     this.dataLayer = React.createRef();
@@ -64,9 +64,9 @@ class _App extends React.Component<AppPageProps, AppState> {
 
     // this is needed to ensure that state updates are atomic
     // all new items need to be joined together... cannot skip updatesÍ
-    this.setState(prevState => {
+    this.setState((prevState) => {
       let allItems = _.cloneDeep(prevState.allItems).concat(items);
-      allItems = _.uniqBy(allItems, c => c.id);
+      allItems = _.uniqBy(allItems, (c) => c.id);
       console.log("new all itemS", allItems);
       return { allItems };
     });
@@ -91,7 +91,7 @@ class _App extends React.Component<AppPageProps, AppState> {
         <DataLayer
           ref={this.dataLayer}
           provideNewItems={this.newItemsProvided}
-          updateIsLoadingStatus={isLoading => this.setState({ isLoading })}
+          updateIsLoadingStatus={(isLoading) => this.setState({ isLoading })}
           loadFreshSource={this.state.activeList}
         />
 
@@ -128,6 +128,7 @@ class _App extends React.Component<AppPageProps, AppState> {
                         props.match.params.page
                       )
                 }
+                {...props}
               />
             )}
           />
@@ -149,7 +150,7 @@ export enum HnListSource {
   Front,
   Day,
   Week,
-  Month
+  Month,
 }
 
 interface AppState {
