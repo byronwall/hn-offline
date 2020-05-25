@@ -6,9 +6,13 @@ import { getDomain } from "./getDomain";
 import { isValidComment } from "./HnComment";
 import { HnCommentList } from "./HnCommentList";
 import { timeSince } from "./timeSince";
+import _ from "lodash";
 
 interface HnStoryPageState {
   data: HnItem | undefined;
+
+  collapsedComments: number[];
+  idToScrollTo: number | undefined;
 }
 
 export interface HnStoryPageProps {
@@ -17,6 +21,7 @@ export interface HnStoryPageProps {
   history: History;
 }
 
+const SESSION_COLLAPSED = "SESSION_COLLAPSED";
 export class HnStoryPage extends React.Component<
   HnStoryPageProps,
   HnStoryPageState
@@ -25,7 +30,9 @@ export class HnStoryPage extends React.Component<
     super(props);
 
     this.state = {
-      data: undefined
+      data: undefined,
+      collapsedComments: [],
+      idToScrollTo: undefined,
     };
 
     this.anchorClickHandler = this.anchorClickHandler.bind(this);
@@ -35,6 +42,8 @@ export class HnStoryPage extends React.Component<
     if (this.state.data === undefined) {
       return null;
     }
+
+    console.log("scroll to ID", this.state.idToScrollTo);
 
     const storyData = this.state.data;
 
@@ -71,9 +80,43 @@ export class HnStoryPage extends React.Component<
           />
         )}
 
-        <HnCommentList childComments={comments} canExpand={true} depth={0} />
+        <HnCommentList
+          childComments={comments}
+          canExpand={true}
+          depth={0}
+          collapsedIds={this.state.collapsedComments}
+          onUpdateOpen={(id, newOpen, scrollId) =>
+            this.handleCollapseEvent(id, newOpen, scrollId)
+          }
+          idToScrollTo={this.state.idToScrollTo}
+        />
       </div>
     );
+  }
+  handleCollapseEvent(
+    id: number,
+    newOpen: boolean,
+    scrollId: number | undefined
+  ): void {
+    // save the id to session storage
+
+    if (newOpen) {
+      // remove from list
+      const newIds = _.cloneDeep(this.state.collapsedComments);
+      _.remove(newIds, (c) => c === id);
+
+      sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newIds));
+      this.setState({ collapsedComments: newIds });
+    } else {
+      const newIds = this.state.collapsedComments.concat(id);
+
+      sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newIds));
+      this.setState({ collapsedComments: newIds });
+    }
+
+    if (scrollId !== undefined) {
+      this.setState({ idToScrollTo: scrollId });
+    }
   }
 
   componentDidMount() {
@@ -82,6 +125,15 @@ export class HnStoryPage extends React.Component<
     // set the data initially -- kick off async request if needed
     this.updateDataFromDataLayer();
     document.body.addEventListener("click", this.anchorClickHandler);
+
+    const strCollapsedIds = sessionStorage.getItem(SESSION_COLLAPSED);
+    // load the collapsed comments from session storage
+
+    if (strCollapsedIds !== null) {
+      const collapsedIds = JSON.parse(strCollapsedIds) as number[];
+
+      this.setState({ collapsedComments: collapsedIds });
+    }
   }
 
   componentWillUnmount() {

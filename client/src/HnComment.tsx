@@ -10,11 +10,17 @@ export interface HnCommentProps {
 
   canExpand: boolean;
 
-  scrollToNextChild(): void;
+  isOpen: boolean;
+  onUpdateOpen(
+    id: number,
+    newIsOpen: boolean,
+    scrollId: number | undefined
+  ): void;
+  collapsedIds: number[];
+  idToScrollTo: number | undefined;
 }
 
 interface HnCommentState {
-  isOpen: boolean;
   expandSelf: boolean;
 }
 
@@ -24,11 +30,31 @@ const colors = [
   "#d46850",
   "#8c7f3b",
   "#dec392",
-  "#c9893a"
+  "#c9893a",
 ];
 
 export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
   divRef: React.RefObject<HTMLDivElement>;
+
+  componentDidMount() {
+    this.scrollIfDesired();
+  }
+
+  componentDidUpdate() {
+    this.scrollIfDesired();
+  }
+
+  scrollIfDesired() {
+    console.log("scroll to id ", this.props.idToScrollTo);
+    if (this.props.idToScrollTo === this.props.comment?.id) {
+      const dims = this.divRef.current?.offsetTop;
+      console.log("scrolling to me", dims);
+
+      if (dims !== undefined) {
+        window.scrollTo(0, dims - 80);
+      }
+    }
+  }
 
   static getDerivedStateFromProps(
     props: HnCommentProps,
@@ -36,7 +62,7 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
   ) {
     // if a parent expands, collapse this one
     if (!props.canExpand) {
-      return { isOpen: state.isOpen, expandSelf: false };
+      return { expandSelf: false };
     }
 
     return null;
@@ -46,8 +72,7 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
     super(props);
 
     this.state = {
-      isOpen: true,
-      expandSelf: false
+      expandSelf: false,
     };
 
     this.divRef = React.createRef();
@@ -58,6 +83,7 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
   }
 
   render() {
+    console.log("isOpen", this.props.isOpen);
     const comment = this.props.comment;
 
     if (comment === null) {
@@ -74,7 +100,7 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
 
     // TODO: rewrite links to hn to open in this site instead
 
-    const childrenToShow = !this.state.isOpen ? null : (
+    const childrenToShow = !this.props.isOpen ? null : (
       <React.Fragment>
         <p
           className="comment"
@@ -86,6 +112,11 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
             childComments={childComments}
             canExpand={this.props.canExpand && !this.state.expandSelf}
             depth={this.props.depth + 1}
+            onUpdateOpen={(id, newIsOpen, scrollId) =>
+              this.props.onUpdateOpen(id, newIsOpen, scrollId)
+            }
+            collapsedIds={this.props.collapsedIds}
+            idToScrollTo={this.props.idToScrollTo}
           />
         )}
       </React.Fragment>
@@ -95,12 +126,12 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
       this.props.depth < colors.length ? colors[this.props.depth] : "#bbb";
     return (
       <div
-        className={classNames("bp3-card", { collapsed: !this.state.isOpen })}
-        onClick={e => this.handleCardClick(e)}
+        className={classNames("bp3-card", { collapsed: !this.props.isOpen })}
+        onClick={(e) => this.handleCardClick(e)}
         style={{
           paddingLeft: 12 + Math.max(4 - this.props.depth),
           marginLeft:
-            this.state.expandSelf && this.state.isOpen
+            this.state.expandSelf && this.props.isOpen
               ? -17 * this.props.depth
               : 0,
 
@@ -111,11 +142,11 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
           borderRight: this.state.expandSelf
             ? "1px solid" + borderColor
             : undefined,
-          paddingRight: this.state.expandSelf ? 6 : undefined
+          paddingRight: this.state.expandSelf ? 6 : undefined,
         }}
       >
         <p
-          style={{ fontWeight: this.state.isOpen ? 450 : 300 }}
+          style={{ fontWeight: this.props.isOpen ? 450 : 300 }}
           ref={this.divRef}
         >
           {comment.by}
@@ -150,12 +181,13 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
     ) {
       this.setState({ expandSelf: !this.state.expandSelf });
     } else {
-      const isOpen = !this.state.isOpen;
-      this.setState({ isOpen }, () => {
-        if (!isOpen) {
-          this.props.scrollToNextChild();
-        }
-      });
+      const isOpen = !this.props.isOpen;
+
+      if (this.props.comment === null) {
+        return;
+      }
+
+      this.props.onUpdateOpen(this.props.comment.id, isOpen, undefined);
     }
   }
 }
