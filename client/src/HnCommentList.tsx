@@ -1,5 +1,3 @@
-import computeScrollIntoView from "compute-scroll-into-view";
-import _ from "lodash";
 import React from "react";
 
 import { HnComment } from "./HnComment";
@@ -43,8 +41,12 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
             depth={this.props.depth}
             canExpand={this.props.canExpand}
             ref={this.childRefs[childComm!.id]}
-            onUpdateOpen={(id, newOpen) =>
-              this.props.onUpdateOpen(id, newOpen, validChildren[index + 1]?.id)
+            onUpdateOpen={(id, newOpen, scrollId) =>
+              this.props.onUpdateOpen(
+                id,
+                newOpen,
+                scrollId ?? validChildren[index + 1]?.id
+              )
             }
             isOpen={
               !(

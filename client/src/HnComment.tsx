@@ -151,6 +151,8 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
         >
           {comment.by}
           {" | "}
+          {comment.id}
+          {" | "}
           {timeSince(comment.time)}
           {" ago"}
         </p>
