@@ -92,6 +92,10 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
     console.log("hn item from server", data);
 
     this.props.updateIsLoadingStatus(false);
+
+    // ensure new story is saved locally
+    const newItems = this.state.allItems.concat(data);
+    this.setState({ allItems: newItems });
     return data;
   }
 
@@ -110,34 +114,36 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
 
       const itemsToCheck: (HnItem | KidsObj3)[] = [itemRemoved];
 
-      const collapsedIds = JSON.parse(
-        sessionStorage.getItem(SESSION_COLLAPSED) ?? ""
-      ) as number[];
+      const strIds = sessionStorage.getItem(SESSION_COLLAPSED);
 
-      const collapseHash = new Set(collapsedIds);
+      if (strIds !== null) {
+        const collapsedIds = JSON.parse(strIds) as number[];
 
-      while (itemsToCheck.length) {
-        const item = itemsToCheck.shift();
+        const collapseHash = new Set(collapsedIds);
 
-        if (item === undefined) {
-          continue;
+        while (itemsToCheck.length) {
+          const item = itemsToCheck.shift();
+
+          if (item === undefined) {
+            continue;
+          }
+
+          // remove if collapsed
+          if (collapseHash.has(item.id)) {
+            collapseHash.delete(item.id);
+          }
+
+          item.kidsObj
+            ?.filter((c) => c !== null)
+            .forEach((c) => itemsToCheck.push(c!));
         }
 
-        // remove if collapsed
-        if (collapseHash.has(item.id)) {
-          collapseHash.delete(item.id);
-        }
+        const newCollapse = Array.from(collapseHash);
 
-        item.kidsObj
-          ?.filter((c) => c !== null)
-          .forEach((c) => itemsToCheck.push(c!));
+        console.log("old collapse", collapsedIds, newCollapse);
+
+        sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newCollapse));
       }
-
-      const newCollapse = Array.from(collapseHash);
-
-      console.log("old collapse", collapsedIds, newCollapse);
-
-      sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newCollapse));
     }
 
     this.setState({ allItems: newData });
