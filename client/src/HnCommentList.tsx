@@ -45,7 +45,8 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
               this.props.onUpdateOpen(
                 id,
                 newOpen,
-                scrollId ?? validChildren[index + 1]?.id
+                scrollId ??
+                  (newOpen ? childComm?.id : validChildren[index + 1]?.id)
               )
             }
             isOpen={
