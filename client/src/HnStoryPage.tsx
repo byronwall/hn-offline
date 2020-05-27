@@ -120,7 +120,7 @@ export class HnStoryPage extends React.Component<
   }
 
   componentDidMount() {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     // set the data initially -- kick off async request if needed
     this.updateDataFromDataLayer();

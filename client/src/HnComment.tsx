@@ -51,7 +51,7 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
       console.log("scrolling to me", dims);
 
       if (dims !== undefined) {
-        window.scrollTo(0, dims - 80);
+        window.scrollTo({ behavior: "smooth", top: dims - 80 });
       }
     }
   }
