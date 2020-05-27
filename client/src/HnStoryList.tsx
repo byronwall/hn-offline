@@ -28,7 +28,7 @@ export class HnStoryList extends React.Component<HnStoryListProps> {
 
       if (!isNaN(scrollPos)) {
         console.log("fire off scroll", scrollPos);
-        window.scrollTo({ top: scrollPos, behavior: "smooth" });
+        window.scrollTo({ top: scrollPos });
       }
     }
   }
