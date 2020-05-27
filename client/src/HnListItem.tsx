@@ -4,9 +4,12 @@ import { Link } from "react-router-dom";
 import { getDomain } from "./getDomain";
 import { timeSince } from "./timeSince";
 import { Glyphicon } from "react-bootstrap";
+import classNames from "classnames";
 
 export interface HnStoryProps {
   data: HnItem;
+
+  isRead: boolean | undefined;
 }
 
 export class HnListItem extends React.Component<HnStoryProps> {
@@ -32,7 +35,7 @@ export class HnListItem extends React.Component<HnStoryProps> {
       );
 
     return (
-      <div>
+      <div className={classNames({ isRead: this.props.isRead })}>
         <p>{storyLinkEl}</p>
         <p>
           <span>

@@ -19,6 +19,8 @@ export interface HnStoryPageProps {
   dataLayer: DataLayer | null;
   id: number;
   history: History;
+
+  onVisitMarker(id: number): void;
 }
 
 const SESSION_COLLAPSED = "SESSION_COLLAPSED";
@@ -120,7 +122,7 @@ export class HnStoryPage extends React.Component<
   }
 
   componentDidMount() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0 });
 
     // set the data initially -- kick off async request if needed
     this.updateDataFromDataLayer();
@@ -134,6 +136,10 @@ export class HnStoryPage extends React.Component<
 
       this.setState({ collapsedComments: collapsedIds });
     }
+
+    // save the read stories to localForage
+
+    this.props.onVisitMarker(this.props.id);
   }
 
   componentWillUnmount() {

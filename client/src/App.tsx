@@ -8,10 +8,12 @@ import { DataLayer } from "./DataLayer";
 import { Header } from "./Header";
 import { HnStoryList } from "./HnStoryList";
 import { HnStoryPage } from "./HnStoryPage";
+import localforage from "localforage";
 
 interface StoryPageProps extends RouteComponentProps<{ id: string }> {}
 interface AppPageProps extends RouteComponentProps<{ page?: string }> {}
 
+const STORAGE_READ_ITEMS = "STORAGE_READ_ITEMS";
 class _App extends React.Component<AppPageProps, AppState> {
   dataLayer: RefObject<DataLayer>;
 
@@ -49,12 +51,23 @@ class _App extends React.Component<AppPageProps, AppState> {
       activeList: HnListSource.Front,
       error: undefined,
       isLoading: false,
+      readIdList: {},
     };
 
     this.dataLayer = React.createRef();
 
     this.updateActiveDataStore = this.updateActiveDataStore.bind(this);
     this.newItemsProvided = this.newItemsProvided.bind(this);
+  }
+
+  async componentDidMount() {
+    // read the saved read list
+
+    const readItems = await localforage.getItem<TrueHash>(STORAGE_READ_ITEMS);
+
+    if (readItems !== null) {
+      this.setState({ readIdList: readItems });
+    }
   }
 
   updateActiveDataStore(items: HnItem[], isActive: boolean) {
@@ -114,6 +127,7 @@ class _App extends React.Component<AppPageProps, AppState> {
                 dataLayer={this.dataLayer.current}
                 history={props.history}
                 key={+props.match.params.id}
+                onVisitMarker={(id) => this.saveIdToReadList(id)}
               />
             )}
           />
@@ -128,6 +142,7 @@ class _App extends React.Component<AppPageProps, AppState> {
                         props.match.params.page
                       )
                 }
+                readIds={this.state.readIdList}
                 {...props}
               />
             )}
@@ -135,6 +150,20 @@ class _App extends React.Component<AppPageProps, AppState> {
         </Switch>
       </div>
     );
+  }
+  saveIdToReadList(id: number): void {
+    const newReadList = _.cloneDeep(this.state.readIdList);
+    console.log("new read list", newReadList);
+
+    // skip out if already there
+    if (newReadList[id]) {
+      return;
+    }
+
+    newReadList[id] = true;
+
+    localforage.setItem(STORAGE_READ_ITEMS, newReadList);
+    this.setState({ readIdList: newReadList });
   }
 
   newItemsProvided(items: HnItem[], listType: HnListSource): void {
@@ -153,6 +182,10 @@ export enum HnListSource {
   Month,
 }
 
+export type TrueHash = {
+  [key: number]: true;
+};
+
 interface AppState {
   items: HnItem[];
   allItems: HnItem[];
@@ -162,4 +195,6 @@ interface AppState {
   activeList: HnListSource;
 
   isLoading: boolean;
+
+  readIdList: TrueHash;
 }
