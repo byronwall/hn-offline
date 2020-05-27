@@ -35,18 +35,12 @@ export class Header extends React.PureComponent<HeaderProps> {
         <Navbar.Form pullRight>
           {this.props.isLoading && <Spinner size={32} />}
           {!this.props.isLoading && (
-            <Route
-              render={({ location }) => {
-                return location.pathname.indexOf("/story") === -1 ? (
-                  <Button
-                    bsStyle="primary"
-                    onClick={() => this.props.requestNewData()}
-                  >
-                    <Glyphicon glyph="refresh" />
-                  </Button>
-                ) : null;
-              }}
-            />
+            <Button
+              bsStyle="primary"
+              onClick={() => this.props.requestNewData()}
+            >
+              <Glyphicon glyph="refresh" />
+            </Button>
           )}
         </Navbar.Form>
       </Navbar>

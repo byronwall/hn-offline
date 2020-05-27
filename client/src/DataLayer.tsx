@@ -3,6 +3,8 @@ import React from "react";
 
 import { HnListSource } from "./App";
 import { LocalStorageWrapper } from "./LocalStorageWrapper";
+import localforage from "localforage";
+import { SESSION_COLLAPSED } from "./HnStoryPage";
 
 interface DataLayerState {
   allItems: HnItem[];
@@ -91,6 +93,54 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
 
     this.props.updateIsLoadingStatus(false);
     return data;
+  }
+
+  clearItemData(id: number) {
+    const itemRemoved = this.state.allItems.find((c) => c.id === id);
+
+    const newData = this.state.allItems.filter((c) => c.id !== id);
+    console.log("clear item", {
+      before: this.state.allItems.length,
+      after: newData.length,
+    });
+
+    // need to clear any collpased ids also
+    if (itemRemoved !== undefined) {
+      // get all child ids
+
+      const itemsToCheck: (HnItem | KidsObj3)[] = [itemRemoved];
+
+      const collapsedIds = JSON.parse(
+        sessionStorage.getItem(SESSION_COLLAPSED) ?? ""
+      ) as number[];
+
+      const collapseHash = new Set(collapsedIds);
+
+      while (itemsToCheck.length) {
+        const item = itemsToCheck.shift();
+
+        if (item === undefined) {
+          continue;
+        }
+
+        // remove if collapsed
+        if (collapseHash.has(item.id)) {
+          collapseHash.delete(item.id);
+        }
+
+        item.kidsObj
+          ?.filter((c) => c !== null)
+          .forEach((c) => itemsToCheck.push(c!));
+      }
+
+      const newCollapse = Array.from(collapseHash);
+
+      console.log("old collapse", collapsedIds, newCollapse);
+
+      sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newCollapse));
+    }
+
+    this.setState({ allItems: newData });
   }
 
   getPageData(page: string | undefined) {

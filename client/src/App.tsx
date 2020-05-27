@@ -52,6 +52,7 @@ class _App extends React.Component<AppPageProps, AppState> {
       error: undefined,
       isLoading: false,
       readIdList: {},
+      storyKey: 0,
     };
 
     this.dataLayer = React.createRef();
@@ -110,6 +111,21 @@ class _App extends React.Component<AppPageProps, AppState> {
 
         <Header
           requestNewData={() => {
+            const isStoryPage =
+              this.props.location.pathname.indexOf("story") > -1;
+
+            if (isStoryPage) {
+              // get the story id -- delete that data from local -- force update
+              const id = +this.props.location.pathname.split("/")[2];
+
+              console.log("clear old story");
+              this.dataLayer.current!.clearItemData(id);
+              this.setState((prevState) => {
+                return { storyKey: prevState.storyKey + 1 };
+              });
+              return;
+            }
+
             if (!this.state.isLoading) {
               this.dataLayer.current!.loadData(this.state.activeList);
             }
@@ -126,7 +142,7 @@ class _App extends React.Component<AppPageProps, AppState> {
                 id={+props.match.params.id}
                 dataLayer={this.dataLayer.current}
                 history={props.history}
-                key={+props.match.params.id}
+                key={props.match.params.id + "-" + this.state.storyKey}
                 onVisitMarker={(id) => this.saveIdToReadList(id)}
               />
             )}
@@ -197,4 +213,6 @@ interface AppState {
   isLoading: boolean;
 
   readIdList: TrueHash;
+
+  storyKey: number;
 }

@@ -23,7 +23,7 @@ export interface HnStoryPageProps {
   onVisitMarker(id: number): void;
 }
 
-const SESSION_COLLAPSED = "SESSION_COLLAPSED";
+export const SESSION_COLLAPSED = "SESSION_COLLAPSED";
 export class HnStoryPage extends React.Component<
   HnStoryPageProps,
   HnStoryPageState
