@@ -85,7 +85,8 @@ var Server = /** @class */ (function () {
                 }
             });
         }); });
-        app.get("*", function (req, res) {
+        var reactClientPaths = ["/", "/day", "/week", "/month", "/story/*"];
+        app.get(reactClientPaths, function (req, res) {
             // need to respond to all pages so that BrowserRouter works
             res.sendFile(path.join(__dirname, "../../client/build/index.html"));
         });
