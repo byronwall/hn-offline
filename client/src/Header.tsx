@@ -14,7 +14,7 @@ export class Header extends React.PureComponent<HeaderProps> {
         <Navbar.Group>
           <Link to="/" className="bp3-button bp3-minimal  header-link">
             <Navbar.Heading style={{ display: "flex", alignItems: "center" }}>
-              <img src="favicon-32x32.png" />
+              <img src="/favicon-32x32.png" />
               <span style={{ marginLeft: 3, color: "#5C7080" }}>offline</span>
             </Navbar.Heading>
           </Link>
