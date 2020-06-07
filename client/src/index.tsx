@@ -24,6 +24,14 @@ window.onerror = function (msg, url, lineNo, columnNo, error) {
     "<h1>major error occurred.  local storage cleared to avoid corruption. please refresh.</h1>";
 };
 
+// check if version exists
+const version = localStorage.getItem("VERSION");
+if (version === null) {
+  localForage.clear();
+}
+
+localStorage.setItem("VERSION", "1.0");
+
 export const GLOBAL_DATA_LAYER = new DataLayer();
 
 ReactDOM.render(
