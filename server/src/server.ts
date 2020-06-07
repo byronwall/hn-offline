@@ -7,7 +7,7 @@ import * as cors from "cors";
 import {
   _getFullDataForIds,
   db_getTopStoryIds,
-  db_clearOldStories
+  db_clearOldStories,
 } from "./database";
 import { ItemExt, TopStoriesParams, TopStoriesType } from "./interfaces";
 
@@ -59,7 +59,9 @@ export class Server {
       res.json({ error: "story not found" });
     });
 
-    app.get("*", (req, res) => {
+    const reactClientPaths = ["/", "/day", "/week", "/month", "/story/*"];
+
+    app.get(reactClientPaths, (req, res) => {
       // need to respond to all pages so that BrowserRouter works
       res.sendFile(path.join(__dirname, "../../client/build/index.html"));
     });
@@ -94,11 +96,11 @@ async function updateData() {
   }
   console.log(new Date(), "refresh interval hit");
 
-  updateList.forEach(async storyType => {
+  updateList.forEach(async (storyType) => {
     console.log(new Date(), "calling for update to", storyType);
 
     // get the data
-    const results = await db_getTopStoryIds(storyType).then(ids => {
+    const results = await db_getTopStoryIds(storyType).then((ids) => {
       return _getFullDataForIds(ids);
     });
 
@@ -106,8 +108,8 @@ async function updateData() {
     if (storyType === "month") {
       console.log("clearing old stories");
       const idsToKeep = new Set();
-      Object.keys(cachedData).forEach(key => {
-        cachedData[key].forEach(story => {
+      Object.keys(cachedData).forEach((key) => {
+        cachedData[key].forEach((story) => {
           idsToKeep.add(story.id);
         });
       });
