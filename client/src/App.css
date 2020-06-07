@@ -5,6 +5,10 @@ body {
   padding: 5px;
 }
 
+pre {
+  white-space: pre-wrap;
+}
+
 .isRead,
 .isRead a {
   color: #999;
