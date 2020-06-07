@@ -113,8 +113,11 @@ class _App extends React.Component<AppPageProps, AppState> {
 
   async componentDidUpdate(prevProps: AppPageProps, prevState: AppState) {
     const didPageChange = prevState.activeList !== this.state.activeList;
+    const didGoFromStoryToList =
+      prevState.activePage !== this.state.activePage &&
+      this.state.activePage === HnPage.STORY_LIST;
 
-    if (didPageChange) {
+    if (didPageChange || didGoFromStoryToList) {
       // load the correct items from the data layer
       GLOBAL_DATA_LAYER.updateActiveList(this.state.activeList);
     }
