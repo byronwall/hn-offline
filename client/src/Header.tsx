@@ -43,7 +43,7 @@ export class Header extends React.PureComponent<HeaderProps> {
         </Navbar.Group>
 
         <Navbar.Group align="right">
-          {this.props.isLoading && <Spinner size={32} />}
+          {this.props.isLoading && <Spinner size={32} intent="warning" />}
           {!this.props.isLoading && (
             <Button
               intent="primary"

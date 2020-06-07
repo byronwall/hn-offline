@@ -15,7 +15,6 @@ interface DataLayerState {
   activeList: HnItem[];
   activeStory: HnItem | undefined;
 
-  isLoadingFresh: boolean;
   isLoadingNewData: boolean;
   isLoadingLocalStorage: boolean;
   localStoragePromise: Promise<any> | undefined;
@@ -43,7 +42,7 @@ export class DataLayer extends Container<DataLayerState> {
     this.state = {
       allItems: [],
       currentLists: [],
-      isLoadingFresh: false,
+
       isLoadingNewData: false,
       activeList: [],
       activeStory: undefined,
@@ -207,7 +206,7 @@ export class DataLayer extends Container<DataLayerState> {
   async updateActiveList(source: HnListSource) {
     // TODO: add loading step if data is missing -- figure out how to trigger refresh
 
-    this.setState({ activeListType: source });
+    this.setState({ activeListType: source, activeList: [] });
 
     console.log("getpagedata", source, this.state);
 

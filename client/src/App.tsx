@@ -149,6 +149,7 @@ class _App extends React.Component<AppPageProps, AppState> {
               <HnStoryList
                 items={dataLayer.state.activeList}
                 readIds={dataLayer.state.readItems}
+                isLoading={dataLayer.state.isLoadingNewData}
                 history={this.props.history}
               />
             )}

@@ -1,3 +1,4 @@
+import { Spinner } from "@blueprintjs/core";
 import { History } from "history";
 import React from "react";
 
@@ -8,6 +9,7 @@ interface HnStoryListProps {
   items: HnItem[];
   readIds: TrueHash;
   history: History;
+  isLoading: boolean;
 }
 
 const SESSION_SCROLL = "SCROLL_LIST";
@@ -43,6 +45,15 @@ export class HnStoryList extends React.Component<HnStoryListProps> {
 
   render() {
     document.title = `HN: Offline`;
+
+    if (this.props.items.length === 0 && this.props.isLoading) {
+      return (
+        <div style={{ marginTop: 20 }}>
+          <Spinner size={200} intent="warning" />
+        </div>
+      );
+    }
+
     return (
       <div>
         {this.props.items
