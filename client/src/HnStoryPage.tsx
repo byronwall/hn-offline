@@ -1,23 +1,22 @@
-import { History } from "history";
-import React from "react";
+import { H2, H4 } from '@blueprintjs/core';
+import { History } from 'history';
+import _ from 'lodash';
+import React from 'react';
 
-import { DataLayer } from "./DataLayer";
-import { getDomain } from "./getDomain";
-import { isValidComment } from "./HnComment";
-import { HnCommentList } from "./HnCommentList";
-import { timeSince } from "./timeSince";
-import _ from "lodash";
+import { getDomain } from './getDomain';
+import { isValidComment } from './HnComment';
+import { HnCommentList } from './HnCommentList';
+import { timeSince } from './timeSince';
 
 interface HnStoryPageState {
-  data: HnItem | undefined;
-
   collapsedComments: number[];
   idToScrollTo: number | undefined;
 }
 
 export interface HnStoryPageProps {
-  dataLayer: DataLayer | null;
-  id: number;
+  data: HnItem | undefined;
+
+  id: number | undefined;
   history: History;
 
   onVisitMarker(id: number): void;
@@ -32,7 +31,6 @@ export class HnStoryPage extends React.Component<
     super(props);
 
     this.state = {
-      data: undefined,
       collapsedComments: [],
       idToScrollTo: undefined,
     };
@@ -41,13 +39,13 @@ export class HnStoryPage extends React.Component<
   }
 
   render() {
-    if (this.state.data === undefined) {
+    if (this.props.data === undefined) {
       return null;
     }
 
     console.log("scroll to ID", this.state.idToScrollTo);
 
-    const storyData = this.state.data;
+    const storyData = this.props.data;
 
     const storyLinkEl =
       storyData.url === undefined ? (
@@ -62,8 +60,8 @@ export class HnStoryPage extends React.Component<
 
     return (
       <div>
-        <h2 style={{ overflowWrap: "break-word" }}>{storyLinkEl}</h2>
-        <h4>
+        <H2 style={{ overflowWrap: "break-word" }}>{storyLinkEl}</H2>
+        <H4>
           <span>{storyData.by}</span>
           <span>{" | "}</span>
           <span>
@@ -74,7 +72,7 @@ export class HnStoryPage extends React.Component<
           <span>{timeSince(storyData.time)} ago</span>
           <span>{" | "}</span>
           <span>{getDomain(storyData.url)}</span>
-        </h4>
+        </H4>
         {storyData.text !== undefined && (
           <p
             className="top-text"
@@ -125,7 +123,7 @@ export class HnStoryPage extends React.Component<
     window.scrollTo({ top: 0 });
 
     // set the data initially -- kick off async request if needed
-    this.updateDataFromDataLayer();
+
     document.body.addEventListener("click", this.anchorClickHandler);
 
     const strCollapsedIds = sessionStorage.getItem(SESSION_COLLAPSED);
@@ -139,7 +137,9 @@ export class HnStoryPage extends React.Component<
 
     // save the read stories to localForage
 
-    this.props.onVisitMarker(this.props.id);
+    if (this.props.id !== undefined) {
+      this.props.onVisitMarker(this.props.id);
+    }
   }
 
   componentWillUnmount() {
@@ -167,24 +167,5 @@ export class HnStoryPage extends React.Component<
 
     e.preventDefault();
     return false;
-  }
-
-  private async updateDataFromDataLayer() {
-    const storyData = await this.getStoryData(this.props.id);
-
-    this.setState({ data: storyData });
-  }
-
-  componentDidUpdate(prevProps: HnStoryPageProps) {
-    // load the story once the data layer is available
-    if (prevProps.dataLayer === null && this.props.dataLayer !== null) {
-      this.updateDataFromDataLayer();
-    }
-  }
-
-  private async getStoryData(id: number): Promise<HnItem | undefined> {
-    return this.props.dataLayer === null
-      ? undefined
-      : await this.props.dataLayer.getStoryData(id);
   }
 }

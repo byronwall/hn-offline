@@ -1,11 +1,13 @@
+import { History } from "history";
 import React from "react";
 
-import { HnListItem } from "./HnListItem";
 import { TrueHash } from "./App";
+import { HnListItem } from "./HnListItem";
 
 interface HnStoryListProps {
   items: HnItem[];
   readIds: TrueHash;
+  history: History;
 }
 
 const SESSION_SCROLL = "SCROLL_LIST";
@@ -19,7 +21,7 @@ export class HnStoryList extends React.Component<HnStoryListProps> {
 
   componentDidMount() {
     // TODO: get the types right for this
-    const history = (this.props as any).history;
+    const history = this.props.history;
     console.log("story list mount", history);
 
     if (history.action === "POP") {

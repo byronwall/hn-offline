@@ -1,10 +1,10 @@
+import { Icon } from "@blueprintjs/core";
+import classNames from "classnames";
 import React from "react";
 import { Link } from "react-router-dom";
 
 import { getDomain } from "./getDomain";
 import { timeSince } from "./timeSince";
-import { Glyphicon } from "react-bootstrap";
-import classNames from "classnames";
 
 export interface HnStoryProps {
   data: HnItem;
@@ -20,7 +20,7 @@ export class HnListItem extends React.Component<HnStoryProps> {
       <React.Fragment>
         {" | "}
         <Link to={"/story/" + story.id}>
-          <Glyphicon glyph="comment" /> {story.descendants}
+          <Icon icon="comment" /> {story.descendants}
         </Link>
       </React.Fragment>
     );
@@ -39,7 +39,7 @@ export class HnListItem extends React.Component<HnStoryProps> {
         <p>{storyLinkEl}</p>
         <p>
           <span>
-            <Glyphicon glyph="chevron-up" /> {" " + story.score}
+            <Icon icon="chevron-up" /> {" " + story.score}
           </span>
           {story.descendants !== undefined && commentCount}
           <span>{" | " + timeSince(story.time) + " ago"}</span>

@@ -1,18 +1,26 @@
-import _ from "lodash";
-import React from "react";
-
-import { HnListSource } from "./App";
-import { LocalStorageWrapper } from "./LocalStorageWrapper";
 import localforage from "localforage";
+import _ from "lodash";
+import { Container } from "unstated";
+
+import { HnListSource, TrueHash } from "./App";
 import { SESSION_COLLAPSED } from "./HnStoryPage";
 
 interface DataLayerState {
   allItems: HnItem[];
   currentLists: DataList[];
 
-  isLoadingFresh: boolean;
+  activeListType: HnListSource | undefined;
+  activeStoryId: number | undefined;
 
+  activeList: HnItem[];
+  activeStory: HnItem | undefined;
+
+  isLoadingFresh: boolean;
   isLoadingNewData: boolean;
+  isLoadingLocalStorage: boolean;
+  localStoragePromise: Promise<any> | undefined;
+
+  readItems: TrueHash;
 }
 
 export interface DataList {
@@ -20,46 +28,83 @@ export interface DataList {
   stories: number[]; // will be an array of IDs
 }
 
-interface DataLayerProps {
-  provideNewItems(items: HnItem[], listType: HnListSource): void;
-  updateIsLoadingStatus(newStatus: boolean): void;
-  loadFreshSource: HnListSource;
-}
+const LOCAL_ALL_ITEMS = "HN-ALL-ITEMS";
+const LOCAL_DATA_LISTS = "HN-DATA-LISTS";
+const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
+export class DataLayer extends Container<DataLayerState> {
+  constructor() {
+    super();
 
-export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
-  refreshData(activeList: HnListSource): void {}
-  constructor(props: DataLayerProps) {
-    super(props);
+    // run through some initial stuff?
+
+    this.initializeFromLocalStorage();
+    // load from local storage on creation
 
     this.state = {
       allItems: [],
       currentLists: [],
       isLoadingFresh: false,
       isLoadingNewData: false,
+      activeList: [],
+      activeStory: undefined,
+      isLoadingLocalStorage: true,
+      localStoragePromise: undefined,
+      readItems: {},
+      activeListType: undefined,
+      activeStoryId: undefined,
     };
   }
 
-  render() {
-    // TODO: generalize the comps and events for the data type (don't duplicate)
-    return (
-      <React.Fragment>
-        <LocalStorageWrapper<HnItem[]>
-          dataDidUpdate={(allItems) =>
-            this.processDataFromLocalStorage(allItems, this.state.currentLists)
-          }
-          activeItem={this.state.allItems}
-          storageName="HN-ALL-ITEMS"
-        />
+  async initializeFromLocalStorage() {
+    console.log("loading from local storage");
+    this.setState({ isLoadingLocalStorage: true });
 
-        <LocalStorageWrapper<DataList[]>
-          dataDidUpdate={(currentLists) =>
-            this.processDataFromLocalStorage(this.state.allItems, currentLists)
-          }
-          activeItem={this.state.currentLists}
-          storageName="HN-DATA-LISTS"
-        />
-      </React.Fragment>
-    );
+    const allItemsProm = localforage.getItem<HnItem[]>(LOCAL_ALL_ITEMS);
+    const currentListsProm = localforage.getItem<DataList[]>(LOCAL_DATA_LISTS);
+    const readItemsProm = localforage.getItem<TrueHash>(LOCAL_READ_ITEMS);
+
+    const localStorageProm = Promise.all([
+      allItemsProm,
+      currentListsProm,
+      readItemsProm,
+    ]);
+
+    // add the promise so that others can await them too
+    this.setState({ localStoragePromise: localStorageProm });
+
+    const [allItems, currentLists, readItems] = await localStorageProm;
+
+    console.log("loaded from local storage", allItems, currentLists);
+    const result = await this.setState({
+      allItems: allItems ?? [],
+      currentLists: currentLists ?? [],
+      isLoadingLocalStorage: false,
+      localStoragePromise: undefined,
+      readItems: readItems ?? {},
+    });
+
+    if (this.state.activeListType !== undefined) {
+      this.updateActiveList(this.state.activeListType);
+    }
+
+    if (this.state.activeStoryId !== undefined) {
+      this.updateActiveStory(this.state.activeStoryId);
+    }
+  }
+
+  saveIdToReadList(id: number): void {
+    const newReadList = _.cloneDeep(this.state.readItems);
+    console.log("new read list", newReadList);
+
+    // skip out if already there
+    if (newReadList[id]) {
+      return;
+    }
+
+    newReadList[id] = true;
+
+    localforage.setItem(LOCAL_READ_ITEMS, newReadList);
+    this.setState({ readItems: newReadList });
   }
 
   async getStoryData(id: number) {
@@ -75,7 +120,7 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
   public async getStoryFromServer(id: number) {
     let url = "/api/story/" + id;
 
-    this.props.updateIsLoadingStatus(true);
+    this.updateIsLoadingStatus(true);
     const response = await fetch(url);
     if (!response.ok) {
       console.error(response);
@@ -85,18 +130,28 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
 
     if ("error" in data) {
       console.error(data);
-      this.props.updateIsLoadingStatus(false);
+      this.updateIsLoadingStatus(false);
       return undefined;
     }
 
     console.log("hn item from server", data);
 
-    this.props.updateIsLoadingStatus(false);
+    this.updateIsLoadingStatus(false);
 
     // ensure new story is saved locally
     const newItems = this.state.allItems.concat(data);
     this.setState({ allItems: newItems });
     return data;
+  }
+  updateIsLoadingStatus(isLoading: boolean) {
+    this.setState({ isLoadingNewData: isLoading });
+  }
+
+  async reloadStoryById(id: number) {
+    this.clearItemData(id);
+
+    const newStory = await this.getStoryData(id);
+    this.setState({ activeStory: newStory });
   }
 
   clearItemData(id: number) {
@@ -149,36 +204,35 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
     this.setState({ allItems: newData });
   }
 
-  getPageData(page: string | undefined) {
+  async updateActiveList(source: HnListSource) {
     // TODO: add loading step if data is missing -- figure out how to trigger refresh
 
-    console.log("getpagedata", page, this.state);
+    this.setState({ activeListType: source });
 
-    if (page === "" || page === undefined) {
-      page = "front";
-    }
-
-    const pageToSourceMapping: { [key: string]: HnListSource } = {
-      day: HnListSource.Day,
-      week: HnListSource.Week,
-      month: HnListSource.Month,
-      front: HnListSource.Front,
-    };
-
-    const source = pageToSourceMapping[page];
+    console.log("getpagedata", source, this.state);
 
     if (source === undefined) {
       console.error("unknown page -> source map");
       return [];
     }
 
+    if (this.state.isLoadingLocalStorage) {
+      console.log("need to wait for local storage first");
+      return [];
+    }
+
+    if (this.state.localStoragePromise) {
+      console.log("waiting on local storage to load");
+      await this.state.localStoragePromise;
+      console.log("local storage loaded");
+    }
+
     const idsToLoad = this.state.currentLists.find((c) => c.key === source);
 
     if (idsToLoad === undefined) {
-      // TODO: this needs to fire off an update
       console.log("no ids to load...");
-      this.loadData(source);
-      return [];
+      this.reloadStoryListFromServer(source);
+      return;
     }
 
     let dataOut = idsToLoad.stories
@@ -189,10 +243,10 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
       dataOut = _.sortBy(dataOut, (c) => -c.score);
     }
 
-    return dataOut;
+    this.setState({ activeList: dataOut });
   }
 
-  public async loadData(activeList: HnListSource) {
+  public async reloadStoryListFromServer(activeList: HnListSource) {
     console.log("loading data");
     let url = "";
     switch (activeList) {
@@ -215,13 +269,13 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
       return;
     }
 
-    this.props.updateIsLoadingStatus(true);
-    this.setState({ isLoadingNewData: true });
+    this.updateIsLoadingStatus(true);
+
     const response = await fetch(url);
     if (!response.ok) {
       console.error(response);
-      this.props.updateIsLoadingStatus(false);
-      this.setState({ isLoadingNewData: false });
+      this.updateIsLoadingStatus(false);
+
       return;
     }
     let data: HnItem[] = await response.json();
@@ -231,63 +285,18 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
       data = _.sortBy<HnItem>(data, (c) => -c.score);
     }
 
-    // TODO: do not reload data on mount... use a button
-
     // TODO: take that list of items and set it equal to the current list
     // TODO: update the items with a merge of sorts instead of overwriting
 
     console.log("hn items from server", data);
 
-    this.props.updateIsLoadingStatus(false);
-    this.setState({ isLoadingNewData: false });
+    this.updateIsLoadingStatus(false);
+
     this.updateNewItems(data, activeList);
   }
 
-  processDataFromLocalStorage(
-    allItems: HnItem[] | undefined,
-    allLists: DataList[] | undefined
-  ) {
-    // all items come through
-    // the lists come through also
-
-    console.log("fresh data from local storage", allItems, allLists);
-
-    // these state updates ensure that the data is available for next pass
-    if (allItems !== undefined) {
-      this.setState({ allItems });
-    }
-
-    if (allLists !== undefined) {
-      this.setState({ currentLists: allLists });
-    }
-
-    if (allItems === undefined || allLists === undefined) {
-      if (!this.state.isLoadingFresh) {
-        console.log(
-          "local storage is empty, loading fresh data based on active page",
-          this.props.loadFreshSource
-        );
-        this.setState({ isLoadingFresh: true });
-        this.loadData(this.props.loadFreshSource);
-      }
-      return;
-    }
-
-    // iterate the lists
-
-    allLists.forEach((list) => {
-      const items = list.stories
-        .map((id) => allItems.find((c) => c.id === id))
-        .filter((c) => c !== undefined) as HnItem[];
-
-      this.props.provideNewItems(items, list.key);
-    });
-
-    // send out update commands to each one
-  }
-
   updateNewItems(data: HnItem[] | undefined, listType: HnListSource): void {
-    console.log("items coming from server", data, listType);
+    console.log("items coming from server", data, listType, this.state);
 
     if (data === undefined) {
       data = [];
@@ -342,8 +351,34 @@ export class DataLayer extends React.Component<DataLayerProps, DataLayerState> {
 
     // update otherwise
 
-    this.setState({ allItems: newAllItems, currentLists: newDataList }, () => {
-      this.props.provideNewItems(storiesToReturn, listType);
+    this.saveNewDataToLocalStorage(newAllItems, newDataList);
+
+    this.setState({
+      allItems: newAllItems,
+      currentLists: newDataList,
+      activeList: data,
     });
+  }
+  saveNewDataToLocalStorage(newAllItems: HnItem[], newDataList: DataList[]) {
+    localforage.setItem(LOCAL_ALL_ITEMS, newAllItems);
+    localforage.setItem(LOCAL_DATA_LISTS, newDataList);
+  }
+
+  async updateActiveStory(activeStoryId: number | undefined) {
+    this.setState({ activeStoryId: activeStoryId });
+
+    if (activeStoryId === undefined) {
+      this.setState({ activeStory: undefined });
+      return;
+    }
+
+    if (this.state.isLoadingLocalStorage) {
+      console.log("will update story when local storage is ready");
+      return;
+    }
+
+    const story = await this.getStoryData(activeStoryId);
+
+    this.setState({ activeStory: story });
   }
 }

@@ -45,7 +45,6 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
   }
 
   scrollIfDesired() {
-    console.log("scroll to id ", this.props.idToScrollTo);
     if (this.props.idToScrollTo === this.props.comment?.id) {
       const dims = this.divRef.current?.offsetTop;
       console.log("scrolling to me", dims);
@@ -83,7 +82,6 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
   }
 
   render() {
-    console.log("isOpen", this.props.isOpen);
     const comment = this.props.comment;
 
     if (comment === null) {

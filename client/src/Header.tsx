@@ -1,8 +1,6 @@
+import { Button, Navbar, Spinner } from "@blueprintjs/core";
 import React from "react";
-import { Button, Glyphicon, Nav, Navbar, NavItem } from "react-bootstrap";
-import { LinkContainer } from "react-router-bootstrap";
-import { NavLink, Route } from "react-router-dom";
-import { Spinner } from "@blueprintjs/core";
+import { Link, NavLink } from "react-router-dom";
 
 interface HeaderProps {
   requestNewData(): void;
@@ -13,36 +11,48 @@ export class Header extends React.PureComponent<HeaderProps> {
   render() {
     return (
       <Navbar>
-        <Navbar.Header>
-          <Navbar.Brand>
-            <NavLink to="/">hn-offline</NavLink>
-          </Navbar.Brand>
-        </Navbar.Header>
-        <Nav>
-          <LinkContainer to="/day">
-            <NavItem eventKey={1}>day</NavItem>
-          </LinkContainer>
+        <Navbar.Group>
+          <Link to="/" className="bp3-button bp3-minimal  header-link">
+            <Navbar.Heading style={{ display: "flex", alignItems: "center" }}>
+              <img src="favicon-32x32.png" />
+              <span style={{ marginLeft: 3, color: "#5C7080" }}>offline</span>
+            </Navbar.Heading>
+          </Link>
 
-          <LinkContainer to="/week">
-            <NavItem eventKey={2}>week</NavItem>
-          </LinkContainer>
+          <NavLink
+            to="/day"
+            className="bp3-button bp3-minimal  header-link"
+            activeClassName="bp3-active bp3-intent-primary"
+          >
+            day
+          </NavLink>
+          <NavLink
+            to="/week"
+            className="bp3-button bp3-minimal  header-link"
+            activeClassName="bp3-active bp3-intent-primary"
+          >
+            week
+          </NavLink>
+          <NavLink
+            to="/month"
+            className="bp3-button bp3-minimal  header-link"
+            activeClassName="bp3-active bp3-intent-primary"
+          >
+            month
+          </NavLink>
+        </Navbar.Group>
 
-          <LinkContainer to="/month">
-            <NavItem eventKey={3}>month</NavItem>
-          </LinkContainer>
-        </Nav>
-
-        <Navbar.Form pullRight>
+        <Navbar.Group align="right">
           {this.props.isLoading && <Spinner size={32} />}
           {!this.props.isLoading && (
             <Button
-              bsStyle="primary"
+              intent="primary"
               onClick={() => this.props.requestNewData()}
-            >
-              <Glyphicon glyph="refresh" />
-            </Button>
+              icon="refresh"
+              minimal={true}
+            />
           )}
-        </Navbar.Form>
+        </Navbar.Group>
       </Navbar>
     );
   }
