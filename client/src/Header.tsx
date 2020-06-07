@@ -10,7 +10,7 @@ interface HeaderProps {
 export class Header extends React.PureComponent<HeaderProps> {
   render() {
     return (
-      <Navbar>
+      <Navbar style={{ marginBottom: 10 }}>
         <Navbar.Group>
           <Link to="/" className="bp3-button bp3-minimal  header-link">
             <Navbar.Heading style={{ display: "flex", alignItems: "center" }}>
