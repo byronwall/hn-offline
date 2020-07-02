@@ -38,8 +38,11 @@ interface AppState {
 }
 
 class _App extends React.Component<AppPageProps, AppState> {
+  lastOpenTime: number;
   constructor(props: AppPageProps) {
     super(props);
+
+    this.lastOpenTime = Date.now();
 
     this.state = {
       activeList: HnListSource.Front,
@@ -47,6 +50,8 @@ class _App extends React.Component<AppPageProps, AppState> {
       activePage: HnPage.STORY_LIST,
       activeStoryId: undefined,
     };
+
+    this.onFocus = this.onFocus.bind(this);
   }
   static getDerivedStateFromProps(props: AppPageProps, state: AppState) {
     let listType: HnListSource;
@@ -109,6 +114,30 @@ class _App extends React.Component<AppPageProps, AppState> {
         GLOBAL_DATA_LAYER.updateActiveList(this.state.activeList);
         break;
     }
+
+    this.lastOpenTime = Date.now();
+
+    window.addEventListener("focus", this.onFocus);
+  }
+
+  componentWilUnmount() {
+    window.removeEventListener("focus", this.onFocus);
+  }
+
+  onFocus() {
+    const curTime = Date.now();
+    const timeSinceInit = curTime - this.lastOpenTime;
+    console.log("time since init", timeSinceInit, this.lastOpenTime, curTime);
+
+    // if it's been more than 1 minute
+    if (timeSinceInit > 20 * 1000) {
+      console.log(
+        "been too long... force reload from local storage in case data changed on other tabs"
+      );
+      GLOBAL_DATA_LAYER.initializeFromLocalStorage();
+    }
+
+    this.lastOpenTime = curTime;
   }
 
   async componentDidUpdate(prevProps: AppPageProps, prevState: AppState) {

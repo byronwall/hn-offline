@@ -31,6 +31,8 @@ const LOCAL_ALL_ITEMS = "HN-ALL-ITEMS";
 const LOCAL_DATA_LISTS = "HN-DATA-LISTS";
 const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
 export class DataLayer extends Container<DataLayerState> {
+  pendingReadItems: number[] = [];
+
   constructor() {
     super();
 
@@ -82,6 +84,9 @@ export class DataLayer extends Container<DataLayerState> {
       readItems: readItems ?? {},
     });
 
+    this.pendingReadItems.forEach((id) => this.saveIdToReadList(id));
+    this.pendingReadItems = [];
+
     if (this.state.activeListType !== undefined) {
       this.updateActiveList(this.state.activeListType);
     }
@@ -92,6 +97,12 @@ export class DataLayer extends Container<DataLayerState> {
   }
 
   saveIdToReadList(id: number): void {
+    if (this.state.isLoadingLocalStorage) {
+      // don't save data before list is loaded --- will clear it
+      console.log("do not update read list... pending updates");
+      this.pendingReadItems.push(id);
+      return;
+    }
     const newReadList = _.cloneDeep(this.state.readItems);
     console.log("new read list", newReadList);
 
@@ -103,7 +114,11 @@ export class DataLayer extends Container<DataLayerState> {
     newReadList[id] = true;
 
     localforage.setItem(LOCAL_READ_ITEMS, newReadList);
-    this.setState({ readItems: newReadList });
+
+    // ensure the new item is taken
+    this.setState((prevState) => {
+      return { readItems: newReadList };
+    });
   }
 
   async getStoryData(id: number) {
