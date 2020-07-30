@@ -86,8 +86,7 @@ export class DataLayer extends Container<DataLayerState> {
         readItems: readItems ?? {},
       },
       () => {
-        const sizeEstimate =
-          (JSON.stringify(this.state).length * 8) / 1024 / 1024;
+        const sizeEstimate = JSON.stringify(this.state).length / 1024 / 1024;
 
         this.setState({ sizeEstimate });
       }
