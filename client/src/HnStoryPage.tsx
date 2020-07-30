@@ -1,12 +1,12 @@
-import { H2, H4 } from '@blueprintjs/core';
-import { History } from 'history';
-import _ from 'lodash';
-import React from 'react';
+import { H2, H4 } from "@blueprintjs/core";
+import { History } from "history";
+import _ from "lodash";
+import React from "react";
 
-import { getDomain } from './getDomain';
-import { isValidComment } from './HnComment';
-import { HnCommentList } from './HnCommentList';
-import { timeSince } from './timeSince';
+import { getDomain } from "./getDomain";
+import { isValidComment } from "./HnComment";
+import { HnCommentList } from "./HnCommentList";
+import { timeSince } from "./timeSince";
 
 interface HnStoryPageState {
   collapsedComments: number[];
@@ -43,7 +43,10 @@ export class HnStoryPage extends React.Component<
       return null;
     }
 
-    console.log("scroll to ID", this.state.idToScrollTo);
+    // add this line to remove the state info on scrolling -- prevent scroll on reload
+    if (this.state.idToScrollTo) {
+      this.setState({ idToScrollTo: undefined });
+    }
 
     const storyData = this.props.data;
 

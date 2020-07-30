@@ -35,6 +35,8 @@ interface AppState {
   activeStoryId: number | undefined;
 
   storyKey: number;
+
+  storageUsed: number;
 }
 
 class _App extends React.Component<AppPageProps, AppState> {
@@ -49,6 +51,7 @@ class _App extends React.Component<AppPageProps, AppState> {
       storyKey: 0,
       activePage: HnPage.STORY_LIST,
       activeStoryId: undefined,
+      storageUsed: 0,
     };
 
     this.onFocus = this.onFocus.bind(this);
@@ -118,6 +121,11 @@ class _App extends React.Component<AppPageProps, AppState> {
     this.lastOpenTime = Date.now();
 
     window.addEventListener("focus", this.onFocus);
+
+    navigator.storage.estimate().then((data) => {
+      const size = (data.usage ?? 0) / 1024 / 1024;
+      this.setState({ storageUsed: size });
+    });
   }
 
   componentWilUnmount() {
@@ -164,6 +172,18 @@ class _App extends React.Component<AppPageProps, AppState> {
       <Subscribe to={[DataLayer]}>
         {(dataLayer: DataLayer) => (
           <div>
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 12,
+                fontSize: 8,
+                color: "#aaa",
+              }}
+            >
+              {this.state.storageUsed.toFixed(1)}
+              {" MB"}
+            </div>
             <Header
               requestNewData={() => this.requestFreshDataFromDataLayer()}
               isLoading={dataLayer.state.isLoadingNewData}
