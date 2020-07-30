@@ -17,9 +17,10 @@ interface DataLayerState {
 
   isLoadingNewData: boolean;
   isLoadingLocalStorage: boolean;
-  localStoragePromise: Promise<any> | undefined;
 
   readItems: TrueHash;
+
+  sizeEstimate: number;
 }
 
 export interface DataList {
@@ -49,10 +50,11 @@ export class DataLayer extends Container<DataLayerState> {
       activeList: [],
       activeStory: undefined,
       isLoadingLocalStorage: true,
-      localStoragePromise: undefined,
+
       readItems: {},
       activeListType: undefined,
       activeStoryId: undefined,
+      sizeEstimate: 0,
     };
   }
 
@@ -71,18 +73,25 @@ export class DataLayer extends Container<DataLayerState> {
     ]);
 
     // add the promise so that others can await them too
-    this.setState({ localStoragePromise: localStorageProm });
 
     const [allItems, currentLists, readItems] = await localStorageProm;
 
     console.log("loaded from local storage", allItems, currentLists);
-    const result = await this.setState({
-      allItems: allItems ?? [],
-      currentLists: currentLists ?? [],
-      isLoadingLocalStorage: false,
-      localStoragePromise: undefined,
-      readItems: readItems ?? {},
-    });
+    const result = await this.setState(
+      {
+        allItems: allItems ?? [],
+        currentLists: currentLists ?? [],
+        isLoadingLocalStorage: false,
+
+        readItems: readItems ?? {},
+      },
+      () => {
+        const sizeEstimate =
+          (JSON.stringify(this.state).length * 8) / 1024 / 1024;
+
+        this.setState({ sizeEstimate });
+      }
+    );
 
     this.pendingReadItems.forEach((id) => this.saveIdToReadList(id));
     this.pendingReadItems = [];
@@ -233,12 +242,6 @@ export class DataLayer extends Container<DataLayerState> {
     if (this.state.isLoadingLocalStorage) {
       console.log("need to wait for local storage first");
       return [];
-    }
-
-    if (this.state.localStoragePromise) {
-      console.log("waiting on local storage to load");
-      await this.state.localStoragePromise;
-      console.log("local storage loaded");
     }
 
     const idsToLoad = this.state.currentLists.find((c) => c.key === source);

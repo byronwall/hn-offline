@@ -121,11 +121,6 @@ class _App extends React.Component<AppPageProps, AppState> {
     this.lastOpenTime = Date.now();
 
     window.addEventListener("focus", this.onFocus);
-
-    navigator.storage.estimate().then((data) => {
-      const size = (data.usage ?? 0) / 1024 / 1024;
-      this.setState({ storageUsed: size });
-    });
   }
 
   componentWilUnmount() {
@@ -181,7 +176,7 @@ class _App extends React.Component<AppPageProps, AppState> {
                 color: "#aaa",
               }}
             >
-              {this.state.storageUsed.toFixed(1)}
+              {dataLayer.state.sizeEstimate.toFixed(1)}
               {" MB"}
             </div>
             <Header
