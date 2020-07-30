@@ -167,18 +167,6 @@ class _App extends React.Component<AppPageProps, AppState> {
       <Subscribe to={[DataLayer]}>
         {(dataLayer: DataLayer) => (
           <div>
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                right: 12,
-                fontSize: 8,
-                color: "#aaa",
-              }}
-            >
-              {dataLayer.state.sizeEstimate.toFixed(1)}
-              {" MB"}
-            </div>
             <Header
               requestNewData={() => this.requestFreshDataFromDataLayer()}
               isLoading={dataLayer.state.isLoadingNewData}
@@ -200,6 +188,17 @@ class _App extends React.Component<AppPageProps, AppState> {
                 history={this.props.history}
               />
             )}
+
+            <div
+              style={{
+                float: "right",
+                fontSize: 8,
+                color: "#aaa",
+              }}
+            >
+              {dataLayer.state.sizeEstimate.toFixed(1)}
+              {" MB"}
+            </div>
           </div>
         )}
       </Subscribe>
