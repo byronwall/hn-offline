@@ -5,9 +5,10 @@ import { Link } from "react-router-dom";
 
 import { getDomain } from "./getDomain";
 import { timeSince } from "./timeSince";
+import { HnStorySummary } from "./DataLayer";
 
 export interface HnStoryProps {
-  data: HnItem;
+  data: HnStorySummary;
 
   isRead: boolean | undefined;
 }
@@ -20,7 +21,7 @@ export class HnListItem extends React.Component<HnStoryProps> {
       <React.Fragment>
         {" | "}
         <Link to={"/story/" + story.id}>
-          <Icon icon="comment" /> {story.descendants}
+          <Icon icon="comment" /> {story.commentCount}
         </Link>
       </React.Fragment>
     );
@@ -41,7 +42,7 @@ export class HnListItem extends React.Component<HnStoryProps> {
           <span>
             <Icon icon="chevron-up" /> {" " + story.score}
           </span>
-          {story.descendants !== undefined && commentCount}
+          {story.commentCount !== undefined && commentCount}
           <span>{" | " + timeSince(story.time) + " ago"}</span>
           <span>{" | " + getDomain(story.url)}</span>
         </p>

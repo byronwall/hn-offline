@@ -107,7 +107,7 @@ async function updateData() {
     // clear out old stories as needed -- will happen daily
     if (storyType === "month") {
       console.log("clearing old stories");
-      const idsToKeep = new Set();
+      const idsToKeep = new Set<number>();
       Object.keys(cachedData).forEach((key) => {
         cachedData[key].forEach((story) => {
           idsToKeep.add(story.id);

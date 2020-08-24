@@ -6,26 +6,31 @@ import { HnListSource, TrueHash } from "./App";
 import { SESSION_COLLAPSED } from "./HnStoryPage";
 
 interface DataLayerState {
-  allItems: HnItem[];
-  currentLists: DataList[];
-
   activeListType: HnListSource | undefined;
   activeStoryId: number | undefined;
 
-  activeList: HnItem[];
+  activeList: HnStorySummary[];
   activeStory: HnItem | undefined;
 
   isLoadingNewData: boolean;
   isLoadingLocalStorage: boolean;
 
   readItems: TrueHash;
-
-  sizeEstimate: number;
 }
 
 export interface DataList {
   key: HnListSource;
-  stories: number[]; // will be an array of IDs
+
+  storyHeadlines: HnStorySummary[];
+}
+
+export interface HnStorySummary {
+  title: string;
+  score: number;
+  id: number;
+  url: string | undefined;
+  commentCount: number | undefined;
+  time: number;
 }
 
 const LOCAL_ALL_ITEMS = "HN-ALL-ITEMS";
@@ -43,9 +48,6 @@ export class DataLayer extends Container<DataLayerState> {
     // load from local storage on creation
 
     this.state = {
-      allItems: [],
-      currentLists: [],
-
       isLoadingNewData: false,
       activeList: [],
       activeStory: undefined,
@@ -54,7 +56,6 @@ export class DataLayer extends Container<DataLayerState> {
       readItems: {},
       activeListType: undefined,
       activeStoryId: undefined,
-      sizeEstimate: 0,
     };
   }
 
@@ -62,35 +63,16 @@ export class DataLayer extends Container<DataLayerState> {
     console.log("loading from local storage");
     this.setState({ isLoadingLocalStorage: true });
 
-    const allItemsProm = localforage.getItem<HnItem[]>(LOCAL_ALL_ITEMS);
-    const currentListsProm = localforage.getItem<DataList[]>(LOCAL_DATA_LISTS);
-    const readItemsProm = localforage.getItem<TrueHash>(LOCAL_READ_ITEMS);
-
-    const localStorageProm = Promise.all([
-      allItemsProm,
-      currentListsProm,
-      readItemsProm,
-    ]);
-
     // add the promise so that others can await them too
 
-    const [allItems, currentLists, readItems] = await localStorageProm;
+    const readItems = await localforage.getItem<TrueHash>(LOCAL_READ_ITEMS);
 
-    console.log("loaded from local storage", allItems, currentLists);
-    const result = await this.setState(
-      {
-        allItems: allItems ?? [],
-        currentLists: currentLists ?? [],
-        isLoadingLocalStorage: false,
+    console.log("loaded from local storage");
 
-        readItems: readItems ?? {},
-      },
-      () => {
-        const sizeEstimate = JSON.stringify(this.state).length / 1024 / 1024;
-
-        this.setState({ sizeEstimate });
-      }
-    );
+    this.setState({
+      isLoadingLocalStorage: false,
+      readItems: readItems ?? {},
+    });
 
     this.pendingReadItems.forEach((id) => this.saveIdToReadList(id));
     this.pendingReadItems = [];
@@ -102,6 +84,33 @@ export class DataLayer extends Container<DataLayerState> {
     if (this.state.activeStoryId !== undefined) {
       this.updateActiveStory(this.state.activeStoryId);
     }
+
+    this.pruneLocalStorage();
+  }
+  async pruneLocalStorage() {
+    // this will go through the known lists and remove any stories that are not needed now
+
+    const keys = await localforage.keys();
+
+    const listProm = keys
+      .filter((key) => key.startsWith("STORIES_"))
+      .map((key) => {
+        return localforage.getItem<HnStorySummary[]>(key);
+      });
+
+    const storyLists = await Promise.all(listProm);
+
+    const allKnownIds = _.flatten(storyLists).map((c) => c.id + "");
+
+    // remove those ids from the keys array above
+
+    const keysToRemove = keys
+      .filter((c) => !c.startsWith("STORIES_"))
+      .filter((c) => !_.includes(allKnownIds, c));
+
+    console.log("going to prune", keysToRemove);
+
+    keysToRemove.forEach((c) => localforage.removeItem(c));
   }
 
   saveIdToReadList(id: number): void {
@@ -130,8 +139,9 @@ export class DataLayer extends Container<DataLayerState> {
   }
 
   async getStoryData(id: number) {
-    let item = this.state.allItems.find((c) => c.id === id);
-    if (item !== undefined) {
+    // load story from local storage or server
+    let item = localforage.getItem<HnItem>(id + "");
+    if (item !== null) {
       return item;
     }
 
@@ -161,8 +171,8 @@ export class DataLayer extends Container<DataLayerState> {
     this.updateIsLoadingStatus(false);
 
     // ensure new story is saved locally
-    const newItems = this.state.allItems.concat(data);
-    this.setState({ allItems: newItems });
+    localforage.setItem(id + "", data);
+
     return data;
   }
   updateIsLoadingStatus(isLoading: boolean) {
@@ -176,14 +186,14 @@ export class DataLayer extends Container<DataLayerState> {
     this.setState({ activeStory: newStory });
   }
 
-  clearItemData(id: number) {
-    const itemRemoved = this.state.allItems.find((c) => c.id === id);
+  async clearItemData(id: number) {
+    const itemRemoved = await localforage.getItem<HnItem>(id + "");
 
-    const newData = this.state.allItems.filter((c) => c.id !== id);
-    console.log("clear item", {
-      before: this.state.allItems.length,
-      after: newData.length,
-    });
+    if (itemRemoved === null) {
+      return;
+    }
+
+    await localforage.removeItem(id + "");
 
     // need to clear any collpased ids also
     if (itemRemoved !== undefined) {
@@ -222,8 +232,6 @@ export class DataLayer extends Container<DataLayerState> {
         sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newCollapse));
       }
     }
-
-    this.setState({ allItems: newData });
   }
 
   async updateActiveList(source: HnListSource) {
@@ -238,22 +246,18 @@ export class DataLayer extends Container<DataLayerState> {
       return [];
     }
 
-    if (this.state.isLoadingLocalStorage) {
-      console.log("need to wait for local storage first");
-      return [];
-    }
+    // load the story list from local storage if possible
+    const summariesForType = await localforage.getItem<HnStorySummary[]>(
+      "STORIES_" + source
+    );
 
-    const idsToLoad = this.state.currentLists.find((c) => c.key === source);
-
-    if (idsToLoad === undefined) {
+    if (summariesForType === null) {
       console.log("no ids to load...");
       this.reloadStoryListFromServer(source);
       return;
     }
 
-    let dataOut = idsToLoad.stories
-      .map((id) => this.state.allItems.find((c) => c.id === id))
-      .filter((c) => c !== undefined) as HnItem[];
+    let dataOut = summariesForType;
 
     if (source !== HnListSource.Front) {
       dataOut = _.sortBy(dataOut, (c) => -c.score);
@@ -319,60 +323,30 @@ export class DataLayer extends Container<DataLayerState> {
     }
 
     // replace the list with the new IDs
-    const newList = data.map((c) => c.id);
+    const storySummaries: HnStorySummary[] = data.map<HnStorySummary>((c) => {
+      return {
+        id: c.id,
+        score: c.score,
+        title: c.title,
+        url: c.url,
+        commentCount: c.descendants,
+        time: c.time,
+      };
+    });
 
-    const newDataList = _.cloneDeep(this.state.currentLists);
-
-    let listToUpdate = newDataList.find((c) => c.key === listType);
-
-    if (listToUpdate === undefined) {
-      newDataList.push({
-        key: listType,
-        stories: newList,
-      });
-    } else {
-      listToUpdate.stories = newList;
-    }
-
-    // get all items... replace those whose data is newer in this version
-
-    const newAllItems = _.cloneDeep(this.state.allItems);
-
-    const storiesToReturn: HnItem[] = [];
+    //  push each item in localforage under its own key
 
     data.forEach((newStory) => {
-      const existingStoryIndex = newAllItems.findIndex(
-        (c) => c.id === newStory.id
-      );
-
-      // add the story if it is new
-      if (existingStoryIndex === -1) {
-        newAllItems.push(newStory);
-        storiesToReturn.push(newStory);
-        return;
-      }
-
-      // check the data if already found
-      const existingStory = newAllItems[existingStoryIndex];
-      if (existingStory.lastUpdated > newStory.lastUpdated) {
-        storiesToReturn.push(existingStory);
-        return;
-      }
-
-      newAllItems[existingStoryIndex] = newStory;
-      storiesToReturn.push(newStory);
-
-      // new story is actually newer... replace its data
+      localforage.setItem(newStory.id + "", newStory);
     });
+
+    // also save the new list to localfoeage
+    localforage.setItem("STORIES_" + listType, storySummaries);
 
     // update otherwise
 
-    this.saveNewDataToLocalStorage(newAllItems, newDataList);
-
     this.setState({
-      allItems: newAllItems,
-      currentLists: newDataList,
-      activeList: data,
+      activeList: storySummaries,
     });
   }
   saveNewDataToLocalStorage(newAllItems: HnItem[], newDataList: DataList[]) {
@@ -385,11 +359,6 @@ export class DataLayer extends Container<DataLayerState> {
 
     if (activeStoryId === undefined) {
       this.setState({ activeStory: undefined });
-      return;
-    }
-
-    if (this.state.isLoadingLocalStorage) {
-      console.log("will update story when local storage is ready");
       return;
     }
 

@@ -188,17 +188,6 @@ class _App extends React.Component<AppPageProps, AppState> {
                 history={this.props.history}
               />
             )}
-
-            <div
-              style={{
-                float: "right",
-                fontSize: 8,
-                color: "#aaa",
-              }}
-            >
-              {dataLayer.state.sizeEstimate.toFixed(1)}
-              {" MB"}
-            </div>
           </div>
         )}
       </Subscribe>

@@ -33,13 +33,6 @@ export class Header extends React.PureComponent<HeaderProps> {
           >
             week
           </NavLink>
-          <NavLink
-            to="/month"
-            className="bp3-button bp3-minimal  header-link"
-            activeClassName="bp3-active bp3-intent-primary"
-          >
-            month
-          </NavLink>
         </Navbar.Group>
 
         <Navbar.Group align="right">

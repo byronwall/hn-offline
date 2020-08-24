@@ -4,9 +4,10 @@ import React from "react";
 
 import { TrueHash } from "./App";
 import { HnListItem } from "./HnListItem";
+import { HnStorySummary } from "./DataLayer";
 
 interface HnStoryListProps {
-  items: HnItem[];
+  items: HnStorySummary[];
   readIds: TrueHash;
   history: History;
   isLoading: boolean;
@@ -57,7 +58,7 @@ export class HnStoryList extends React.Component<HnStoryListProps> {
     return (
       <div>
         {this.props.items
-          .filter((story) => story.descendants !== undefined)
+          .filter((story) => story.commentCount !== undefined)
           .map((item) => (
             <HnListItem
               data={item}
