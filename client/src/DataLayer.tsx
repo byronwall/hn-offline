@@ -33,8 +33,6 @@ export interface HnStorySummary {
   time: number;
 }
 
-const LOCAL_ALL_ITEMS = "HN-ALL-ITEMS";
-const LOCAL_DATA_LISTS = "HN-DATA-LISTS";
 const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
 export class DataLayer extends Container<DataLayerState> {
   pendingReadItems: number[] = [];
@@ -106,6 +104,7 @@ export class DataLayer extends Container<DataLayerState> {
 
     const keysToRemove = keys
       .filter((c) => !c.startsWith("STORIES_"))
+      .filter((c) => c !== LOCAL_READ_ITEMS)
       .filter((c) => !_.includes(allKnownIds, c));
 
     console.log("going to prune", keysToRemove);
@@ -348,10 +347,6 @@ export class DataLayer extends Container<DataLayerState> {
     this.setState({
       activeList: storySummaries,
     });
-  }
-  saveNewDataToLocalStorage(newAllItems: HnItem[], newDataList: DataList[]) {
-    localforage.setItem(LOCAL_ALL_ITEMS, newAllItems);
-    localforage.setItem(LOCAL_DATA_LISTS, newDataList);
   }
 
   async updateActiveStory(activeStoryId: number | undefined) {
