@@ -80,50 +80,51 @@ export class Server {
 
 let index = 0;
 async function updateData() {
-  const updateList: TopStoriesType[] = ["topstories"];
+  await loadFreshDataForStoryType("topstories");
+
   if (index % 6 === 0) {
     // every hour
-    updateList.push("day");
+    await loadFreshDataForStoryType("day");
   }
   if (index % (6 * 6) === 0) {
     // every 6 hours
-    updateList.push("week");
+    await loadFreshDataForStoryType("week");
   }
   if (index % (6 * 24) === 0) {
     // every 24 hours
-    updateList.push("month");
+    await loadFreshDataForStoryType("month");
     index = 1;
   }
-  console.log(new Date(), "refresh interval hit");
 
-  updateList.forEach(async (storyType) => {
-    console.log(new Date(), "calling for update to", storyType);
+  index++;
+}
 
-    // get the data
-    const results = await db_getTopStoryIds(storyType).then((ids) => {
-      return _getFullDataForIds(ids);
+async function loadFreshDataForStoryType(storyType: TopStoriesType) {
+  console.log(new Date(), "calling for update to", storyType);
+
+  // get the data
+  const results = await db_getTopStoryIds(storyType).then((ids) => {
+    return _getFullDataForIds(ids);
+  });
+
+  // clear out old stories as needed -- will happen daily
+  if (storyType === "month") {
+    console.log("clearing old stories");
+    const idsToKeep = new Set<number>();
+    Object.keys(cachedData).forEach((key) => {
+      cachedData[key].forEach((story) => {
+        idsToKeep.add(story.id);
+      });
     });
 
-    // clear out old stories as needed -- will happen daily
-    if (storyType === "month") {
-      console.log("clearing old stories");
-      const idsToKeep = new Set<number>();
-      Object.keys(cachedData).forEach((key) => {
-        cachedData[key].forEach((story) => {
-          idsToKeep.add(story.id);
-        });
-      });
+    const idArr = Array.from(idsToKeep);
+    console.log("keeping IDs", idArr);
+    const removeCount = await db_clearOldStories(idArr);
+    console.log("removed stories: " + removeCount);
+  }
 
-      const idArr = Array.from(idsToKeep);
-      console.log("keeping IDs", idArr);
-      const removeCount = await db_clearOldStories(idArr);
-      console.log("removed stories: " + removeCount);
-    }
+  // save result to local cache... will be served
+  cachedData[storyType] = results;
 
-    // save result to local cache... will be served
-    cachedData[storyType] = results;
-
-    console.log(new Date(), "update complete", storyType);
-  });
-  index++;
+  console.log(new Date(), "update complete", storyType);
 }

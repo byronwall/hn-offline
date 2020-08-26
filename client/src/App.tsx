@@ -33,10 +33,6 @@ interface AppState {
   activeList: HnListSource;
   activePage: HnPage;
   activeStoryId: number | undefined;
-
-  storyKey: number;
-
-  storageUsed: number;
 }
 
 class _App extends React.Component<AppPageProps, AppState> {
@@ -48,10 +44,9 @@ class _App extends React.Component<AppPageProps, AppState> {
 
     this.state = {
       activeList: HnListSource.Front,
-      storyKey: 0,
+
       activePage: HnPage.STORY_LIST,
       activeStoryId: undefined,
-      storageUsed: 0,
     };
 
     this.onFocus = this.onFocus.bind(this);
@@ -108,14 +103,8 @@ class _App extends React.Component<AppPageProps, AppState> {
 
   async componentDidMount() {
     // ensure that list and story are correct on a direct load
-    switch (this.state.activePage) {
-      case HnPage.STORY:
-        GLOBAL_DATA_LAYER.updateActiveStory(this.state.activeStoryId);
-        break;
-
-      case HnPage.STORY_LIST:
-        GLOBAL_DATA_LAYER.updateActiveList(this.state.activeList);
-        break;
+    if (this.state.activePage === HnPage.STORY_LIST) {
+      GLOBAL_DATA_LAYER.updateActiveList(this.state.activeList);
     }
 
     this.lastOpenTime = Date.now();
@@ -153,16 +142,10 @@ class _App extends React.Component<AppPageProps, AppState> {
       // load the correct items from the data layer
       GLOBAL_DATA_LAYER.updateActiveList(this.state.activeList);
     }
-
-    const didStoryIdChange =
-      prevState.activeStoryId !== this.state.activeStoryId;
-
-    if (didStoryIdChange) {
-      GLOBAL_DATA_LAYER.updateActiveStory(this.state.activeStoryId);
-    }
   }
 
   render() {
+    console.log("app render", window.scrollY);
     return (
       <Subscribe to={[DataLayer]}>
         {(dataLayer: DataLayer) => (
@@ -175,9 +158,8 @@ class _App extends React.Component<AppPageProps, AppState> {
               <HnStoryPage
                 id={this.state.activeStoryId}
                 history={this.props.history}
-                key={this.state.activeStoryId + "-" + this.state.storyKey}
+                key={this.state.activeStoryId + "-" + dataLayer.state.storyKey}
                 onVisitMarker={(id) => dataLayer.saveIdToReadList(id)}
-                data={dataLayer.state.activeStory}
               />
             )}
             {this.state.activePage === HnPage.STORY_LIST && (

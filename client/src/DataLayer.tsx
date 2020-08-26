@@ -7,15 +7,15 @@ import { SESSION_COLLAPSED } from "./HnStoryPage";
 
 interface DataLayerState {
   activeListType: HnListSource | undefined;
-  activeStoryId: number | undefined;
 
   activeList: HnStorySummary[];
-  activeStory: HnItem | undefined;
 
   isLoadingNewData: boolean;
   isLoadingLocalStorage: boolean;
 
   readItems: TrueHash;
+
+  storyKey: number;
 }
 
 export interface DataList {
@@ -48,12 +48,13 @@ export class DataLayer extends Container<DataLayerState> {
     this.state = {
       isLoadingNewData: false,
       activeList: [],
-      activeStory: undefined,
+
       isLoadingLocalStorage: true,
 
       readItems: {},
       activeListType: undefined,
-      activeStoryId: undefined,
+
+      storyKey: 0,
     };
   }
 
@@ -77,10 +78,6 @@ export class DataLayer extends Container<DataLayerState> {
 
     if (this.state.activeListType !== undefined) {
       this.updateActiveList(this.state.activeListType);
-    }
-
-    if (this.state.activeStoryId !== undefined) {
-      this.updateActiveStory(this.state.activeStoryId);
     }
 
     this.pruneLocalStorage();
@@ -139,7 +136,8 @@ export class DataLayer extends Container<DataLayerState> {
 
   async getStoryData(id: number) {
     // load story from local storage or server
-    let item = localforage.getItem<HnItem>(id + "");
+    let item = await localforage.getItem<HnItem>(id + "");
+
     if (item !== null) {
       return item;
     }
@@ -179,10 +177,12 @@ export class DataLayer extends Container<DataLayerState> {
   }
 
   async reloadStoryById(id: number) {
-    this.clearItemData(id);
+    await this.clearItemData(id);
 
-    const newStory = await this.getStoryData(id);
-    this.setState({ activeStory: newStory });
+    // this should force a render of the story page
+    this.setState((prevState) => {
+      return { storyKey: prevState.storyKey + 1 };
+    });
   }
 
   async clearItemData(id: number) {
@@ -236,12 +236,13 @@ export class DataLayer extends Container<DataLayerState> {
   async updateActiveList(source: HnListSource) {
     // TODO: add loading step if data is missing -- figure out how to trigger refresh
 
-    this.setState({ activeListType: source, activeList: [] });
+    this.setState({ activeListType: source });
 
     console.log("getpagedata", source, this.state);
 
     if (source === undefined) {
       console.error("unknown page -> source map");
+      this.setState({ activeList: [] });
       return [];
     }
 
@@ -347,18 +348,5 @@ export class DataLayer extends Container<DataLayerState> {
     this.setState({
       activeList: storySummaries,
     });
-  }
-
-  async updateActiveStory(activeStoryId: number | undefined) {
-    this.setState({ activeStoryId: activeStoryId });
-
-    if (activeStoryId === undefined) {
-      this.setState({ activeStory: undefined });
-      return;
-    }
-
-    const story = await this.getStoryData(activeStoryId);
-
-    this.setState({ activeStory: story });
   }
 }

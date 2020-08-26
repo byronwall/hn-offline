@@ -3,6 +3,7 @@ import { History } from "history";
 import _ from "lodash";
 import React from "react";
 
+import { GLOBAL_DATA_LAYER } from ".";
 import { getDomain } from "./getDomain";
 import { isValidComment } from "./HnComment";
 import { HnCommentList } from "./HnCommentList";
@@ -11,11 +12,11 @@ import { timeSince } from "./timeSince";
 interface HnStoryPageState {
   collapsedComments: number[];
   idToScrollTo: number | undefined;
+
+  data: HnItem | undefined | null;
 }
 
 export interface HnStoryPageProps {
-  data: HnItem | undefined;
-
   id: number | undefined;
   history: History;
 
@@ -33,13 +34,14 @@ export class HnStoryPage extends React.Component<
     this.state = {
       collapsedComments: [],
       idToScrollTo: undefined,
+      data: undefined,
     };
 
     this.anchorClickHandler = this.anchorClickHandler.bind(this);
   }
 
   render() {
-    if (this.props.data === undefined) {
+    if (!this.state.data) {
       return null;
     }
 
@@ -48,7 +50,7 @@ export class HnStoryPage extends React.Component<
       this.setState({ idToScrollTo: undefined });
     }
 
-    const storyData = this.props.data;
+    const storyData = this.state.data;
 
     const storyLinkEl =
       storyData.url === undefined ? (
@@ -143,6 +145,32 @@ export class HnStoryPage extends React.Component<
     if (this.props.id !== undefined) {
       this.props.onVisitMarker(this.props.id);
     }
+
+    // load the story data
+
+    this.loadStoryData();
+  }
+
+  componentDidUpdate(prevProps: HnStoryPageProps) {
+    const didIdChange = this.props.id !== prevProps.id;
+
+    if (didIdChange) {
+      this.loadStoryData();
+    }
+  }
+
+  async loadStoryData() {
+    // take the ID, get the story, send to state
+
+    // TODO: why is this ever undefined?
+
+    if (this.props.id === undefined) {
+      return;
+    }
+
+    const storyData = await GLOBAL_DATA_LAYER.getStoryData(this.props.id);
+
+    this.setState({ data: storyData });
   }
 
   componentWillUnmount() {

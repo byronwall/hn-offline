@@ -14,7 +14,7 @@ interface HnStoryListProps {
 }
 
 const SESSION_SCROLL = "SCROLL_LIST";
-export class HnStoryList extends React.Component<HnStoryListProps> {
+export class HnStoryList extends React.PureComponent<HnStoryListProps> {
   constructor(props: HnStoryListProps) {
     super(props);
     this.state = {
@@ -23,9 +23,11 @@ export class HnStoryList extends React.Component<HnStoryListProps> {
   }
 
   componentDidMount() {
-    // TODO: get the types right for this
+    this.scrollToPrevious();
+  }
+
+  private scrollToPrevious() {
     const history = this.props.history;
-    console.log("story list mount", history);
 
     if (history.action === "POP") {
       // restore scroll pos if available
@@ -47,25 +49,27 @@ export class HnStoryList extends React.Component<HnStoryListProps> {
   render() {
     document.title = `HN: Offline`;
 
-    if (this.props.items.length === 0 && this.props.isLoading) {
-      return (
+    const spinner =
+      this.props.items.length === 0 && this.props.isLoading ? (
         <div style={{ marginTop: 20 }}>
           <Spinner size={200} intent="warning" />
         </div>
-      );
-    }
+      ) : null;
 
     return (
       <div>
-        {this.props.items
-          .filter((story) => story.commentCount !== undefined)
-          .map((item) => (
-            <HnListItem
-              data={item}
-              key={item.id}
-              isRead={this.props.readIds[item.id]}
-            />
-          ))}
+        {spinner}
+        <div>
+          {this.props.items
+            .filter((story) => story.commentCount !== undefined)
+            .map((item) => (
+              <HnListItem
+                data={item}
+                key={item.id}
+                isRead={this.props.readIds[item.id]}
+              />
+            ))}
+        </div>
       </div>
     );
   }
