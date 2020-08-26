@@ -103,60 +103,75 @@ exports.Server = Server;
 var index = 0;
 function updateData() {
     return __awaiter(this, void 0, void 0, function () {
-        var updateList;
-        var _this = this;
         return __generator(this, function (_a) {
-            updateList = ["topstories"];
-            if (index % 6 === 0) {
-                // every hour
-                updateList.push("day");
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, loadFreshDataForStoryType("topstories")];
+                case 1:
+                    _a.sent();
+                    if (!(index % 6 === 0)) return [3 /*break*/, 3];
+                    // every hour
+                    return [4 /*yield*/, loadFreshDataForStoryType("day")];
+                case 2:
+                    // every hour
+                    _a.sent();
+                    _a.label = 3;
+                case 3:
+                    if (!(index % (6 * 6) === 0)) return [3 /*break*/, 5];
+                    // every 6 hours
+                    return [4 /*yield*/, loadFreshDataForStoryType("week")];
+                case 4:
+                    // every 6 hours
+                    _a.sent();
+                    _a.label = 5;
+                case 5:
+                    if (!(index % (6 * 24) === 0)) return [3 /*break*/, 7];
+                    // every 24 hours
+                    return [4 /*yield*/, loadFreshDataForStoryType("month")];
+                case 6:
+                    // every 24 hours
+                    _a.sent();
+                    index = 1;
+                    _a.label = 7;
+                case 7:
+                    index++;
+                    return [2 /*return*/];
             }
-            if (index % (6 * 6) === 0) {
-                // every 6 hours
-                updateList.push("week");
+        });
+    });
+}
+function loadFreshDataForStoryType(storyType) {
+    return __awaiter(this, void 0, void 0, function () {
+        var results, idsToKeep_1, idArr, removeCount;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    console.log(new Date(), "calling for update to", storyType);
+                    return [4 /*yield*/, database_1.db_getTopStoryIds(storyType).then(function (ids) {
+                            return database_1._getFullDataForIds(ids);
+                        })];
+                case 1:
+                    results = _a.sent();
+                    if (!(storyType === "month")) return [3 /*break*/, 3];
+                    console.log("clearing old stories");
+                    idsToKeep_1 = new Set();
+                    Object.keys(cachedData).forEach(function (key) {
+                        cachedData[key].forEach(function (story) {
+                            idsToKeep_1.add(story.id);
+                        });
+                    });
+                    idArr = Array.from(idsToKeep_1);
+                    console.log("keeping IDs", idArr);
+                    return [4 /*yield*/, database_1.db_clearOldStories(idArr)];
+                case 2:
+                    removeCount = _a.sent();
+                    console.log("removed stories: " + removeCount);
+                    _a.label = 3;
+                case 3:
+                    // save result to local cache... will be served
+                    cachedData[storyType] = results;
+                    console.log(new Date(), "update complete", storyType);
+                    return [2 /*return*/];
             }
-            if (index % (6 * 24) === 0) {
-                // every 24 hours
-                updateList.push("month");
-                index = 1;
-            }
-            console.log(new Date(), "refresh interval hit");
-            updateList.forEach(function (storyType) { return __awaiter(_this, void 0, void 0, function () {
-                var results, idsToKeep_1, idArr, removeCount;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            console.log(new Date(), "calling for update to", storyType);
-                            return [4 /*yield*/, database_1.db_getTopStoryIds(storyType).then(function (ids) {
-                                    return database_1._getFullDataForIds(ids);
-                                })];
-                        case 1:
-                            results = _a.sent();
-                            if (!(storyType === "month")) return [3 /*break*/, 3];
-                            console.log("clearing old stories");
-                            idsToKeep_1 = new Set();
-                            Object.keys(cachedData).forEach(function (key) {
-                                cachedData[key].forEach(function (story) {
-                                    idsToKeep_1.add(story.id);
-                                });
-                            });
-                            idArr = Array.from(idsToKeep_1);
-                            console.log("keeping IDs", idArr);
-                            return [4 /*yield*/, database_1.db_clearOldStories(idArr)];
-                        case 2:
-                            removeCount = _a.sent();
-                            console.log("removed stories: " + removeCount);
-                            _a.label = 3;
-                        case 3:
-                            // save result to local cache... will be served
-                            cachedData[storyType] = results;
-                            console.log(new Date(), "update complete", storyType);
-                            return [2 /*return*/];
-                    }
-                });
-            }); });
-            index++;
-            return [2 /*return*/];
         });
     });
 }
