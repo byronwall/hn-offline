@@ -15,6 +15,8 @@ interface HnCommentListProps {
 
   collapsedIds: number[];
   idToScrollTo: number | undefined;
+
+  isSkeleton: boolean;
 }
 
 export class HnCommentList extends React.Component<HnCommentListProps, {}> {
@@ -32,33 +34,39 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
     const validChildren = this.props.childComments.filter(
       (comm) => comm !== null
     );
+
+    const classMod = {
+      className: this.props.isSkeleton ? "bp3-skeleton" : undefined,
+    };
+
     return (
       <React.Fragment>
         {validChildren.map((childComm, index) => (
-          <HnComment
-            key={childComm!.id}
-            comment={childComm}
-            depth={this.props.depth}
-            canExpand={this.props.canExpand}
-            ref={this.childRefs[childComm!.id]}
-            onUpdateOpen={(id, newOpen, scrollId) =>
-              this.props.onUpdateOpen(
-                id,
-                newOpen,
-                scrollId ??
-                  (newOpen ? childComm?.id : validChildren[index + 1]?.id)
-              )
-            }
-            isOpen={
-              !(
-                this.props.collapsedIds.findIndex(
-                  (c) => childComm !== null && c === childComm.id
-                ) >= 0
-              )
-            }
-            collapsedIds={this.props.collapsedIds}
-            idToScrollTo={this.props.idToScrollTo}
-          />
+          <div key={childComm!.id} {...classMod}>
+            <HnComment
+              comment={childComm}
+              depth={this.props.depth}
+              canExpand={this.props.canExpand}
+              ref={this.childRefs[childComm!.id]}
+              onUpdateOpen={(id, newOpen, scrollId) =>
+                this.props.onUpdateOpen(
+                  id,
+                  newOpen,
+                  scrollId ??
+                    (newOpen ? childComm?.id : validChildren[index + 1]?.id)
+                )
+              }
+              isOpen={
+                !(
+                  this.props.collapsedIds.findIndex(
+                    (c) => childComm !== null && c === childComm.id
+                  ) >= 0
+                )
+              }
+              collapsedIds={this.props.collapsedIds}
+              idToScrollTo={this.props.idToScrollTo}
+            />
+          </div>
         ))}
       </React.Fragment>
     );

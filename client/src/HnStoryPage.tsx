@@ -9,6 +9,8 @@ import { isValidComment } from "./HnComment";
 import { HnCommentList } from "./HnCommentList";
 import { timeSince } from "./timeSince";
 
+import dummyItem from "./dummyItem.json";
+
 interface HnStoryPageState {
   collapsedComments: number[];
   idToScrollTo: number | undefined;
@@ -41,16 +43,13 @@ export class HnStoryPage extends React.Component<
   }
 
   render() {
-    if (!this.state.data) {
-      return null;
-    }
+    const isSkeleton = this.state.data === undefined;
+    const storyData = this.state.data ?? (dummyItem as HnItem);
 
     // add this line to remove the state info on scrolling -- prevent scroll on reload
     if (this.state.idToScrollTo) {
       this.setState({ idToScrollTo: undefined });
     }
-
-    const storyData = this.state.data;
 
     const storyLinkEl =
       storyData.url === undefined ? (
@@ -63,20 +62,26 @@ export class HnStoryPage extends React.Component<
 
     document.title = `HN: ${storyData.title}`;
 
+    const classMod = {
+      className: isSkeleton ? "bp3-skeleton" : undefined,
+    };
+
     return (
       <div>
-        <H2 style={{ overflowWrap: "break-word" }}>{storyLinkEl}</H2>
+        <H2 style={{ overflowWrap: "break-word" }} {...classMod}>
+          {storyLinkEl}
+        </H2>
         <H4>
-          <span>{storyData.by}</span>
+          <span {...classMod}>{storyData.by}</span>
           <span>{" | "}</span>
-          <span>
+          <span {...classMod}>
             {storyData.score}
             {" points"}
           </span>
           <span>{" | "}</span>
-          <span>{timeSince(storyData.time)} ago</span>
+          <span {...classMod}>{timeSince(storyData.time)} ago</span>
           <span>{" | "}</span>
-          <span>{getDomain(storyData.url)}</span>
+          <span {...classMod}>{getDomain(storyData.url)}</span>
         </H4>
         {storyData.text !== undefined && (
           <p
@@ -94,6 +99,7 @@ export class HnStoryPage extends React.Component<
             this.handleCollapseEvent(id, newOpen, scrollId)
           }
           idToScrollTo={this.state.idToScrollTo}
+          isSkeleton={isSkeleton}
         />
       </div>
     );
