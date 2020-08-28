@@ -43,75 +43,72 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var nedb = require("nedb");
+var fs = require("fs");
+var _ = require("lodash");
 var algolia_1 = require("./algolia");
 var api_1 = require("./api");
 var helpers_1 = require("./helpers");
-var Database = /** @class */ (function () {
-    function Database() {
+exports.db = {};
+var dbPath = "./newdb.json";
+function saveDatabase() {
+    var dataStr = JSON.stringify(exports.db);
+    fs.writeFileSync(dbPath, dataStr);
+}
+exports.saveDatabase = saveDatabase;
+function reloadDatabase() {
+    // create database if it's missing
+    if (!fs.existsSync(dbPath)) {
+        saveDatabase();
     }
-    Database.get = function () {
-        if (Database._db === undefined) {
-            console.log("creating DB");
-            Database._db = new nedb({ filename: "./data_test.db", autoload: true });
-            Database._db.ensureIndex({ fieldName: "id", unique: true }, function (err) {
-                if (err !== null) {
-                    console.log("nedb unique error", err);
-                }
-            });
-        }
-        return Database._db;
-    };
-    return Database;
-}());
-exports.Database = Database;
+    var dataStr = fs.readFileSync(dbPath).toString();
+    exports.db = JSON.parse(dataStr);
+}
+exports.reloadDatabase = reloadDatabase;
 function db_clearOldStories(idsToKeep) {
     return __awaiter(this, void 0, void 0, function () {
+        var allIds;
         return __generator(this, function (_a) {
-            return [2 /*return*/, new Promise(function (resolve, reject) {
-                    Database.get().remove({ id: { $nin: idsToKeep } }, { multi: true }, function (err, numRemoved) {
-                        if (err) {
-                            reject(err);
-                            return;
-                        }
-                        // reduce size on disk
-                        Database.get().persistence.compactDatafile();
-                        resolve(numRemoved);
-                        return;
-                    });
-                })];
+            allIds = Object.keys(exports.db)
+                .map(function (c) { return +c; })
+                .filter(function (c) { return !isNaN(c); });
+            console.log("all ids in database", allIds);
+            allIds.forEach(function (id) {
+                var shouldKeep = _.includes(idsToKeep, id);
+                if (!shouldKeep) {
+                    delete exports.db[id];
+                }
+            });
+            return [2 /*return*/, allIds.length - idsToKeep.length];
         });
     });
 }
 exports.db_clearOldStories = db_clearOldStories;
 function db_getTopStoryIds(reqType) {
     return __awaiter(this, void 0, void 0, function () {
+        var doc, shouldUpdate, ids, topstories;
         return __generator(this, function (_a) {
-            return [2 /*return*/, new Promise(function (resolve, reject) {
-                    Database.get().findOne({ id: reqType }, function (err, doc) {
-                        if (err !== null) {
-                            console.log("error occurred fetching ids", err);
-                            return reject(err);
+            switch (_a.label) {
+                case 0:
+                    doc = exports.db[reqType];
+                    if (doc !== undefined) {
+                        shouldUpdate = helpers_1._getUnixTimestamp() - doc.lastUpdated > 600;
+                        if (!shouldUpdate) {
+                            // same type of obj as created below
+                            return [2 /*return*/, doc.items];
                         }
-                        if (doc !== null) {
-                            var shouldUpdate = helpers_1._getUnixTimestamp() - doc.lastUpdated > 600;
-                            if (!shouldUpdate) {
-                                return resolve(doc.items);
-                            }
-                        }
-                        _getTopStories(reqType).then(function (ids) {
-                            var topstories = {
-                                id: reqType,
-                                items: ids,
-                                lastUpdated: helpers_1._getUnixTimestamp()
-                            };
-                            // this will update or insert the new topstories
-                            Database.get().update({ id: topstories.id }, topstories, { upsert: true }, function (err, numUpdated, upsert) {
-                                return resolve(ids);
-                            });
-                        });
-                    });
-                })];
+                    }
+                    return [4 /*yield*/, _getTopStories(reqType)];
+                case 1:
+                    ids = _a.sent();
+                    topstories = {
+                        id: reqType,
+                        items: ids,
+                        lastUpdated: helpers_1._getUnixTimestamp(),
+                    };
+                    // add to database
+                    exports.db[reqType] = topstories;
+                    return [2 /*return*/, ids];
+            }
         });
     });
 }
@@ -153,44 +150,33 @@ function addAllChildren(items) {
 }
 function addChildrenToItem(item) {
     return __awaiter(this, void 0, void 0, function () {
+        var result;
         return __generator(this, function (_a) {
-            if (item.kids !== undefined && item.kids.length > 0) {
-                return [2 /*return*/, Promise.all(item.kids.map(function (kid) { return api_1.HackerNewsApi.get().fetchItem(kid); })).then(function (result) {
-                        // result contains all of the comments loaded, run them back into the parent
-                        item.kidsObj = result;
-                        delete item.kids;
-                        return item.kidsObj;
-                    })];
+            switch (_a.label) {
+                case 0:
+                    if (!(item.kids !== undefined && item.kids.length > 0)) return [3 /*break*/, 2];
+                    return [4 /*yield*/, Promise.all(item.kids.map(function (kid) { return api_1.HackerNewsApi.get().fetchItem(kid); }))];
+                case 1:
+                    result = _a.sent();
+                    // result contains all of the comments loaded, run them back into the parent
+                    item.kidsObj = result;
+                    delete item.kids;
+                    return [2 /*return*/, item.kidsObj];
+                case 2: 
+                // just send  back empty array otherwise
+                return [2 /*return*/, []];
             }
-            else {
-                /// just send  back empty array
-                return [2 /*return*/, Promise.resolve([])];
-            }
-            return [2 /*return*/];
         });
     });
 }
 function addItemToDb(item) {
-    return __awaiter(this, void 0, void 0, function () {
-        var itemExt;
-        return __generator(this, function (_a) {
-            itemExt = __assign({}, item, { lastUpdated: helpers_1._getUnixTimestamp() });
-            return [2 /*return*/, new Promise(function (resolve, reject) {
-                    Database.get().update({ id: item.id }, itemExt, { upsert: true }, function (err, numCount) {
-                        if (err) {
-                            return reject(err);
-                        }
-                        else {
-                            return resolve(true);
-                        }
-                    });
-                })];
-        });
-    });
+    var itemExt = __assign({}, item, { lastUpdated: helpers_1._getUnixTimestamp() });
+    exports.db[item.id] = itemExt;
+    return true;
 }
 function _getTopStories(type) {
     return __awaiter(this, void 0, void 0, function () {
-        var _a;
+        var _a, topStories;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -203,7 +189,9 @@ function _getTopStories(type) {
                     }
                     return [3 /*break*/, 9];
                 case 1: return [4 /*yield*/, api_1.HackerNewsApi.get().fetchItemIds("topstories")];
-                case 2: return [2 /*return*/, (_b.sent()).slice(0, algolia_1.HITS_PER_PAGE)];
+                case 2:
+                    topStories = (_b.sent()).slice(0, algolia_1.HITS_PER_PAGE);
+                    return [2 /*return*/, topStories];
                 case 3: return [4 /*yield*/, algolia_1.AlgoliaApi.getDay()];
                 case 4: return [2 /*return*/, _b.sent()];
                 case 5: return [4 /*yield*/, algolia_1.AlgoliaApi.getMonth()];
@@ -219,25 +207,12 @@ function _getTopStories(type) {
     });
 }
 function getItemFromDb(itemId) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, new Promise(function (resolve, reject) {
-                    Database.get().findOne({ id: itemId }, function (err, doc) {
-                        if (err !== null) {
-                            return reject(err);
-                        }
-                        else {
-                            if (doc === null || _isTimePastThreshold(doc)) {
-                                return resolve(null);
-                            }
-                            else {
-                                return resolve(doc);
-                            }
-                        }
-                    });
-                })];
-        });
-    });
+    var doc = exports.db[itemId];
+    if (doc === undefined || _isTimePastThreshold(doc)) {
+        // this is caught later and used to refresh the story
+        return null;
+    }
+    return doc;
 }
 function _getFullDataForIds(itemIDs) {
     return __awaiter(this, void 0, void 0, function () {

@@ -43,21 +43,22 @@ var AlgoliaApi = /** @class */ (function () {
     }
     AlgoliaApi.getDay = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var timestamp, options, results;
+            var timestamp, options, results, hits;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         timestamp = helpers_1._getUnixTimestamp() - 60 * 60 * 24;
                         options = {
                             uri: "https://hn.algolia.com/api/v1/search?tags=story&hitsPerPage=" + exports.HITS_PER_PAGE + "&numericFilters=created_at_i>" + timestamp,
-                            json: true
+                            json: true,
                         };
                         return [4 /*yield*/, rp(options)];
                     case 1:
-                        results = _a.sent();
+                        results = (_a.sent());
+                        hits = results.hits;
                         // these will be strings not numbers at first
                         // note the object is .hits for the main data
-                        return [2 /*return*/, results.hits.map(function (result) { return Number.parseInt(result.objectID); })];
+                        return [2 /*return*/, hits.map(function (result) { return Number.parseInt(result.objectID); })];
                 }
             });
         });
@@ -71,11 +72,11 @@ var AlgoliaApi = /** @class */ (function () {
                         timestamp = helpers_1._getUnixTimestamp() - 60 * 60 * 24 * 7;
                         options = {
                             uri: "https://hn.algolia.com/api/v1/search?tags=story&hitsPerPage=" + exports.HITS_PER_PAGE + "&numericFilters=created_at_i>" + timestamp,
-                            json: true
+                            json: true,
                         };
                         return [4 /*yield*/, rp(options)];
                     case 1:
-                        results = _a.sent();
+                        results = (_a.sent());
                         // these will be strings not numbers at first
                         // note the object is .hits for the main data
                         return [2 /*return*/, results.hits.map(function (result) { return Number.parseInt(result.objectID); })];
@@ -92,11 +93,11 @@ var AlgoliaApi = /** @class */ (function () {
                         timestamp = helpers_1._getUnixTimestamp() - 60 * 60 * 24 * 30;
                         options = {
                             uri: "https://hn.algolia.com/api/v1/search?tags=story&hitsPerPage=" + exports.HITS_PER_PAGE + "&numericFilters=created_at_i>" + timestamp,
-                            json: true
+                            json: true,
                         };
                         return [4 /*yield*/, rp(options)];
                     case 1:
-                        results = _a.sent();
+                        results = (_a.sent());
                         // these will be strings not numbers at first
                         // note the object is .hits for the main data
                         return [2 /*return*/, results.hits.map(function (result) { return Number.parseInt(result.objectID); })];

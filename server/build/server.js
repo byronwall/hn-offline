@@ -93,6 +93,7 @@ var Server = /** @class */ (function () {
         var port = process.env.PORT || 3001;
         app.listen(port);
         // set up the auto download
+        database_1.reloadDatabase();
         setInterval(updateData, 10 * 60 * 1000);
         updateData();
         console.log("server is running on port: " + port);
@@ -125,10 +126,10 @@ function updateData() {
                     _a.label = 5;
                 case 5:
                     if (!(index % (6 * 24) === 0)) return [3 /*break*/, 7];
-                    // every 24 hours
+                    // every 24 hours -- only used to clean up history now
                     return [4 /*yield*/, loadFreshDataForStoryType("month")];
                 case 6:
-                    // every 24 hours
+                    // every 24 hours -- only used to clean up history now
                     _a.sent();
                     index = 1;
                     _a.label = 7;
@@ -141,17 +142,12 @@ function updateData() {
 }
 function loadFreshDataForStoryType(storyType) {
     return __awaiter(this, void 0, void 0, function () {
-        var results, idsToKeep_1, idArr, removeCount;
+        var idsToKeep_1, idArr, removeCount, results;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     console.log(new Date(), "calling for update to", storyType);
-                    return [4 /*yield*/, database_1.db_getTopStoryIds(storyType).then(function (ids) {
-                            return database_1._getFullDataForIds(ids);
-                        })];
-                case 1:
-                    results = _a.sent();
-                    if (!(storyType === "month")) return [3 /*break*/, 3];
+                    if (!(storyType === "month")) return [3 /*break*/, 2];
                     console.log("clearing old stories");
                     idsToKeep_1 = new Set();
                     Object.keys(cachedData).forEach(function (key) {
@@ -162,13 +158,20 @@ function loadFreshDataForStoryType(storyType) {
                     idArr = Array.from(idsToKeep_1);
                     console.log("keeping IDs", idArr);
                     return [4 /*yield*/, database_1.db_clearOldStories(idArr)];
-                case 2:
+                case 1:
                     removeCount = _a.sent();
                     console.log("removed stories: " + removeCount);
-                    _a.label = 3;
+                    return [3 /*break*/, 4];
+                case 2: return [4 /*yield*/, database_1.db_getTopStoryIds(storyType).then(function (ids) {
+                        return database_1._getFullDataForIds(ids);
+                    })];
                 case 3:
+                    results = _a.sent();
                     // save result to local cache... will be served
                     cachedData[storyType] = results;
+                    _a.label = 4;
+                case 4:
+                    database_1.saveDatabase();
                     console.log(new Date(), "update complete", storyType);
                     return [2 /*return*/];
             }
