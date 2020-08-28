@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "server": "nodemon --watch '*.ts' --exec \"ts-node src/index.ts\"",
+    "server": "nodemon -e ts,js --watch '*.ts' --exec \"ts-node src/index.ts\"",
     "client": "cd ../client && yarn start",
     "dev": "concurrently \"yarn server\" \"yarn client\"",
     "start": "node build/index.js",
@@ -16,7 +16,6 @@
   "devDependencies": {
     "@types/express": "^4.11.1",
     "@types/firebase": "^3.2.1",
-    "@types/nedb": "^1.8.5",
     "@types/node": "^8.0.47",
     "@types/request-promise": "^4.1.41",
     "nodemon": "^1.17.2",
@@ -30,7 +29,7 @@
     "cors": "^2.8.5",
     "express": "^4.16.3",
     "firebase": "^4.11.0",
-    "nedb": "^1.8.0",
-    "request-promise": "^4.2.2"
+    "request-promise": "^4.2.2",
+    "v8-profiler": "^5.7.0"
   }
 }

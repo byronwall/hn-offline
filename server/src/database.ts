@@ -1,4 +1,5 @@
-import * as nedb from "nedb";
+import * as fs from "fs";
+import * as _ from "lodash";
 
 import { AlgoliaApi, HITS_PER_PAGE } from "./algolia";
 import { HackerNewsApi } from "./api";
@@ -6,80 +7,78 @@ import { _getUnixTimestamp } from "./helpers";
 import { ItemExt, TopStories, TopStoriesType } from "./interfaces";
 import { Item } from "./item";
 
-export class Database {
-  static _db: Nedb;
-  static get() {
-    if (Database._db === undefined) {
-      console.log("creating DB");
-      Database._db = new nedb({ filename: "./data_test.db", autoload: true });
-      Database._db.ensureIndex({ fieldName: "id", unique: true }, function(
-        err
-      ) {
-        if (err !== null) {
-          console.log("nedb unique error", err);
-        }
-      });
-    }
+type ItemHash = {
+  [id: number]: ItemExt;
 
-    return Database._db;
+  topstories?: TopStories;
+  day?: TopStories;
+  week?: TopStories;
+  month?: TopStories;
+};
+
+export let db: ItemHash = {};
+const dbPath = "./newdb.json";
+
+export function saveDatabase() {
+  const dataStr = JSON.stringify(db);
+  fs.writeFileSync(dbPath, dataStr);
+}
+
+export function reloadDatabase() {
+  // create database if it's missing
+  if (!fs.existsSync(dbPath)) {
+    saveDatabase();
   }
+
+  const dataStr = fs.readFileSync(dbPath).toString();
+
+  db = JSON.parse(dataStr) as ItemExt[];
 }
 
 export async function db_clearOldStories(idsToKeep: number[]) {
-  return new Promise<number>((resolve, reject) => {
-    Database.get().remove(
-      { id: { $nin: idsToKeep } },
-      { multi: true },
-      function(err, numRemoved) {
-        if (err) {
-          reject(err);
-          return;
-        }
+  // remove the day/week items from the delete list
+  const allIds = Object.keys(db)
+    .map((c) => +c)
+    .filter((c) => !isNaN(c));
 
-        // reduce size on disk
-        Database.get().persistence.compactDatafile();
+  console.log("all ids in database", allIds);
 
-        resolve(numRemoved);
-        return;
-      }
-    );
+  allIds.forEach((id) => {
+    const shouldKeep = _.includes(idsToKeep, id);
+
+    if (!shouldKeep) {
+      delete db[id];
+    }
   });
+
+  return allIds.length - idsToKeep.length;
 }
 
-export async function db_getTopStoryIds(reqType: TopStoriesType) {
-  return new Promise<number[]>((resolve, reject) => {
-    Database.get().findOne<TopStories>({ id: reqType }, (err, doc) => {
-      if (err !== null) {
-        console.log("error occurred fetching ids", err);
-        return reject(err);
-      }
+export async function db_getTopStoryIds(
+  reqType: TopStoriesType
+): Promise<number[]> {
+  const doc = db[reqType] as TopStories;
 
-      if (doc !== null) {
-        const shouldUpdate = _getUnixTimestamp() - doc.lastUpdated > 600;
-        if (!shouldUpdate) {
-          return resolve(doc.items);
-        }
-      }
+  if (doc !== undefined) {
+    const shouldUpdate = _getUnixTimestamp() - doc.lastUpdated > 600;
+    if (!shouldUpdate) {
+      // same type of obj as created below
+      return doc.items;
+    }
+  }
 
-      _getTopStories(reqType).then(ids => {
-        let topstories: TopStories = {
-          id: reqType,
-          items: ids,
-          lastUpdated: _getUnixTimestamp()
-        };
+  const ids = await _getTopStories(reqType);
 
-        // this will update or insert the new topstories
-        Database.get().update(
-          { id: topstories.id },
-          topstories,
-          { upsert: true },
-          (err, numUpdated, upsert) => {
-            return resolve(ids);
-          }
-        );
-      });
-    });
-  });
+  let topstories: TopStories = {
+    id: reqType,
+    items: ids,
+    lastUpdated: _getUnixTimestamp(),
+  };
+
+  // add to database
+  db[reqType] = topstories;
+
+  return ids;
 }
 
 async function addAllChildren(items: Item[]) {
@@ -91,7 +90,7 @@ async function addAllChildren(items: Item[]) {
 
     if (item !== null) {
       let freshItems = await addChildrenToItem(item);
-      freshItems = freshItems.filter(item => item !== null);
+      freshItems = freshItems.filter((item) => item !== null);
       newItems = newItems.concat(freshItems);
     }
 
@@ -109,49 +108,38 @@ async function addAllChildren(items: Item[]) {
 
 async function addChildrenToItem(item: Item): Promise<Item[]> {
   if (item.kids !== undefined && item.kids.length > 0) {
-    return Promise.all(
-      item.kids.map(kid => HackerNewsApi.get().fetchItem(kid))
-    ).then(result => {
-      // result contains all of the comments loaded, run them back into the parent
-      item.kidsObj = result;
-      delete item.kids;
+    // load all the kids and then return those
+    const result = await Promise.all(
+      item.kids.map((kid) => HackerNewsApi.get().fetchItem(kid))
+    );
 
-      return item.kidsObj;
-    });
-  } else {
-    /// just send  back empty array
-    return Promise.resolve([]);
+    // result contains all of the comments loaded, run them back into the parent
+    item.kidsObj = result;
+    delete item.kids;
+
+    return item.kidsObj;
   }
+
+  // just send  back empty array otherwise
+  return [];
 }
 
-async function addItemToDb(item: Item) {
-  // outputItem(item, 0);
-
+function addItemToDb(item: Item) {
   let itemExt: ItemExt = { ...item, lastUpdated: _getUnixTimestamp() };
 
-  return new Promise((resolve, reject) => {
-    Database.get().update(
-      { id: item.id },
-      itemExt,
-      { upsert: true },
-      (err, numCount) => {
-        if (err) {
-          return reject(err);
-        } else {
-          return resolve(true);
-        }
-      }
-    );
-  });
+  db[item.id] = itemExt;
+
+  return true;
 }
 
-async function _getTopStories(type: TopStoriesType) {
+async function _getTopStories(type: TopStoriesType): Promise<number[]> {
   switch (type) {
     case "topstories":
-      return (await HackerNewsApi.get().fetchItemIds("topstories")).slice(
-        0,
-        HITS_PER_PAGE
-      );
+      const topStories = (
+        await HackerNewsApi.get().fetchItemIds("topstories")
+      ).slice(0, HITS_PER_PAGE);
+
+      return topStories;
     case "day":
       return await AlgoliaApi.getDay();
     case "month":
@@ -164,20 +152,15 @@ async function _getTopStories(type: TopStoriesType) {
   }
 }
 
-async function getItemFromDb(itemId: number): Promise<ItemExt> {
-  return new Promise<ItemExt>((resolve, reject) => {
-    Database.get().findOne<ItemExt>({ id: itemId }, (err, doc) => {
-      if (err !== null) {
-        return reject(err);
-      } else {
-        if (doc === null || _isTimePastThreshold(doc)) {
-          return resolve(null);
-        } else {
-          return resolve(doc);
-        }
-      }
-    });
-  });
+function getItemFromDb(itemId: number): ItemExt | null {
+  const doc = db[itemId];
+
+  if (doc === undefined || _isTimePastThreshold(doc)) {
+    // this is caught later and used to refresh the story
+    return null;
+  }
+
+  return doc;
 }
 
 export async function _getFullDataForIds(itemIDs: number[]) {
@@ -203,7 +186,6 @@ async function addChildrenToItemRecurse(item: Item) {
   var newItems: Item[] = [];
 
   // this now needs to go grab comments if they are desired
-  // TODO: consider building a giant normalized list and then doing a final denorm step... that final obj coudl be saved too as a cache.
 
   let freshItems = await addChildrenToItem(item);
 

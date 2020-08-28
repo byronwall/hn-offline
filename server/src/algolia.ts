@@ -4,52 +4,57 @@ import { _getUnixTimestamp } from "./helpers";
 
 export const HITS_PER_PAGE = 50;
 
+type AlgoliaRes = { hits: AlgoliaHit[] };
+type AlgoliaHit = { objectID: string };
+
 export class AlgoliaApi {
-  static async getDay() {
+  static async getDay(): Promise<number[]> {
     let timestamp = _getUnixTimestamp() - 60 * 60 * 24;
 
     var options = {
       uri: `https://hn.algolia.com/api/v1/search?tags=story&hitsPerPage=${HITS_PER_PAGE}&numericFilters=created_at_i>${timestamp}`,
 
-      json: true
+      json: true,
     };
 
-    let results = await rp(options);
+    let results = (await rp(options)) as AlgoliaRes;
+
+    const hits = results.hits;
 
     // these will be strings not numbers at first
     // note the object is .hits for the main data
-    return results.hits.map(result => Number.parseInt(result.objectID));
+    return hits.map((result) => Number.parseInt(result.objectID));
   }
 
-  static async getWeek() {
+  static async getWeek(): Promise<number[]> {
     let timestamp = _getUnixTimestamp() - 60 * 60 * 24 * 7;
 
     var options = {
       uri: `https://hn.algolia.com/api/v1/search?tags=story&hitsPerPage=${HITS_PER_PAGE}&numericFilters=created_at_i>${timestamp}`,
 
-      json: true
+      json: true,
     };
 
-    let results = await rp(options);
+    let results = (await rp(options)) as AlgoliaRes;
 
     // these will be strings not numbers at first
     // note the object is .hits for the main data
-    return results.hits.map(result => Number.parseInt(result.objectID));
+    return results.hits.map((result) => Number.parseInt(result.objectID));
   }
 
-  static async getMonth() {
+  static async getMonth(): Promise<number[]> {
     let timestamp = _getUnixTimestamp() - 60 * 60 * 24 * 30;
 
     var options = {
       uri: `https://hn.algolia.com/api/v1/search?tags=story&hitsPerPage=${HITS_PER_PAGE}&numericFilters=created_at_i>${timestamp}`,
 
-      json: true
+      json: true,
     };
 
-    let results = await rp(options);
+    let results = (await rp(options)) as AlgoliaRes;
 
     // these will be strings not numbers at first
     // note the object is .hits for the main data
-    return results.hits.map(result => Number.parseInt(result.objectID));
+    return results.hits.map((result) => Number.parseInt(result.objectID));
   }
 }

@@ -8,6 +8,8 @@ import {
   _getFullDataForIds,
   db_getTopStoryIds,
   db_clearOldStories,
+  saveDatabase,
+  reloadDatabase,
 } from "./database";
 import { ItemExt, TopStoriesParams, TopStoriesType } from "./interfaces";
 
@@ -71,6 +73,8 @@ export class Server {
 
     // set up the auto download
 
+    reloadDatabase();
+
     setInterval(updateData, 10 * 60 * 1000);
     updateData();
 
@@ -91,7 +95,7 @@ async function updateData() {
     await loadFreshDataForStoryType("week");
   }
   if (index % (6 * 24) === 0) {
-    // every 24 hours
+    // every 24 hours -- only used to clean up history now
     await loadFreshDataForStoryType("month");
     index = 1;
   }
@@ -101,11 +105,6 @@ async function updateData() {
 
 async function loadFreshDataForStoryType(storyType: TopStoriesType) {
   console.log(new Date(), "calling for update to", storyType);
-
-  // get the data
-  const results = await db_getTopStoryIds(storyType).then((ids) => {
-    return _getFullDataForIds(ids);
-  });
 
   // clear out old stories as needed -- will happen daily
   if (storyType === "month") {
@@ -121,10 +120,16 @@ async function loadFreshDataForStoryType(storyType: TopStoriesType) {
     console.log("keeping IDs", idArr);
     const removeCount = await db_clearOldStories(idArr);
     console.log("removed stories: " + removeCount);
+  } else {
+    // get the data
+    const results = await db_getTopStoryIds(storyType).then((ids) => {
+      return _getFullDataForIds(ids);
+    });
+
+    // save result to local cache... will be served
+    cachedData[storyType] = results;
   }
 
-  // save result to local cache... will be served
-  cachedData[storyType] = results;
-
+  saveDatabase();
   console.log(new Date(), "update complete", storyType);
 }
