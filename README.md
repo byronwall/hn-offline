@@ -2,7 +2,7 @@
 
 This is a simple web app to read Hacker News comments by storing a local copy. App uses service workers and local storage to provide fully offline HN reading. The goal of this app is to read the comments. It does not provide an offline version of any articles or non-HN links.
 
-**Features:**
+## Features
 
 - Optimized for lurking. No ability to login, comment, or do anything other than read comments and follow links.
 - Three main views for accessing stories: front page, day, and week. Each view provides 50 stories. Infinite scroll is intentionally avoided.
@@ -16,3 +16,13 @@ This is a simple web app to read Hacker News comments by storing a local copy. A
   - Click the right margin of the comment to make deeply nested comments wider.
   - Comment collapse state is stored in the current session.
     - If you leave a story and come back the comments will return to their previous state.
+
+## Screenshots
+
+### Mobile
+
+![Mobile screenshot](mobile.png)
+
+### Desktop
+
+![Desktop screenshot](desktop.png)
