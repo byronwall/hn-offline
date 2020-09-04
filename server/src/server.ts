@@ -15,6 +15,9 @@ import { ItemExt, TopStoriesParams, TopStoriesType } from "./interfaces";
 
 const cachedData: { [key: string]: ItemExt[] } = {};
 
+const staticPath = path.join(__dirname, "static");
+console.log("static path: ", staticPath);
+
 export class Server {
   static start() {
     const app = express();
@@ -25,7 +28,7 @@ export class Server {
     app.use(cors());
 
     // this assumes that the app is running in server/build
-    app.use(express.static(path.join(__dirname, "../../client/build")));
+    app.use(express.static(staticPath));
 
     app.get("/topstories/:type", (req, res) => {
       // return a set of 30 stories with the title, comment count, and URL
@@ -65,7 +68,7 @@ export class Server {
 
     app.get(reactClientPaths, (req, res) => {
       // need to respond to all pages so that BrowserRouter works
-      res.sendFile(path.join(__dirname, "../../client/build/index.html"));
+      res.sendFile(path.join(staticPath, "index.html"));
     });
 
     var port = process.env.PORT || 3001;
