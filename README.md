@@ -24,7 +24,7 @@ This is a simple web app. Server is built on Node and Express. There are two API
 - Official HN API, via Firebase - used to load front page list, story, and comment details
 - Algolia HN search results - for the top day and week stories
 
-The server has a simple timer which triggers every 10 minutes to check for updates for the front page. The day and week lists update less frequently.
+The server has a simple timer which triggers every 10 minutes to check for updates for the front page. The day and week lists update less frequently. There's additional logic to only reload the comments for a story if enough time has elapsed from the previous update.
 
 The client is a SPA built in React. The bulk of the code is data management and controlling the view when comments are collapsed.
 
