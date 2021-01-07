@@ -1,3 +1,4 @@
 profiles
 newdb.json
 build
+.env

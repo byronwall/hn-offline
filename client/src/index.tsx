@@ -36,7 +36,7 @@ export const GLOBAL_DATA_LAYER = new DataLayer();
 
 ReactDOM.render(
   <BrowserRouter>
-    <Route path={["/story/:storyId", "/:page?"]}>
+    <Route path={["/story/:storyId", "/search/:searchTerm", "/:page?"]}>
       <Provider inject={[GLOBAL_DATA_LAYER]}>
         <App />
       </Provider>

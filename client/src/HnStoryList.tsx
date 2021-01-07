@@ -59,16 +59,14 @@ export class HnStoryList extends React.PureComponent<HnStoryListProps> {
     return (
       <div>
         {spinner}
-        <div>
-          {this.props.items
-            .filter((story) => story.commentCount !== undefined)
-            .map((item) => (
-              <HnListItem
-                data={item}
-                key={item.id}
-                isRead={this.props.readIds[item.id]}
-              />
-            ))}
+        <div id="list-holder">
+          {this.props.items.map((item) => (
+            <HnListItem
+              data={item}
+              key={item.id}
+              isRead={this.props.readIds[item.id]}
+            />
+          ))}
         </div>
       </div>
     );

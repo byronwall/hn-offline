@@ -17,11 +17,13 @@ export class HnListItem extends React.Component<HnStoryProps> {
   render() {
     const story = this.props.data;
 
-    const commentCount = (
+    const commentCountNum =
+      story.commentCount ?? ((story as any).kids ?? []).length ?? "";
+    const commentCountComp = (
       <React.Fragment>
         {" | "}
         <Link to={"/story/" + story.id}>
-          <Icon icon="comment" /> {story.commentCount}
+          <Icon icon="comment" /> {commentCountNum}
         </Link>
       </React.Fragment>
     );
@@ -42,7 +44,7 @@ export class HnListItem extends React.Component<HnStoryProps> {
           <span>
             <Icon icon="chevron-up" /> {" " + story.score}
           </span>
-          {story.commentCount !== undefined && commentCount}
+          {commentCountNum !== "" && commentCountComp}
           <span>{" | " + timeSince(story.time) + " ago"}</span>
           <span>{" | " + getDomain(story.url)}</span>
         </p>

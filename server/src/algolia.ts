@@ -8,6 +8,23 @@ type AlgoliaRes = { hits: AlgoliaHit[] };
 type AlgoliaHit = { objectID: string };
 
 export class AlgoliaApi {
+  static async getAllByQuery(query: string): Promise<number[]> {
+    const querySafe = encodeURIComponent(query);
+
+    var options = {
+      uri: `https://hn.algolia.com/api/v1/search?query=${querySafe}&tags=story&hitsPerPage=${HITS_PER_PAGE}`,
+
+      json: true,
+    };
+
+    let results = (await rp(options)) as AlgoliaRes;
+
+    const hits = results.hits;
+
+    // these will be strings not numbers at first
+    // note the object is .hits for the main data
+    return hits.map((result) => Number.parseInt(result.objectID));
+  }
   static async getDay(): Promise<number[]> {
     let timestamp = _getUnixTimestamp() - 60 * 60 * 24;
 

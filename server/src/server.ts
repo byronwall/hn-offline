@@ -3,6 +3,10 @@ import * as compression from "compression";
 import * as express from "express";
 import * as path from "path";
 import * as cors from "cors";
+import debug from "debug";
+
+const log = debug("hn:server");
+log("log created!");
 
 import {
   _getFullDataForIds,
@@ -12,11 +16,13 @@ import {
   reloadDatabase,
 } from "./database";
 import { ItemExt, TopStoriesParams, TopStoriesType } from "./interfaces";
+import { AlgoliaApi } from "./algolia";
+import { HackerNewsApi } from "./api";
 
 const cachedData: { [key: string]: ItemExt[] } = {};
 
 const staticPath = path.join(__dirname, "static");
-console.log("static path: ", staticPath);
+log("static path: ", staticPath);
 
 export class Server {
   static start() {
@@ -39,7 +45,7 @@ export class Server {
       let params: TopStoriesParams = req.params;
       let reqType = params.type;
 
-      console.log(new Date(), reqType);
+      log(new Date(), reqType);
       res.json(cachedData[reqType]);
 
       // find that type...
@@ -51,7 +57,7 @@ export class Server {
       let params: { id: string } = req.params;
       let storyId = params.id;
 
-      console.log(new Date(), "req story", storyId);
+      log(new Date(), "req story", storyId);
 
       const storyData = await _getFullDataForIds([+storyId]);
 
@@ -62,6 +68,26 @@ export class Server {
       }
 
       res.json({ error: "story not found" });
+    });
+    app.get("/api/search/:query", async (req, res) => {
+      // loads the details for a single story -- results are saved to DB but not cached
+
+      let params: { query: string } = req.params;
+      let query = params.query;
+
+      log(new Date(), "search", query);
+
+      const storyIds = await AlgoliaApi.getAllByQuery(query);
+
+      const thinStoryData = await HackerNewsApi.get().fetchItems(storyIds);
+
+      // load the single story and then return
+      if (thinStoryData.length > 0) {
+        res.json(thinStoryData);
+        return;
+      }
+
+      res.json({ error: "search had no results" });
     });
 
     const reactClientPaths = ["/", "/day", "/week", "/month", "/story/*"];
@@ -81,7 +107,7 @@ export class Server {
     setInterval(updateData, 10 * 60 * 1000);
     updateData();
 
-    console.log("server is running on port: " + port);
+    log("server is running on port: " + port);
   }
 }
 
@@ -107,11 +133,11 @@ async function updateData() {
 }
 
 async function loadFreshDataForStoryType(storyType: TopStoriesType) {
-  console.log(new Date(), "calling for update to", storyType);
+  log(new Date(), "calling for update to", storyType);
 
   // clear out old stories as needed -- will happen daily
   if (storyType === "month") {
-    console.log("clearing old stories");
+    log("clearing old stories");
     const idsToKeep = new Set<number>();
     Object.keys(cachedData).forEach((key) => {
       cachedData[key].forEach((story) => {
@@ -120,9 +146,9 @@ async function loadFreshDataForStoryType(storyType: TopStoriesType) {
     });
 
     const idArr = Array.from(idsToKeep);
-    console.log("keeping IDs", idArr);
+    log("keeping IDs", idArr);
     const removeCount = await db_clearOldStories(idArr);
-    console.log("removed stories: " + removeCount);
+    log("removed stories: " + removeCount);
   } else {
     // get the data
     const results = await db_getTopStoryIds(storyType).then((ids) => {
@@ -134,5 +160,5 @@ async function loadFreshDataForStoryType(storyType: TopStoriesType) {
   }
 
   saveDatabase();
-  console.log(new Date(), "update complete", storyType);
+  log(new Date(), "update complete", storyType);
 }

@@ -58,6 +58,30 @@ export class DataLayer extends Container<DataLayerState> {
     };
   }
 
+  async executeSearch(searchTerm: string) {
+    console.log("execute search", searchTerm);
+
+    // get the stories
+    this.updateIsLoadingStatus(true);
+    const storyData = await this.api_getSearchResults(searchTerm);
+
+    if (storyData === undefined) {
+      this.updateIsLoadingStatus(false);
+      return;
+    }
+
+    console.log("searhc results", storyData);
+
+    this.updateIsLoadingStatus(false);
+
+    this.setState({
+      activeList: storyData,
+      activeListType: HnListSource.Search,
+    });
+
+    // update the story list
+  }
+
   async initializeFromLocalStorage() {
     console.log("loading from local storage");
     this.setState({ isLoadingLocalStorage: true });
@@ -95,7 +119,9 @@ export class DataLayer extends Container<DataLayerState> {
 
     const storyLists = await Promise.all(listProm);
 
-    const allKnownIds = _.flatten(storyLists).map((c) => c.id + "");
+    const allKnownIds = _.flatten(storyLists)
+      .filter((c) => c !== null)
+      .map((c) => c!.id + "");
 
     // remove those ids from the keys array above
 
@@ -144,6 +170,27 @@ export class DataLayer extends Container<DataLayerState> {
 
     // hit the API for the story data
     return await this.getStoryFromServer(id);
+  }
+
+  public async api_getSearchResults(query: string) {
+    let url = "/api/search/" + encodeURIComponent(query);
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error(response);
+      return undefined;
+    }
+    const data: HnStorySummary[] | { error: string } = await response.json();
+
+    if ("error" in data) {
+      console.error(data);
+
+      return undefined;
+    }
+
+    console.log("hn item from search", data);
+
+    return data;
   }
 
   public async getStoryFromServer(id: number) {

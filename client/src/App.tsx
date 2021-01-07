@@ -11,7 +11,11 @@ import { HnStoryList } from "./HnStoryList";
 import { HnStoryPage } from "./HnStoryPage";
 
 interface AppPageProps
-  extends RouteComponentProps<{ page?: string; storyId?: string }> {}
+  extends RouteComponentProps<{
+    page?: string;
+    storyId?: string;
+    searchTerm?: string;
+  }> {}
 
 enum HnPage {
   STORY_LIST,
@@ -23,6 +27,7 @@ export enum HnListSource {
   Day,
   Week,
   Month,
+  Search,
 }
 
 export type TrueHash = {
@@ -33,6 +38,7 @@ interface AppState {
   activeList: HnListSource;
   activePage: HnPage;
   activeStoryId: number | undefined;
+  activeSearchTerm: string;
 }
 
 class _App extends React.Component<AppPageProps, AppState> {
@@ -44,23 +50,29 @@ class _App extends React.Component<AppPageProps, AppState> {
 
     this.state = {
       activeList: HnListSource.Front,
-
+      activeSearchTerm: "",
       activePage: HnPage.STORY_LIST,
       activeStoryId: undefined,
     };
 
     this.onFocus = this.onFocus.bind(this);
   }
-  static getDerivedStateFromProps(props: AppPageProps, state: AppState) {
+  static getDerivedStateFromProps(
+    props: AppPageProps,
+    state: AppState
+  ): Partial<AppState> {
     let listType: HnListSource;
     let hnPage: HnPage;
     let storyId: number | undefined = undefined;
+    let searchTerm: string = "";
 
     console.log("props page", props.match.params.page);
 
     const page =
       props.match.params.storyId === undefined
-        ? props.match.params.page
+        ? props.match.params.searchTerm === undefined
+          ? props.match.params.page
+          : "search"
         : "story";
 
     console.log(props.match, page);
@@ -86,6 +98,13 @@ class _App extends React.Component<AppPageProps, AppState> {
         listType = state.activeList;
         break;
 
+      case "search":
+        hnPage = HnPage.STORY_LIST;
+
+        listType = HnListSource.Search;
+        searchTerm = props.match.params.searchTerm ?? "";
+        break;
+
       default:
         listType = HnListSource.Front;
         hnPage = HnPage.STORY_LIST;
@@ -98,13 +117,18 @@ class _App extends React.Component<AppPageProps, AppState> {
       activeList: listType,
       activePage: hnPage,
       activeStoryId: storyId,
+      activeSearchTerm: searchTerm,
     };
   }
 
   async componentDidMount() {
     // ensure that list and story are correct on a direct load
     if (this.state.activePage === HnPage.STORY_LIST) {
-      GLOBAL_DATA_LAYER.updateActiveList(this.state.activeList);
+      if (this.state.activeList === HnListSource.Search) {
+        GLOBAL_DATA_LAYER.executeSearch(this.state.activeSearchTerm);
+      } else {
+        GLOBAL_DATA_LAYER.updateActiveList(this.state.activeList);
+      }
     }
 
     this.lastOpenTime = Date.now();
@@ -138,7 +162,19 @@ class _App extends React.Component<AppPageProps, AppState> {
       prevState.activePage !== this.state.activePage &&
       this.state.activePage === HnPage.STORY_LIST;
 
-    if (didPageChange || didGoFromStoryToList) {
+    const didChangeSearchTerm =
+      this.state.activeSearchTerm !== prevState.activeSearchTerm;
+
+    const pageIsSearch = this.state.activeList === HnListSource.Search;
+
+    console.log("search did update", didChangeSearchTerm, pageIsSearch);
+
+    if (didChangeSearchTerm && pageIsSearch) {
+      GLOBAL_DATA_LAYER.executeSearch(this.state.activeSearchTerm);
+      return;
+    }
+    console.log("active list", this.state.activeList);
+    if (didPageChange || didGoFromStoryToList || didChangeSearchTerm) {
       // load the correct items from the data layer
       GLOBAL_DATA_LAYER.updateActiveList(this.state.activeList);
     }
@@ -153,6 +189,7 @@ class _App extends React.Component<AppPageProps, AppState> {
             <Header
               requestNewData={() => this.requestFreshDataFromDataLayer()}
               isLoading={dataLayer.state.isLoadingNewData}
+              searchTerm={this.state.activeSearchTerm}
             />
             {this.state.activePage === HnPage.STORY && (
               <HnStoryPage

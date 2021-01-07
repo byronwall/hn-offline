@@ -2,9 +2,13 @@ import { Button, Navbar, Spinner } from "@blueprintjs/core";
 import React from "react";
 import { Link, NavLink } from "react-router-dom";
 
+import { SearchPopup } from "./SearchPopup";
+
 interface HeaderProps {
   requestNewData(): void;
   isLoading: boolean;
+
+  searchTerm: string;
 }
 
 export class Header extends React.PureComponent<HeaderProps> {
@@ -33,6 +37,16 @@ export class Header extends React.PureComponent<HeaderProps> {
           >
             week
           </NavLink>
+
+          {this.props.searchTerm !== "" && (
+            <NavLink
+              to={"/search/" + this.props.searchTerm}
+              className="bp3-button bp3-minimal  header-link"
+              activeClassName="bp3-active bp3-intent-primary"
+            >
+              {this.props.searchTerm}
+            </NavLink>
+          )}
         </Navbar.Group>
 
         <Navbar.Group align="right">
@@ -45,6 +59,8 @@ export class Header extends React.PureComponent<HeaderProps> {
               minimal={true}
             />
           )}
+
+          <SearchPopup />
         </Navbar.Group>
       </Navbar>
     );

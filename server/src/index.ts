@@ -13,4 +13,8 @@ import { Server } from "./server";
 //   });
 // }, 60 * 1000);
 
+// require("dotenv").config();
+
+console.log("debug mode", process.env.DEBUG);
+
 Server.start();
