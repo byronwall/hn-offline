@@ -7,8 +7,9 @@
     "server": "nodemon -e ts,js --watch '*.ts' --exec \"ts-node src/index.ts\"",
     "client": "cd ../client && yarn start",
     "dev": "concurrently \"yarn server\" \"yarn client\"",
+    "nvm-use": "unset PREFIX && NODE_VERSION=11 ~/.nvm/nvm-exec",
     "start": "node build/index.js",
-    "build": "yarn && tsc && cd ../client && yarn deploy",
+    "build": "yarn nvm-use && yarn && tsc && cd ../client && yarn deploy",
     "build_run": "tsc && yarn start",
     "deploy-copy": "rsync -rvzq --include='build/***' --include='node_modules/***' --include='package.json' --exclude='*' ./ root@byroni.us:/root/hn-client",
     "deploy": "yarn build && yarn deploy-copy"
