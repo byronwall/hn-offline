@@ -33,9 +33,8 @@
     "unstated": "^2.1.1"
   },
   "scripts": {
-    "start": "yarn nvm-use && react-scripts start",
-    "build": "yarn nvm-use && react-scripts build",
-    "nvm-use": "NODE_VERSION=14 ~/.nvm/nvm-exec",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "copy-build": "rsync -ruv ./build/ ../server/build/static",

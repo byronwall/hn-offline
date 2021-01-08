@@ -15,7 +15,12 @@ import {
   saveDatabase,
   reloadDatabase,
 } from "./database";
-import { ItemExt, TopStoriesParams, TopStoriesType } from "./interfaces";
+import {
+  ItemExt,
+  STORY_TYPE,
+  TopStoriesParams,
+  TopStoriesType,
+} from "./interfaces";
 import { AlgoliaApi } from "./algolia";
 import { HackerNewsApi } from "./api";
 
@@ -42,10 +47,15 @@ export class Server {
       // load the first layer and note that more could be loaded
       // store those top stories for some period of time
 
-      let params: TopStoriesParams = req.params;
+      let params = req.params;
       let reqType = params.type;
 
-      log(new Date(), reqType);
+      if (STORY_TYPE.indexOf(reqType as any) === -1) {
+        res.status(500).send("Incorrect story type");
+        return;
+      }
+
+      if (reqType) log(new Date(), reqType);
       res.json(cachedData[reqType]);
 
       // find that type...
@@ -54,7 +64,7 @@ export class Server {
     app.get("/api/story/:id", async (req, res) => {
       // loads the details for a single story -- results are saved to DB but not cached
 
-      let params: { id: string } = req.params;
+      let params = req.params as { id: string };
       let storyId = params.id;
 
       log(new Date(), "req story", storyId);
@@ -72,7 +82,7 @@ export class Server {
     app.get("/api/search/:query", async (req, res) => {
       // loads the details for a single story -- results are saved to DB but not cached
 
-      let params: { query: string } = req.params;
+      let params = req.params as { query: string };
       let query = params.query;
 
       log(new Date(), "search", query);

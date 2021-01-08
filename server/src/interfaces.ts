@@ -17,7 +17,8 @@ export interface TopStoriesParams {
   type: TopStoriesType;
 }
 
-export type TopStoriesType = "topstories" | "day" | "week" | "month";
+export const STORY_TYPE = ["topstories", "day", "week", "month"] as const;
+export type TopStoriesType = typeof STORY_TYPE[number];
 
 export interface ItemParams {
   id: number;

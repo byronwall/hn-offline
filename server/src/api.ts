@@ -1,9 +1,10 @@
 // https://github.com/michaelbull/aurelia-hacker-news/blob/master/src/services/api.ts
-import * as firebase from "firebase";
+
+import firebase from "firebase";
+import DataSnapshot = firebase.database.DataSnapshot;
 
 import { Item } from "./item";
 
-import DataSnapshot = firebase.database.DataSnapshot;
 const API_URL = "https://hacker-news.firebaseio.com";
 const API_VERSION = "/v0";
 export const STORIES_PER_PAGE = 25;
