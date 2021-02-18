@@ -106,8 +106,8 @@ async function addAllChildren(items: Item[]) {
   }
 }
 
-async function addChildrenToItem(item: Item): Promise<Item[]> {
-  if (item.kids !== undefined && item.kids.length > 0) {
+async function addChildrenToItem(item: Item | null): Promise<Item[]> {
+  if (item !== null && item.kids !== undefined && item.kids.length > 0) {
     // load all the kids and then return those
     const result = await Promise.all(
       item.kids.map((kid) => HackerNewsApi.get().fetchItem(kid))
@@ -164,22 +164,25 @@ function getItemFromDb(itemId: number): ItemExt | null {
 }
 
 export async function _getFullDataForIds(itemIDs: number[]) {
-  let itemObjs = await Promise.all(itemIDs.map(getItemFromDb));
+  let itemObjects = await Promise.all(itemIDs.map(getItemFromDb));
 
-  for (var i = 0; i < itemObjs.length; i++) {
-    let obj = itemObjs[i];
+  for (var i = 0; i < itemObjects.length; i++) {
+    let obj = itemObjects[i];
 
     /// TODO: add a check to the data updated
     if (obj === null) {
       let item = await HackerNewsApi.get().fetchItem(itemIDs[i]);
+      if (item === null) {
+        continue;
+      }
       await addChildrenToItemRecurse(item);
       await addItemToDb(item);
 
-      itemObjs[i] = { ...item, lastUpdated: _getUnixTimestamp() };
+      itemObjects[i] = { ...item, lastUpdated: _getUnixTimestamp() };
     }
   }
 
-  return itemObjs;
+  return itemObjects;
 }
 
 async function addChildrenToItemRecurse(item: Item) {

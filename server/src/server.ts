@@ -24,7 +24,7 @@ import {
 import { AlgoliaApi } from "./algolia";
 import { HackerNewsApi } from "./api";
 
-const cachedData: { [key: string]: ItemExt[] } = {};
+const cachedData: { [key: string]: ItemExt[] | null } = {};
 
 const staticPath = path.join(__dirname, "static");
 log("static path: ", staticPath);
@@ -151,6 +151,9 @@ async function loadFreshDataForStoryType(storyType: TopStoriesType) {
     const idsToKeep = new Set<number>();
     Object.keys(cachedData).forEach((key) => {
       cachedData[key].forEach((story) => {
+        if (story === null) {
+          return;
+        }
         idsToKeep.add(story.id);
       });
     });
