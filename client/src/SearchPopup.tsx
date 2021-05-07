@@ -1,9 +1,10 @@
 import { Button, Card, InputGroup, Popover, Position } from "@blueprintjs/core";
-import React from "react";
+import React, { KeyboardEventHandler } from "react";
 import { RouteComponentProps, withRouter } from "react-router-dom";
 
 import { handleStringChange } from "./helpers";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface SearchPopupProps extends RouteComponentProps<{}> {}
 interface SearchPopupState {
   searchTerm: string;
@@ -17,62 +18,62 @@ class _SearchPopup extends React.Component<SearchPopupProps, SearchPopupState> {
     this.state = { searchTerm: "", isOpen: false };
   }
 
-  componentDidMount() {}
+  private handleKeyDown: KeyboardEventHandler<HTMLInputElement> | undefined = (
+    ev
+  ) => {
+    if (ev.keyCode === 13) {
+      this.handleSearch();
+    }
+  };
 
-  componentDidUpdate(
-    prevProps: SearchPopupProps,
-    prevState: SearchPopupState
-  ) {}
+  private handleSearchTermChange = handleStringChange((searchTerm) =>
+    this.setState({ searchTerm })
+  );
+
+  private handleClose = () => this.setState({ isOpen: false });
+  private handleOpen = () => this.setState({ isOpen: true });
+
+  private handleSearch = () => {
+    const { searchTerm } = this.state;
+    const { history } = this.props;
+    history.push("/search/" + searchTerm);
+
+    this.setState({ isOpen: false });
+  };
 
   render() {
+    const { isOpen, searchTerm } = this.state;
     return (
       <div style={{ position: "relative" }}>
         <Popover
           position={Position.BOTTOM_LEFT}
           minimal
-          isOpen={this.state.isOpen}
-          onClose={() => this.setState({ isOpen: false })}
+          isOpen={isOpen}
+          onClose={this.handleClose}
         >
           <Button
             icon="search"
             intent="primary"
             minimal
-            onClick={() => this.setState({ isOpen: true })}
+            onClick={this.handleOpen}
           />
           <Card
             style={{ position: "absolute", width: 250, top: -45, left: -200 }}
           >
             <div style={{ display: "flex" }}>
               <InputGroup
-                value={this.state.searchTerm}
-                onChange={handleStringChange((searchTerm) =>
-                  this.setState({ searchTerm })
-                )}
-                onKeyDown={(ev) => {
-                  if (ev.keyCode === 13) {
-                    this.handleSearch();
-                  }
-                }}
+                value={searchTerm}
+                onChange={this.handleSearchTermChange}
+                onKeyDown={this.handleKeyDown}
                 autoFocus
               />
 
-              <Button
-                icon="search"
-                onClick={() => {
-                  this.handleSearch();
-                }}
-              />
+              <Button icon="search" onClick={this.handleSearch} />
             </div>
           </Card>
         </Popover>
       </div>
     );
-  }
-
-  private handleSearch() {
-    this.props.history.push("/search/" + this.state.searchTerm);
-
-    this.setState({ isOpen: false });
   }
 }
 

@@ -5,6 +5,7 @@ import React from "react";
 import { TrueHash } from "./App";
 import { HnListItem } from "./HnListItem";
 import { HnStorySummary } from "./DataLayer";
+import { InfiniteScrollContainer } from "./InfiniteScrollContainer";
 
 interface HnStoryListProps {
   items: HnStorySummary[];
@@ -17,9 +18,7 @@ const SESSION_SCROLL = "SCROLL_LIST";
 export class HnStoryList extends React.PureComponent<HnStoryListProps> {
   constructor(props: HnStoryListProps) {
     super(props);
-    this.state = {
-      items: [],
-    };
+    this.state = {};
   }
 
   componentDidMount() {
@@ -27,7 +26,7 @@ export class HnStoryList extends React.PureComponent<HnStoryListProps> {
   }
 
   private scrollToPrevious() {
-    const history = this.props.history;
+    const { history } = this.props;
 
     if (history.action === "POP") {
       // restore scroll pos if available
@@ -47,10 +46,12 @@ export class HnStoryList extends React.PureComponent<HnStoryListProps> {
   }
 
   render() {
+    const { items, isLoading, readIds } = this.props;
+
     document.title = `HN: Offline`;
 
     const spinner =
-      this.props.items.length === 0 && this.props.isLoading ? (
+      items.length === 0 && isLoading ? (
         <div style={{ marginTop: 20 }}>
           <Spinner size={200} intent="warning" />
         </div>
@@ -60,13 +61,11 @@ export class HnStoryList extends React.PureComponent<HnStoryListProps> {
       <div>
         {spinner}
         <div id="list-holder">
-          {this.props.items.map((item) => (
-            <HnListItem
-              data={item}
-              key={item.id}
-              isRead={this.props.readIds[item.id]}
-            />
-          ))}
+          <InfiniteScrollContainer items={items} itemsToAddOnRefresh={15}>
+            {(item) => (
+              <HnListItem data={item} key={item.id} isRead={readIds[item.id]} />
+            )}
+          </InfiniteScrollContainer>
         </div>
       </div>
     );

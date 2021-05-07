@@ -14,10 +14,13 @@ export interface HnCommentProps {
   onUpdateOpen(
     id: number,
     newIsOpen: boolean,
-    scrollId: number | undefined
+    scrollId: number | undefined,
+    comment: KidsObj3 | null,
+    nextChildId: number | undefined
   ): void;
   collapsedIds: number[];
   idToScrollTo: number | undefined;
+  nextChildId: number | undefined;
 }
 
 interface HnCommentState {
@@ -45,7 +48,8 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
   }
 
   scrollIfDesired() {
-    if (this.props.idToScrollTo === this.props.comment?.id) {
+    const { idToScrollTo, comment } = this.props;
+    if (idToScrollTo === comment?.id) {
       const dims = this.divRef.current?.offsetTop;
       console.log("scrolling to me", dims);
 
@@ -55,10 +59,7 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
     }
   }
 
-  static getDerivedStateFromProps(
-    props: HnCommentProps,
-    state: HnCommentState
-  ) {
+  static getDerivedStateFromProps(props: HnCommentProps) {
     // if a parent expands, collapse this one
     if (!props.canExpand) {
       return { expandSelf: false };
@@ -78,16 +79,30 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
   }
 
   getDivRef() {
-    return this.divRef.current!;
+    if (this.divRef.current === null) {
+      throw new Error("should not be null");
+    }
+    return this.divRef.current;
   }
 
   render() {
-    const comment = this.props.comment;
+    const {
+      idToScrollTo,
+      comment,
+      isOpen,
+      canExpand,
+      depth,
+      onUpdateOpen,
+      collapsedIds,
+    } = this.props;
+
+    const { expandSelf } = this.state;
 
     if (comment === null) {
       return null;
     }
 
+    // TODO: don't modify this array here
     const childComments = (comment.kidsObj || []).filter(isValidComment);
     const commentText = comment.text || "";
 
@@ -96,9 +111,7 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
       return null;
     }
 
-    // TODO: rewrite links to hn to open in this site instead
-
-    const childrenToShow = !this.props.isOpen ? null : (
+    const childrenToShow = !isOpen ? null : (
       <React.Fragment>
         <p
           className="comment"
@@ -108,46 +121,35 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
         {childComments.length > 0 && (
           <HnCommentList
             childComments={childComments}
-            canExpand={this.props.canExpand && !this.state.expandSelf}
-            depth={this.props.depth + 1}
-            onUpdateOpen={(id, newIsOpen, scrollId) =>
-              this.props.onUpdateOpen(id, newIsOpen, scrollId)
-            }
-            collapsedIds={this.props.collapsedIds}
-            idToScrollTo={this.props.idToScrollTo}
+            canExpand={canExpand && !expandSelf}
+            depth={depth + 1}
+            onUpdateOpen={onUpdateOpen}
+            collapsedIds={collapsedIds}
+            idToScrollTo={idToScrollTo}
             isSkeleton={false}
           />
         )}
       </React.Fragment>
     );
 
-    const borderColor =
-      this.props.depth < colors.length ? colors[this.props.depth] : "#bbb";
+    const borderColor = depth < colors.length ? colors[depth] : "#bbb";
     return (
       <div
-        className={classNames("bp3-card", { collapsed: !this.props.isOpen })}
-        onClick={(e) => this.handleCardClick(e)}
+        className={classNames("bp3-card", { collapsed: !isOpen })}
+        onClick={this.handleCardClick}
         style={{
-          paddingLeft: 12 + Math.max(4 - this.props.depth),
-          marginLeft:
-            this.state.expandSelf && this.props.isOpen
-              ? -17 * this.props.depth
-              : 0,
+          paddingLeft: 12 + Math.max(4 - depth),
+          marginLeft: expandSelf && isOpen ? -17 * depth : 0,
 
           borderLeftColor: borderColor,
 
-          borderLeftWidth: this.state.expandSelf ? 6 : undefined,
+          borderLeftWidth: expandSelf ? 6 : undefined,
 
-          borderRight: this.state.expandSelf
-            ? "1px solid" + borderColor
-            : undefined,
-          paddingRight: this.state.expandSelf ? 6 : undefined,
+          borderRight: expandSelf ? "1px solid" + borderColor : undefined,
+          paddingRight: expandSelf ? 6 : undefined,
         }}
       >
-        <p
-          style={{ fontWeight: this.props.isOpen ? 450 : 300 }}
-          ref={this.divRef}
-        >
+        <p style={{ fontWeight: isOpen ? 450 : 300 }} ref={this.divRef}>
           {comment.by}
           {" | "}
 
@@ -159,12 +161,21 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
       </div>
     );
   }
-  handleCardClick(e: React.MouseEvent<HTMLDivElement>): void {
+  private handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const {
+      comment,
+      isOpen,
+      canExpand,
+      depth,
+      onUpdateOpen,
+      nextChildId,
+    } = this.props;
+    const { expandSelf } = this.state;
     // this is to prevent other cards from collapsing too
 
     e.stopPropagation();
 
-    // dont update state if click was A link
+    // don't update state if click was A link
     if ((e.target as any).tagName === "A") {
       return;
     }
@@ -172,33 +183,34 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
     const target = e.target as any;
 
     // allow some gutter expansion once shifted over
-    const gutterRatio = this.state.expandSelf ? 0.85 : 0.9;
+    const gutterRatio = expandSelf ? 0.85 : 0.9;
 
     if (
-      this.props.depth > 0 &&
-      this.props.canExpand &&
+      depth > 0 &&
+      canExpand &&
       (e.pageX + target.offsetLeft) / window.innerWidth > gutterRatio
     ) {
-      this.setState({ expandSelf: !this.state.expandSelf });
+      this.setState({ expandSelf: !expandSelf });
     } else {
-      const isOpen = !this.props.isOpen;
+      const newIsOpen = !isOpen;
 
-      if (this.props.comment === null) {
+      if (comment === null) {
         return;
       }
 
-      this.props.onUpdateOpen(this.props.comment.id, isOpen, undefined);
+      onUpdateOpen(comment.id, newIsOpen, undefined, comment, nextChildId);
     }
-  }
+  };
 }
 
 export function isValidComment(comment: KidsObj3 | null) {
+  // TODO: these items need to be removed somewhere else
   if (comment === null) {
     return false;
   }
   const isBad =
     comment.deleted &&
-    (comment.kidsObj === undefined || comment.kidsObj!.length === 0);
+    (comment.kidsObj === undefined || comment.kidsObj.length === 0);
 
   return !isBad;
 }

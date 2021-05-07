@@ -70,7 +70,7 @@ export class DataLayer extends Container<DataLayerState> {
       return;
     }
 
-    console.log("searhc results", storyData);
+    console.log("search results", storyData);
 
     this.updateIsLoadingStatus(false);
 
@@ -135,7 +135,7 @@ export class DataLayer extends Container<DataLayerState> {
     keysToRemove.forEach((c) => localforage.removeItem(c));
   }
 
-  saveIdToReadList(id: number): void {
+  saveIdToReadList = (id: number) => {
     if (this.state.isLoadingLocalStorage) {
       // don't save data before list is loaded --- will clear it
       console.log("do not update read list... pending updates");
@@ -155,14 +155,14 @@ export class DataLayer extends Container<DataLayerState> {
     localforage.setItem(LOCAL_READ_ITEMS, newReadList);
 
     // ensure the new item is taken
-    this.setState((prevState) => {
+    this.setState(() => {
       return { readItems: newReadList };
     });
-  }
+  };
 
   async getStoryData(id: number) {
     // load story from local storage or server
-    let item = await localforage.getItem<HnItem>(id + "");
+    const item = await localforage.getItem<HnItem>(id + "");
 
     if (item !== null) {
       return item;
@@ -173,7 +173,7 @@ export class DataLayer extends Container<DataLayerState> {
   }
 
   public async api_getSearchResults(query: string) {
-    let url = "/api/search/" + encodeURIComponent(query);
+    const url = "/api/search/" + encodeURIComponent(query);
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -194,7 +194,7 @@ export class DataLayer extends Container<DataLayerState> {
   }
 
   public async getStoryFromServer(id: number) {
-    let url = "/api/story/" + id;
+    const url = "/api/story/" + id;
 
     this.updateIsLoadingStatus(true);
     const response = await fetch(url);

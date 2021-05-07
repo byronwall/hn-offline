@@ -26,7 +26,7 @@ export interface HnStoryPageProps {
 }
 
 export const SESSION_COLLAPSED = "SESSION_COLLAPSED";
-export class HnStoryPage extends React.Component<
+export class HnStoryPage extends React.PureComponent<
   HnStoryPageProps,
   HnStoryPageState
 > {
@@ -43,11 +43,12 @@ export class HnStoryPage extends React.Component<
   }
 
   render() {
-    const isSkeleton = this.state.data === undefined;
-    const storyData = this.state.data ?? (dummyItem as HnItem);
+    const { data, idToScrollTo, collapsedComments } = this.state;
+    const isSkeleton = data === undefined;
+    const storyData = data ?? (dummyItem as HnItem);
 
     // add this line to remove the state info on scrolling -- prevent scroll on reload
-    if (this.state.idToScrollTo) {
+    if (idToScrollTo) {
       this.setState({ idToScrollTo: undefined });
     }
 
@@ -94,32 +95,30 @@ export class HnStoryPage extends React.Component<
           childComments={comments}
           canExpand={true}
           depth={0}
-          collapsedIds={this.state.collapsedComments}
-          onUpdateOpen={(id, newOpen, scrollId) =>
-            this.handleCollapseEvent(id, newOpen, scrollId)
-          }
-          idToScrollTo={this.state.idToScrollTo}
+          collapsedIds={collapsedComments}
+          onUpdateOpen={this.handleCollapseEvent}
+          idToScrollTo={idToScrollTo}
           isSkeleton={isSkeleton}
         />
       </div>
     );
   }
-  handleCollapseEvent(
+  private handleCollapseEvent = (
     id: number,
     newOpen: boolean,
     scrollId: number | undefined
-  ): void {
+  ) => {
     // save the id to session storage
-
+    const { collapsedComments } = this.state;
     if (newOpen) {
       // remove from list
-      const newIds = _.cloneDeep(this.state.collapsedComments);
+      const newIds = _.cloneDeep(collapsedComments);
       _.remove(newIds, (c) => c === id);
 
       sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newIds));
       this.setState({ collapsedComments: newIds });
     } else {
-      const newIds = this.state.collapsedComments.concat(id);
+      const newIds = collapsedComments.concat(id);
 
       sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newIds));
       this.setState({ collapsedComments: newIds });
@@ -128,9 +127,11 @@ export class HnStoryPage extends React.Component<
     if (scrollId !== undefined) {
       this.setState({ idToScrollTo: scrollId });
     }
-  }
+  };
 
   componentDidMount() {
+    const { id, onVisitMarker } = this.props;
+
     window.scrollTo({ top: 0 });
 
     // set the data initially -- kick off async request if needed
@@ -148,8 +149,8 @@ export class HnStoryPage extends React.Component<
 
     // save the read stories to localForage
 
-    if (this.props.id !== undefined) {
-      this.props.onVisitMarker(this.props.id);
+    if (id !== undefined) {
+      onVisitMarker(id);
     }
 
     // load the story data
@@ -158,7 +159,8 @@ export class HnStoryPage extends React.Component<
   }
 
   componentDidUpdate(prevProps: HnStoryPageProps) {
-    const didIdChange = this.props.id !== prevProps.id;
+    const { id } = this.props;
+    const didIdChange = id !== prevProps.id;
 
     if (didIdChange) {
       this.loadStoryData();
@@ -166,15 +168,16 @@ export class HnStoryPage extends React.Component<
   }
 
   async loadStoryData() {
+    const { id } = this.props;
     // take the ID, get the story, send to state
 
     // TODO: why is this ever undefined?
 
-    if (this.props.id === undefined) {
+    if (id === undefined) {
       return;
     }
 
-    const storyData = await GLOBAL_DATA_LAYER.getStoryData(this.props.id);
+    const storyData = await GLOBAL_DATA_LAYER.getStoryData(id);
 
     this.setState({ data: storyData });
   }
@@ -183,6 +186,7 @@ export class HnStoryPage extends React.Component<
     document.body.removeEventListener("click", this.anchorClickHandler);
   }
   anchorClickHandler(e: any) {
+    const { history } = this.props;
     if (e.target.tagName !== "A") {
       return;
     }
@@ -200,7 +204,7 @@ export class HnStoryPage extends React.Component<
     }
 
     // this will navigate to the new page
-    this.props.history.push("/story/" + matches[1]);
+    history.push("/story/" + matches[1]);
 
     e.preventDefault();
     return false;

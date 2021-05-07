@@ -13,6 +13,8 @@ interface HeaderProps {
 
 export class Header extends React.PureComponent<HeaderProps> {
   render() {
+    const { searchTerm, isLoading, requestNewData } = this.props;
+
     return (
       <Navbar style={{ marginBottom: 10 }}>
         <Navbar.Group>
@@ -38,23 +40,23 @@ export class Header extends React.PureComponent<HeaderProps> {
             week
           </NavLink>
 
-          {this.props.searchTerm !== "" && (
+          {searchTerm !== "" && (
             <NavLink
-              to={"/search/" + this.props.searchTerm}
+              to={"/search/" + searchTerm}
               className="bp3-button bp3-minimal  header-link"
               activeClassName="bp3-active bp3-intent-primary"
             >
-              {this.props.searchTerm}
+              {searchTerm}
             </NavLink>
           )}
         </Navbar.Group>
 
         <Navbar.Group align="right">
-          {this.props.isLoading && <Spinner size={32} intent="warning" />}
-          {!this.props.isLoading && (
+          {isLoading && <Spinner size={32} intent="warning" />}
+          {!isLoading && (
             <Button
               intent="primary"
-              onClick={() => this.props.requestNewData()}
+              onClick={requestNewData}
               icon="refresh"
               minimal={true}
             />

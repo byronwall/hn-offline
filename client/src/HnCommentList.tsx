@@ -1,6 +1,7 @@
 import React from "react";
 
 import { HnComment } from "./HnComment";
+import { InfiniteScrollContainer } from "./InfiniteScrollContainer";
 
 interface HnCommentListProps {
   childComments: Array<KidsObj3 | null>;
@@ -10,7 +11,9 @@ interface HnCommentListProps {
   onUpdateOpen(
     id: number,
     newOpen: boolean,
-    scrollId: number | undefined
+    scrollId: number | undefined,
+    comment: KidsObj3 | null,
+    nextChildId: number | undefined
   ): void;
 
   collapsedIds: number[];
@@ -21,6 +24,7 @@ interface HnCommentListProps {
 
 export class HnCommentList extends React.Component<HnCommentListProps, {}> {
   childRefs: Array<React.RefObject<HnComment>> = [];
+
   constructor(props: HnCommentListProps) {
     super(props);
     props.childComments.forEach((item) => {
@@ -30,45 +34,71 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
       this.childRefs[item.id] = React.createRef();
     });
   }
-  render() {
-    const validChildren = this.props.childComments.filter(
-      (comm) => comm !== null
+
+  handleUpdateOpen: (
+    id: number,
+    newIsOpen: boolean,
+    scrollId: number | undefined,
+    comment: KidsObj3 | null,
+    nextChildId: number | undefined
+  ) => void = (id, newOpen, scrollId, comment, nextChildId) => {
+    const { onUpdateOpen } = this.props;
+
+    return onUpdateOpen(
+      id,
+      newOpen,
+      scrollId ?? (newOpen ? comment?.id : nextChildId),
+      comment,
+      nextChildId
     );
+  };
+
+  render() {
+    const {
+      canExpand,
+      childComments,
+      collapsedIds,
+      depth,
+      idToScrollTo,
+      isSkeleton,
+    } = this.props;
+
+    const validChildren = childComments.filter((comm) => comm !== null);
 
     const classMod = {
-      className: this.props.isSkeleton ? "bp3-skeleton" : undefined,
+      className: isSkeleton ? "bp3-skeleton" : undefined,
     };
 
     return (
-      <React.Fragment>
-        {validChildren.map((childComm, index) => (
-          <div key={childComm!.id} {...classMod}>
-            <HnComment
-              comment={childComm}
-              depth={this.props.depth}
-              canExpand={this.props.canExpand}
-              ref={this.childRefs[childComm!.id]}
-              onUpdateOpen={(id, newOpen, scrollId) =>
-                this.props.onUpdateOpen(
-                  id,
-                  newOpen,
-                  scrollId ??
-                    (newOpen ? childComm?.id : validChildren[index + 1]?.id)
-                )
-              }
-              isOpen={
-                !(
-                  this.props.collapsedIds.findIndex(
-                    (c) => childComm !== null && c === childComm.id
-                  ) >= 0
-                )
-              }
-              collapsedIds={this.props.collapsedIds}
-              idToScrollTo={this.props.idToScrollTo}
-            />
-          </div>
-        ))}
-      </React.Fragment>
+      <InfiniteScrollContainer items={validChildren} itemsToAddOnRefresh={3}>
+        {(childComm, index) => {
+          if (childComm === null) {
+            return null;
+          }
+
+          return (
+            <div key={childComm.id} {...classMod}>
+              <HnComment
+                comment={childComm}
+                depth={depth}
+                canExpand={canExpand}
+                nextChildId={validChildren[index + 1]?.id}
+                ref={this.childRefs[childComm.id]}
+                onUpdateOpen={this.handleUpdateOpen}
+                isOpen={
+                  !(
+                    collapsedIds.findIndex(
+                      (c) => childComm !== null && c === childComm.id
+                    ) >= 0
+                  )
+                }
+                collapsedIds={collapsedIds}
+                idToScrollTo={idToScrollTo}
+              />
+            </div>
+          );
+        }}
+      </InfiniteScrollContainer>
     );
   }
 }

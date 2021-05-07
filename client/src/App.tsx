@@ -10,12 +10,11 @@ import { Header } from "./Header";
 import { HnStoryList } from "./HnStoryList";
 import { HnStoryPage } from "./HnStoryPage";
 
-interface AppPageProps
-  extends RouteComponentProps<{
-    page?: string;
-    storyId?: string;
-    searchTerm?: string;
-  }> {}
+type AppPageProps = RouteComponentProps<{
+  page?: string;
+  storyId?: string;
+  searchTerm?: string;
+}>;
 
 enum HnPage {
   STORY_LIST,
@@ -64,7 +63,7 @@ class _App extends React.Component<AppPageProps, AppState> {
     let listType: HnListSource;
     let hnPage: HnPage;
     let storyId: number | undefined = undefined;
-    let searchTerm: string = "";
+    let searchTerm = "";
 
     console.log("props page", props.match.params.page);
 
@@ -122,12 +121,13 @@ class _App extends React.Component<AppPageProps, AppState> {
   }
 
   async componentDidMount() {
+    const { activePage, activeList, activeSearchTerm } = this.state;
     // ensure that list and story are correct on a direct load
-    if (this.state.activePage === HnPage.STORY_LIST) {
-      if (this.state.activeList === HnListSource.Search) {
-        GLOBAL_DATA_LAYER.executeSearch(this.state.activeSearchTerm);
+    if (activePage === HnPage.STORY_LIST) {
+      if (activeList === HnListSource.Search) {
+        GLOBAL_DATA_LAYER.executeSearch(activeSearchTerm);
       } else {
-        GLOBAL_DATA_LAYER.updateActiveList(this.state.activeList);
+        GLOBAL_DATA_LAYER.updateActiveList(activeList);
       }
     }
 
@@ -157,54 +157,55 @@ class _App extends React.Component<AppPageProps, AppState> {
   }
 
   async componentDidUpdate(prevProps: AppPageProps, prevState: AppState) {
-    const didPageChange = prevState.activeList !== this.state.activeList;
+    const { activePage, activeList, activeSearchTerm } = this.state;
+    const didPageChange = prevState.activeList !== activeList;
     const didGoFromStoryToList =
-      prevState.activePage !== this.state.activePage &&
-      this.state.activePage === HnPage.STORY_LIST;
+      prevState.activePage !== activePage && activePage === HnPage.STORY_LIST;
 
-    const didChangeSearchTerm =
-      this.state.activeSearchTerm !== prevState.activeSearchTerm;
+    const didChangeSearchTerm = activeSearchTerm !== prevState.activeSearchTerm;
 
-    const pageIsSearch = this.state.activeList === HnListSource.Search;
+    const pageIsSearch = activeList === HnListSource.Search;
 
     console.log("search did update", didChangeSearchTerm, pageIsSearch);
 
     if (didChangeSearchTerm && pageIsSearch) {
-      GLOBAL_DATA_LAYER.executeSearch(this.state.activeSearchTerm);
+      GLOBAL_DATA_LAYER.executeSearch(activeSearchTerm);
       return;
     }
-    console.log("active list", this.state.activeList);
+    console.log("active list", activeList);
     if (didPageChange || didGoFromStoryToList || didChangeSearchTerm) {
       // load the correct items from the data layer
-      GLOBAL_DATA_LAYER.updateActiveList(this.state.activeList);
+      GLOBAL_DATA_LAYER.updateActiveList(activeList);
     }
   }
 
   render() {
+    const { activePage, activeSearchTerm, activeStoryId } = this.state;
+    const { history } = this.props;
     console.log("app render", window.scrollY);
     return (
       <Subscribe to={[DataLayer]}>
         {(dataLayer: DataLayer) => (
           <div>
             <Header
-              requestNewData={() => this.requestFreshDataFromDataLayer()}
+              requestNewData={this.requestFreshDataFromDataLayer}
               isLoading={dataLayer.state.isLoadingNewData}
-              searchTerm={this.state.activeSearchTerm}
+              searchTerm={activeSearchTerm}
             />
-            {this.state.activePage === HnPage.STORY && (
+            {activePage === HnPage.STORY && (
               <HnStoryPage
-                id={this.state.activeStoryId}
-                history={this.props.history}
-                key={this.state.activeStoryId + "-" + dataLayer.state.storyKey}
-                onVisitMarker={(id) => dataLayer.saveIdToReadList(id)}
+                id={activeStoryId}
+                history={history}
+                key={activeStoryId + "-" + dataLayer.state.storyKey}
+                onVisitMarker={dataLayer.saveIdToReadList}
               />
             )}
-            {this.state.activePage === HnPage.STORY_LIST && (
+            {activePage === HnPage.STORY_LIST && (
               <HnStoryList
                 items={dataLayer.state.activeList}
                 readIds={dataLayer.state.readItems}
                 isLoading={dataLayer.state.isLoadingNewData}
-                history={this.props.history}
+                history={history}
               />
             )}
           </div>
@@ -212,20 +213,21 @@ class _App extends React.Component<AppPageProps, AppState> {
       </Subscribe>
     );
   }
-  requestFreshDataFromDataLayer(): void {
-    switch (this.state.activePage) {
+  private requestFreshDataFromDataLayer = () => {
+    const { activePage, activeList, activeStoryId } = this.state;
+    switch (activePage) {
       case HnPage.STORY:
-        if (this.state.activeStoryId !== undefined) {
+        if (activeStoryId !== undefined) {
           console.log("reloading active story");
-          GLOBAL_DATA_LAYER.reloadStoryById(this.state.activeStoryId);
+          GLOBAL_DATA_LAYER.reloadStoryById(activeStoryId);
         }
         break;
       case HnPage.STORY_LIST:
         console.log("reloading active list");
-        GLOBAL_DATA_LAYER.reloadStoryListFromServer(this.state.activeList);
+        GLOBAL_DATA_LAYER.reloadStoryListFromServer(activeList);
         break;
     }
-  }
+  };
 }
 
 export const App = withRouter(_App);

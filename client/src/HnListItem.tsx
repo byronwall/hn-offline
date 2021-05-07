@@ -13,9 +13,9 @@ export interface HnStoryProps {
   isRead: boolean | undefined;
 }
 
-export class HnListItem extends React.Component<HnStoryProps> {
+export class HnListItem extends React.PureComponent<HnStoryProps> {
   render() {
-    const story = this.props.data;
+    const { data: story, isRead } = this.props;
 
     const commentCountNum =
       story.commentCount ?? ((story as any).kids ?? []).length ?? "";
@@ -32,13 +32,13 @@ export class HnListItem extends React.Component<HnStoryProps> {
       story.url === undefined ? (
         <Link to={"/story/" + story.id}>{story.title}</Link>
       ) : (
-        <a href={story.url} target="_blank">
+        <a href={story.url} target="_blank" rel="noreferrer">
           {story.title}
         </a>
       );
 
     return (
-      <div className={classNames({ isRead: this.props.isRead })}>
+      <div className={classNames({ isRead })}>
         <p>{storyLinkEl}</p>
         <p>
           <span>
