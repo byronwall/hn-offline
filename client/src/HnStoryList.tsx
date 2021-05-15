@@ -61,11 +61,9 @@ export class HnStoryList extends React.PureComponent<HnStoryListProps> {
       <div>
         {spinner}
         <div id="list-holder">
-          <InfiniteScrollContainer items={items} itemsToAddOnRefresh={15}>
-            {(item) => (
-              <HnListItem data={item} key={item.id} isRead={readIds[item.id]} />
-            )}
-          </InfiniteScrollContainer>
+          {items.map((item) => (
+            <HnListItem data={item} key={item.id} isRead={readIds[item.id]} />
+          ))}
         </div>
       </div>
     );
