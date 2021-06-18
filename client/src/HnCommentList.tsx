@@ -6,7 +6,6 @@ import { InfiniteScrollContainer } from "./InfiniteScrollContainer";
 interface HnCommentListProps {
   childComments: Array<KidsObj3 | null>;
   depth: number;
-  canExpand: boolean;
 
   onUpdateOpen(
     id: number,
@@ -54,14 +53,8 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
   };
 
   render() {
-    const {
-      canExpand,
-      childComments,
-      collapsedIds,
-      depth,
-      idToScrollTo,
-      isSkeleton,
-    } = this.props;
+    const { childComments, collapsedIds, depth, idToScrollTo, isSkeleton } =
+      this.props;
 
     const validChildren = childComments.filter((comm) => comm !== null);
 
@@ -81,7 +74,6 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
               <HnComment
                 comment={childComm}
                 depth={depth}
-                canExpand={canExpand}
                 nextChildId={validChildren[index + 1]?.id}
                 ref={this.childRefs[childComm.id]}
                 onUpdateOpen={this.handleUpdateOpen}

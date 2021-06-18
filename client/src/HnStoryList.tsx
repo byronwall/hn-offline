@@ -3,9 +3,8 @@ import { History } from "history";
 import React from "react";
 
 import { TrueHash } from "./App";
-import { HnListItem } from "./HnListItem";
 import { HnStorySummary } from "./DataLayer";
-import { InfiniteScrollContainer } from "./InfiniteScrollContainer";
+import { HnListItem } from "./HnListItem";
 
 interface HnStoryListProps {
   items: HnStorySummary[];

@@ -93,7 +93,6 @@ export class HnStoryPage extends React.PureComponent<
 
         <HnCommentList
           childComments={comments}
-          canExpand={true}
           depth={0}
           collapsedIds={collapsedComments}
           onUpdateOpen={this.handleCollapseEvent}

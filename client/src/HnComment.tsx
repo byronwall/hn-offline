@@ -8,8 +8,6 @@ export interface HnCommentProps {
   comment: KidsObj3 | null;
   depth: number;
 
-  canExpand: boolean;
-
   isOpen: boolean;
   onUpdateOpen(
     id: number,
@@ -23,10 +21,6 @@ export interface HnCommentProps {
   nextChildId: number | undefined;
 }
 
-interface HnCommentState {
-  expandSelf: boolean;
-}
-
 const colors = [
   "#bc8672",
   "#c5be53",
@@ -36,7 +30,7 @@ const colors = [
   "#c9893a",
 ];
 
-export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
+export class HnComment extends React.Component<HnCommentProps> {
   divRef: React.RefObject<HTMLDivElement>;
 
   componentDidMount() {
@@ -59,21 +53,8 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
     }
   }
 
-  static getDerivedStateFromProps(props: HnCommentProps) {
-    // if a parent expands, collapse this one
-    if (!props.canExpand) {
-      return { expandSelf: false };
-    }
-
-    return null;
-  }
-
   constructor(props: HnCommentProps) {
     super(props);
-
-    this.state = {
-      expandSelf: false,
-    };
 
     this.divRef = React.createRef();
   }
@@ -86,17 +67,8 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
   }
 
   render() {
-    const {
-      idToScrollTo,
-      comment,
-      isOpen,
-      canExpand,
-      depth,
-      onUpdateOpen,
-      collapsedIds,
-    } = this.props;
-
-    const { expandSelf } = this.state;
+    const { idToScrollTo, comment, isOpen, depth, onUpdateOpen, collapsedIds } =
+      this.props;
 
     if (comment === null) {
       return null;
@@ -121,7 +93,6 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
         {childComments.length > 0 && (
           <HnCommentList
             childComments={childComments}
-            canExpand={canExpand && !expandSelf}
             depth={depth + 1}
             onUpdateOpen={onUpdateOpen}
             collapsedIds={collapsedIds}
@@ -139,14 +110,9 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
         onClick={this.handleCardClick}
         style={{
           paddingLeft: 12 + Math.max(4 - depth),
-          marginLeft: expandSelf && isOpen ? -17 * depth : 0,
+          marginLeft: 0,
 
           borderLeftColor: borderColor,
-
-          borderLeftWidth: expandSelf ? 6 : undefined,
-
-          borderRight: expandSelf ? "1px solid" + borderColor : undefined,
-          paddingRight: expandSelf ? 6 : undefined,
         }}
       >
         <p style={{ fontWeight: isOpen ? 450 : 300 }} ref={this.divRef}>
@@ -162,15 +128,8 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
     );
   }
   private handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const {
-      comment,
-      isOpen,
-      canExpand,
-      depth,
-      onUpdateOpen,
-      nextChildId,
-    } = this.props;
-    const { expandSelf } = this.state;
+    const { comment, isOpen, onUpdateOpen, nextChildId } = this.props;
+
     // this is to prevent other cards from collapsing too
 
     e.stopPropagation();
@@ -180,26 +139,15 @@ export class HnComment extends React.Component<HnCommentProps, HnCommentState> {
       return;
     }
 
-    const target = e.target as any;
-
     // allow some gutter expansion once shifted over
-    const gutterRatio = expandSelf ? 0.85 : 0.9;
 
-    if (
-      depth > 0 &&
-      canExpand &&
-      (e.pageX + target.offsetLeft) / window.innerWidth > gutterRatio
-    ) {
-      this.setState({ expandSelf: !expandSelf });
-    } else {
-      const newIsOpen = !isOpen;
+    const newIsOpen = !isOpen;
 
-      if (comment === null) {
-        return;
-      }
-
-      onUpdateOpen(comment.id, newIsOpen, undefined, comment, nextChildId);
+    if (comment === null) {
+      return;
     }
+
+    onUpdateOpen(comment.id, newIsOpen, undefined, comment, nextChildId);
   };
 }
 
