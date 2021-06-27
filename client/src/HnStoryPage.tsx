@@ -1,4 +1,4 @@
-import { H2, H4 } from "@blueprintjs/core";
+import { Button, H2, H4 } from "@blueprintjs/core";
 import { History } from "history";
 import _ from "lodash";
 import React from "react";
@@ -83,6 +83,13 @@ export class HnStoryPage extends React.PureComponent<
           <span {...classMod}>{timeSince(storyData.time)} ago</span>
           <span>{" | "}</span>
           <span {...classMod}>{getDomain(storyData.url)}</span>
+
+          {navigator.share && (
+            <>
+              <span>{" | "}</span>
+              <Button icon="share" onClick={this.handleShareClick} minimal />
+            </>
+          )}
         </H4>
         {storyData.text !== undefined && (
           <p
@@ -102,6 +109,11 @@ export class HnStoryPage extends React.PureComponent<
       </div>
     );
   }
+
+  private handleShareClick = () => {
+    navigator.share({ url: window.location.href });
+  };
+
   private handleCollapseEvent = (
     id: number,
     newOpen: boolean,
