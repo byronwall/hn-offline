@@ -16,7 +16,7 @@ type ItemHash = {
   month?: TopStories;
 };
 
-export let db: ItemHash = {};
+let db: ItemHash = {};
 const dbPath = "./newdb.json";
 
 export function saveDatabase() {
@@ -152,7 +152,7 @@ async function _getTopStories(type: TopStoriesType): Promise<number[]> {
   }
 }
 
-function getItemFromDb(itemId: number): ItemExt | null {
+export function getItemFromDb(itemId: number): ItemExt | null {
   const doc = db[itemId];
 
   if (doc === undefined || _isTimePastThreshold(doc)) {

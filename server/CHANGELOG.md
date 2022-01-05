@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 2022-01-04 22:33:07
+
+- Add a title to the HTML page when explicitly requested -- hopefully get better meta data when sharing site
+- Remove yarn - switch to `npm run` and `npm install`
+
 ## 2021-05-07 00:07:11
 
 - Add support for InfiniteScroll for comments and story lists

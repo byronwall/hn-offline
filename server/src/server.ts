@@ -14,6 +14,7 @@ import {
   db_clearOldStories,
   saveDatabase,
   reloadDatabase,
+  getItemFromDb,
 } from "./database";
 import {
   ItemExt,
@@ -26,8 +27,15 @@ import { HackerNewsApi } from "./api";
 
 const cachedData: { [key: string]: ItemExt[] | null } = {};
 
-const staticPath = path.join(__dirname, "static");
+const env = process.env.NODE_ENV || "development";
+const staticPath =
+  env === "development"
+    ? path.join(__dirname, "..", "build", "static")
+    : path.join(__dirname, "static");
+
 log("static path: ", staticPath);
+
+const indexEjs = path.join(staticPath, "index.html");
 
 export class Server {
   static start() {
@@ -100,11 +108,13 @@ export class Server {
       res.json({ error: "search had no results" });
     });
 
-    const reactClientPaths = ["/", "/day", "/week", "/month", "/story/*"];
+    const reactClientPaths = ["/", "/day", "/week", "/month", "/story/:id"];
 
     app.get(reactClientPaths, (req, res) => {
       // need to respond to all pages so that BrowserRouter works
-      res.sendFile(path.join(staticPath, "index.html"));
+      const newTitle = getPageTitle(+req.params.id);
+      log("return the raw page", req.query, newTitle);
+      res.render(indexEjs, { title: newTitle });
     });
 
     var port = process.env.PORT || 3001;
@@ -174,4 +184,15 @@ async function loadFreshDataForStoryType(storyType: TopStoriesType) {
 
   saveDatabase();
   log(new Date(), "update complete", storyType);
+}
+
+function getPageTitle(id: number) {
+  // need to find the title if possible
+  const item = getItemFromDb(id);
+
+  if (item === null) {
+    return "HN Offline";
+  }
+
+  return `HN: ${item.title}`;
 }
