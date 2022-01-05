@@ -22,7 +22,7 @@
     "classnames": "^2.2.6",
     "compute-scroll-into-view": "^1.0.11",
     "localforage": "^1.7.3",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.21",
     "react": "^16.6.3",
     "react-dom": "^16.7.0",
     "react-infinite-scroll-component": "^6.1.0",
