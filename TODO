@@ -9,3 +9,5 @@ Other options:
         If doing this, figure out how to manage what data is stored where
     ☐ Keep track of read stories and filter them out?
     ☐ Ability to save stories for later?
+
+☐ The server side title generation requires the EJS file to be avialable.  There is a conflict where Webpack wants to do the same substituion.  Right now, it's a manual process to add the variable in -- replace XXX with `<title><%- title %></title>`

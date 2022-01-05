@@ -46,6 +46,8 @@ export class Server {
 
     app.use(cors());
 
+    app.engine("html", require("ejs").renderFile);
+
     // this assumes that the app is running in server/build
     app.use(express.static(staticPath));
 
