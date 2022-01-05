@@ -1,29 +1,24 @@
 import * as bodyParser from "body-parser";
 import * as compression from "compression";
-import * as express from "express";
-import * as path from "path";
 import * as cors from "cors";
 import debug from "debug";
+import * as express from "express";
+import * as path from "path";
+
+import { AlgoliaApi } from "./algolia";
+import { HackerNewsApi } from "./api";
+import {
+  _getFullDataForIds,
+  db_clearOldStories,
+  db_getTopStoryIds,
+  getItemFromDb,
+  reloadDatabase,
+  saveDatabase,
+} from "./database";
+import { ItemExt, STORY_TYPE, TopStoriesType } from "./interfaces";
 
 const log = debug("hn:server");
 log("log created!");
-
-import {
-  _getFullDataForIds,
-  db_getTopStoryIds,
-  db_clearOldStories,
-  saveDatabase,
-  reloadDatabase,
-  getItemFromDb,
-} from "./database";
-import {
-  ItemExt,
-  STORY_TYPE,
-  TopStoriesParams,
-  TopStoriesType,
-} from "./interfaces";
-import { AlgoliaApi } from "./algolia";
-import { HackerNewsApi } from "./api";
 
 const cachedData: { [key: string]: ItemExt[] | null } = {};
 
