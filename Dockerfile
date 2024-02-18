@@ -1,6 +1,10 @@
 # Use an official Node runtime as a parent image
 FROM node:14.15.4
 
+# Update package lists and install rsync
+RUN apt-get update && apt-get install -y rsync \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory in the container for the server
 WORKDIR /usr/src/app
 
