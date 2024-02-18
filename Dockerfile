@@ -11,7 +11,7 @@ COPY . .
 WORKDIR /usr/src/app/server
 
 # Install server dependencies
-RUN npm install && tsc && cd ../client && npm install  && npm run  build && cp -ru ./build/* ../server/build/static/
+RUN npm install && npx tsc && cd ../client && npm install  && npm run  build && cp -ru ./build/* ../server/build/static/
 
 # Make port 3001 available to the world outside this container
 EXPOSE 3001
