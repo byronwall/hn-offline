@@ -1,20 +1,47 @@
-# Use an official Node runtime as a parent image
-FROM node:14.15.4
-
-# Set the working directory in the container for the server
+# Builder Stage
+FROM node:14.15.4-alpine AS builder
 WORKDIR /usr/src/app
 
-# Copy the server directory contents into the container at /usr/src/app/server
-COPY . .
-
-# Go into server dir to run commands
-WORKDIR /usr/src/app/server
-
 # Install server dependencies
-RUN npm install && npx tsc && cd ../client && npm install  && npm run  build && mkdir -p ../server/build/static/ && cp -ru ./build/* ../server/build/static/
+COPY server/package*.json ./server/
+RUN npm --prefix server ci
 
-# Make port 3001 available to the world outside this container
+# Install client dependencies
+COPY client/package*.json ./client/
+RUN npm --prefix client ci
+
+# Build server and client
+COPY server/ ./server/
+RUN npm --prefix server run build
+
+COPY client/ ./client/
+RUN npm --prefix client run build
+
+# Final Stage
+FROM node:14.15.4-alpine
+WORKDIR /usr/src/app
+
+# Copy necessary files
+COPY --from=builder /usr/src/app/server ./server
+COPY --from=builder /usr/src/app/client/build ./server/build/static
+
+# Non-root user
+RUN adduser -D appuser
+USER appuser
+
+# volume for main JSON db file - appuser home directory
+VOLUME /home/appuser/db
+
+# create path to db file
+# create db file and change ownership to appuser
+RUN mkdir -p /home/appuser/db && echo "{}" > /home/appuser/db/db.json && chown appuser /home/appuser/db/db.json
+
+# env var called db_path to be used in server/index.js
+ENV db_path /home/appuser/db/db.json
+ENV DEBUG *
+
+# Expose and run
 EXPOSE 3001
+CMD ["npm", "run", "start", "--prefix", "server"]
 
-# Define the command to run the server app
-CMD ["npm", "run", "start"]
+

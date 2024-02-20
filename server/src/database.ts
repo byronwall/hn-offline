@@ -17,7 +17,8 @@ type ItemHash = {
 };
 
 let db: ItemHash = {};
-const dbPath = "./newdb.json";
+const dbPath = process.env.db_path ?? "./newdb.json";
+console.log("db path", dbPath);
 
 export function saveDatabase() {
   const dataStr = JSON.stringify(db);

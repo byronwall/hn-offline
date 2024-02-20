@@ -8,10 +8,8 @@
     "client": "cd ../client && npm run start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "start": "node build/index.js",
-    "build": "npm install && tsc && cd ../client && npm run deploy",
-    "build_run": "tsc && npm run start",
-    "deploy-copy": "rsync -rvzq --include='build/***' --include='node_modules/***' --include='package.json' --exclude='*' ./ root@byroni.us:/root/hn-client",
-    "deploy": "npm run build && npm run deploy-copy"
+    "build": "npm install && tsc",
+    "build_run": "tsc && npm run start"
   },
   "author": "",
   "license": "ISC",
