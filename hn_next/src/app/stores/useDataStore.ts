@@ -42,7 +42,7 @@ type DataStore = {
 
 type DataStoreActions = {
   getContent: (id: StoryId) => Promise<HnItem | undefined>;
-  getContentForPage: (page: StoryPage) => Promise<HnItem[] | undefined>;
+  getContentForPage: (page: string) => Promise<HnItem[] | undefined>;
 
   initializeFromLocalForage: () => void;
 };
@@ -121,7 +121,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       return data;
     },
 
-    async getContentForPage(page: StoryPage) {
+    async getContentForPage(page: string) {
       // attempt to load from local info
       const { storyLists, rawData, isLocalForageInitialized } = get();
 
@@ -130,7 +130,17 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         return undefined;
       }
 
-      const list = storyLists[page];
+      // remove leading slash
+      page = page.slice(1);
+
+      const isIn = page in storyLists;
+
+      if (!isIn) {
+        console.error("error missing type");
+        return undefined;
+      }
+
+      const list = storyLists[page as StoryPage];
       console.log("list", { list, storyLists, rawData });
       if (list.length > 0) {
         // check they all have data
@@ -148,7 +158,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         week: "/topstories/week",
       };
 
-      const urlSlug = urlMap[page];
+      const urlSlug = urlMap[page as StoryPage];
 
       console.log("urlSlug", urlSlug);
 

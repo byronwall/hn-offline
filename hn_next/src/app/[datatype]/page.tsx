@@ -11,7 +11,7 @@ export default function Home() {
 
   const initLocal = useDataStore((s) => s.initializeFromLocalForage);
 
-  const { data, isLoading } = useGetPageData();
+  const { data, isLoading } = useGetPageData(pathname);
 
   useEffect(() => {
     initLocal();
@@ -55,13 +55,13 @@ function useGetSimpleData<T>(getter: () => Promise<T>) {
   return { data, isLoading };
 }
 
-function useGetPageData() {
+function useGetPageData(pathname: string) {
   const getContentForPage = useDataStore((s) => s.getContentForPage);
   const isInit = useDataStore((s) => s.isLocalForageInitialized);
 
   const getter = useCallback(
-    () => getContentForPage("front"),
-    [getContentForPage, isInit]
+    () => getContentForPage(pathname),
+    [getContentForPage, pathname, isInit]
   );
 
   return useGetSimpleData(getter);
