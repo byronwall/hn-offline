@@ -18,8 +18,6 @@ interface HnCommentListProps {
 
   collapsedIds: number[];
   idToScrollTo: number | undefined;
-
-  isSkeleton: boolean;
 }
 
 export class HnCommentList extends React.Component<HnCommentListProps, {}> {
@@ -54,14 +52,9 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
   };
 
   render() {
-    const { childComments, collapsedIds, depth, idToScrollTo, isSkeleton } =
-      this.props;
+    const { childComments, collapsedIds, depth, idToScrollTo } = this.props;
 
     const validChildren = childComments.filter((comm) => comm !== null);
-
-    const classMod = {
-      className: isSkeleton ? "bp3-skeleton" : undefined,
-    };
 
     return (
       <InfiniteScrollContainer items={validChildren} itemsToAddOnRefresh={3}>
@@ -71,7 +64,7 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
           }
 
           return (
-            <div key={childComm.id} {...classMod}>
+            <div key={childComm.id}>
               <HnComment
                 comment={childComm}
                 depth={depth}

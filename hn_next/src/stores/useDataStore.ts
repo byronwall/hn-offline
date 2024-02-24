@@ -73,22 +73,33 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     },
 
     async getContent(id: StoryId) {
+      // attempt to load from local info
+      const { rawData, isLocalForageInitialized } = get();
+
       const url = "https://hn.byroni.us/api/story/" + id;
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        console.error(response);
-        return undefined;
-      }
-      const data: HnItem | { error: string } = await response.json();
-
-      if ("error" in data) {
-        console.error(data);
-
-        return undefined;
+      if (!isLocalForageInitialized) {
+        // kick out for SSR
+        console.error("localforage not initialized");
+        const data = await getContentViaFetch(url);
+        return data;
       }
 
-      console.log("hn item from server", data);
+      // check if we have the item in the cache
+      if (id in rawData) {
+        console.log("hn item from cache", rawData[id]);
+        return rawData[id];
+      }
+
+      // load the item from localforage
+      const item = await localforage.getItem<HnItem>("raw_" + id);
+
+      if (item) {
+        console.log("hn item from localforage", item);
+        return item;
+      }
+
+      const data = getContentViaFetch(url);
 
       return data;
     },
@@ -194,3 +205,22 @@ export interface HnStorySummary {
 export type TrueHash = {
   [key: number]: true;
 };
+
+async function getContentViaFetch(url: string) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    console.error(response);
+    return undefined;
+  }
+  const data: HnItem | { error: string } = await response.json();
+
+  if ("error" in data) {
+    console.error(data);
+
+    return undefined;
+  }
+
+  console.log("hn item from server", data);
+
+  return data;
+}

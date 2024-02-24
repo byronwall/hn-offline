@@ -6,14 +6,11 @@ import { isValidComment } from "./HnComment";
 import { HnCommentList } from "./HnCommentList";
 import { timeSince } from "@/utils";
 
-import dummyItem from "./dummyItem.json";
 import { HnItem } from "@/stores/useDataStore";
 
 interface HnStoryPageState {
   collapsedComments: number[];
   idToScrollTo: number | undefined;
-
-  data: HnItem | undefined | null;
 }
 
 export interface HnStoryPageProps {
@@ -35,18 +32,20 @@ export class HnStoryPage extends React.PureComponent<
     this.state = {
       collapsedComments: [],
       idToScrollTo: undefined,
-      data: undefined,
     };
 
     this.anchorClickHandler = this.anchorClickHandler.bind(this);
   }
 
   render() {
-    const { storyData: data } = this.props;
+    const { storyData } = this.props;
     const { idToScrollTo, collapsedComments } = this.state;
 
-    const isSkeleton = data === undefined;
-    const storyData = data ?? (dummyItem as HnItem);
+    console.log("storyData", storyData);
+
+    if (!storyData) {
+      return null;
+    }
 
     // add this line to remove the state info on scrolling -- prevent scroll on reload
     if (idToScrollTo) {
@@ -64,26 +63,20 @@ export class HnStoryPage extends React.PureComponent<
 
     document.title = `HN: ${storyData.title}`;
 
-    const classMod = {
-      className: isSkeleton ? "bp3-skeleton" : undefined,
-    };
-
     return (
       <div>
-        <h2 style={{ overflowWrap: "break-word" }} {...classMod}>
-          {storyLinkEl}
-        </h2>
+        <h2 style={{ overflowWrap: "break-word" }}>{storyLinkEl}</h2>
         <h4>
-          <span {...classMod}>{storyData.by}</span>
+          <span>{storyData.by}</span>
           <span>{" | "}</span>
-          <span {...classMod}>
+          <span>
             {storyData.score}
             {" points"}
           </span>
           <span>{" | "}</span>
-          <span {...classMod}>{timeSince(storyData.time)} ago</span>
+          <span>{timeSince(storyData.time)} ago</span>
           <span>{" | "}</span>
-          <span {...classMod}>{getDomain(storyData.url)}</span>
+          <span>{getDomain(storyData.url)}</span>
 
           {
             <>
@@ -105,7 +98,6 @@ export class HnStoryPage extends React.PureComponent<
           collapsedIds={collapsedComments}
           onUpdateOpen={this.handleCollapseEvent}
           idToScrollTo={idToScrollTo}
-          isSkeleton={isSkeleton}
         />
       </div>
     );
