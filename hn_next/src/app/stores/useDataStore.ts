@@ -15,7 +15,7 @@ export interface HnItem {
   text?: string; // this is for Ask HN and others that are internal
 }
 
-interface KidsObj3 {
+export interface KidsObj3 {
   by?: string;
   id: number;
   parent: number;
@@ -42,7 +42,7 @@ type DataStore = {
 
 type DataStoreActions = {
   getContent: (id: StoryId) => Promise<HnItem | undefined>;
-  getContentForPage: (page: string) => Promise<HnItem[] | undefined>;
+  getContentForPage: (page: string) => Promise<HnStorySummary[] | undefined>;
 
   initializeFromLocalForage: () => void;
 };
@@ -68,40 +68,12 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     initializeFromLocalForage: async () => {
       // attempt to load from localforage
-      const storyLists = await localforage.getItem<StoryLists>("storyLists");
-
-      console.log("storyLists", storyLists);
-
-      if (storyLists) {
-        set({ storyLists });
-      }
-
-      // get list of all localforage keys
-      const keys = await localforage.keys();
-
-      const newRawData: Record<StoryId, HnItem> = {};
-
-      for (const key of keys) {
-        if (!key.startsWith("raw_")) continue;
-
-        const value = await localforage.getItem<HnItem>(key);
-
-        const id = parseInt(key.split("_")[1]);
-
-        if (value) {
-          newRawData[id] = value;
-        }
-      }
-
-      if (Object.keys(newRawData).length > 0) {
-        set({ rawData: newRawData });
-      }
 
       set({ isLocalForageInitialized: true });
     },
 
     async getContent(id: StoryId) {
-      const url = "/api/story/" + id;
+      const url = "https://hn.byroni.us/api/story/" + id;
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -140,18 +112,17 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         return undefined;
       }
 
-      const list = storyLists[page as StoryPage];
-      console.log("list", { list, storyLists, rawData });
-      if (list.length > 0) {
-        // check they all have data
-        const isGood = list.every((id) => rawData[id] !== undefined);
-        if (isGood) {
-          const items = list.map((id) => rawData[id]);
-          console.log("items via cache", items);
-          return items;
-        }
+      // load the list from localforage
+      const list = await localforage.getItem<HnStorySummary[]>(
+        "STORIES_" + page
+      );
+
+      if (list) {
+        console.log("list", list);
+        return list;
       }
 
+      // no stored list, hit the API
       const urlMap = {
         front: "/topstories/topstories",
         day: "/topstories/day",
@@ -182,8 +153,18 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         storyLists: newStoryList,
       });
 
-      // update localforage
-      await localforage.setItem("storyLists", newStoryList);
+      // replace the list with the new IDs
+      const storySummaries = data.map<HnStorySummary>((c) => ({
+        id: c.id,
+        score: c.score,
+        title: c.title,
+        url: c.url,
+        commentCount: c.descendants,
+        time: c.time,
+      }));
+
+      // also save the new list to localforage
+      localforage.setItem("STORIES_" + page, storySummaries);
 
       const newRawData: Record<StoryId, HnItem> = {};
 
@@ -194,7 +175,18 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       set({ rawData: { ...rawData, ...newRawData } });
 
-      return data;
+      return storySummaries;
     },
   })
 );
+export interface HnStorySummary {
+  title: string;
+  score: number;
+  id: number;
+  url: string | undefined;
+  commentCount: number | undefined;
+  time: number;
+}
+export type TrueHash = {
+  [key: number]: true;
+};

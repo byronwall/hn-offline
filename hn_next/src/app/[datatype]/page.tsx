@@ -2,8 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import { HnItem, useDataStore } from "../stores/useDataStore";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { HnStoryList } from "@/components/HnStoryList";
+import { useGetPageData } from "./useGetPageData";
 
 export default function Home() {
   // get slug from url using next nav
@@ -22,22 +24,13 @@ export default function Home() {
       Testing : {pathname}
       <div>
         {isLoading && <p>Loading...</p>}
-        {data && (
-          <ul>
-            {data.map((item) => (
-              <li key={item.id}>
-                <Link href={`/story/${item.id}`}> {item.title}</Link> -{" "}
-                {item.title} - {item.score}
-              </li>
-            ))}
-          </ul>
-        )}
+        {data && <HnStoryList items={data} readIds={[]} />}
       </div>
     </div>
   );
 }
 
-function useGetSimpleData<T>(getter: () => Promise<T>) {
+export function useGetSimpleData<T>(getter: () => Promise<T>) {
   const [data, setData] = useState<T | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -53,16 +46,4 @@ function useGetSimpleData<T>(getter: () => Promise<T>) {
   }, [getter, setData]);
 
   return { data, isLoading };
-}
-
-function useGetPageData(pathname: string) {
-  const getContentForPage = useDataStore((s) => s.getContentForPage);
-  const isInit = useDataStore((s) => s.isLocalForageInitialized);
-
-  const getter = useCallback(
-    () => getContentForPage(pathname),
-    [getContentForPage, pathname, isInit]
-  );
-
-  return useGetSimpleData(getter);
 }
