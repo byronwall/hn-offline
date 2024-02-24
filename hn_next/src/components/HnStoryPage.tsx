@@ -41,8 +41,6 @@ export class HnStoryPage extends React.PureComponent<
     const { storyData } = this.props;
     const { idToScrollTo, collapsedComments } = this.state;
 
-    console.log("storyData", storyData);
-
     if (!storyData) {
       return null;
     }

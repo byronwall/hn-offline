@@ -3,7 +3,6 @@
 import { useGetContent } from "@/hooks/useGetContent";
 import { HnStoryPage } from "@/components/HnStoryPage";
 import { useParams } from "next/navigation";
-import { Suspense } from "react";
 
 export default function Home() {
   const { id: rawId } = useParams();
@@ -16,14 +15,11 @@ export default function Home() {
 
   const { data, isLoading } = useGetContent(id);
 
-  console.log("data", data, isLoading, id);
-
   return (
     <div>
       {isLoading && <p>Loading...</p>}
-      <Suspense fallback={<p>Loading...</p>}>
-        <HnStoryPage id={id} onVisitMarker={console.log} storyData={data} />
-      </Suspense>
+
+      <HnStoryPage id={id} onVisitMarker={console.log} storyData={data} />
     </div>
   );
 }

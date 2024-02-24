@@ -1,4 +1,3 @@
-"use client";
 import { useDataStore } from "../stores/useDataStore";
 import { useCallback } from "react";
 import { useGetSimpleData } from "./useGetSimpleData";

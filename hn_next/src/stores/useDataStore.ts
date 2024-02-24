@@ -87,7 +87,6 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       // check if we have the item in the cache
       if (id in rawData) {
-        console.log("hn item from cache", rawData[id]);
         return rawData[id];
       }
 
@@ -95,7 +94,6 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       const item = await localforage.getItem<HnItem>("raw_" + id);
 
       if (item) {
-        console.log("hn item from localforage", item);
         return item;
       }
 
@@ -108,16 +106,34 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       // attempt to load from local info
       const { storyLists, rawData, isLocalForageInitialized } = get();
 
-      if (!isLocalForageInitialized) {
-        console.error("localforage not initialized");
-        return undefined;
-      }
-
       // remove leading slash
       page = page.slice(1);
 
       if (page == "") {
         page = "front";
+      }
+
+      // no stored list, hit the API
+      const urlMap = {
+        front: "/topstories/topstories",
+        day: "/topstories/day",
+        week: "/topstories/week",
+      };
+
+      const urlSlug = urlMap[page as StoryPage];
+
+      if (urlSlug === undefined) {
+        console.error("error missing type");
+        return undefined;
+      }
+
+      const url = "https://hn.byroni.us" + urlSlug;
+
+      if (!isLocalForageInitialized) {
+        console.log("localforage not initialized");
+        const { storySummaries } = await getSummaryViaFetch(url);
+
+        return storySummaries;
       }
 
       const isIn = page in storyLists;
@@ -133,30 +149,10 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       );
 
       if (list) {
-        console.log("list", list);
         return list;
       }
 
-      // no stored list, hit the API
-      const urlMap = {
-        front: "/topstories/topstories",
-        day: "/topstories/day",
-        week: "/topstories/week",
-      };
-
-      const urlSlug = urlMap[page as StoryPage];
-
-      console.log("urlSlug", urlSlug);
-
-      if (urlSlug === undefined) {
-        console.error("error missing type");
-        return undefined;
-      }
-
-      const url = "https://hn.byroni.us" + urlSlug;
-
-      const response = await fetch(url);
-      const data = (await response.json()) as HnItem[];
+      const { data, storySummaries } = await getSummaryViaFetch(url);
 
       const newStoryList = {
         ...storyLists,
@@ -167,16 +163,6 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       set({
         storyLists: newStoryList,
       });
-
-      // replace the list with the new IDs
-      const storySummaries = data.map<HnStorySummary>((c) => ({
-        id: c.id,
-        score: c.score,
-        title: c.title,
-        url: c.url,
-        commentCount: c.descendants,
-        time: c.time,
-      }));
 
       // also save the new list to localforage
       localforage.setItem("STORIES_" + page, storySummaries);
@@ -220,7 +206,22 @@ async function getContentViaFetch(url: string) {
     return undefined;
   }
 
-  console.log("hn item from server", data);
-
   return data;
+}
+
+async function getSummaryViaFetch(url: string) {
+  const response = await fetch(url);
+  const data = (await response.json()) as HnItem[];
+
+  // replace the list with the new IDs
+  const storySummaries = data.map<HnStorySummary>((c) => ({
+    id: c.id,
+    score: c.score,
+    title: c.title,
+    url: c.url,
+    commentCount: c.descendants,
+    time: c.time,
+  }));
+
+  return { data, storySummaries };
 }

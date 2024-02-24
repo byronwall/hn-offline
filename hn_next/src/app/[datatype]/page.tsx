@@ -21,11 +21,8 @@ export default function StoryListPage() {
 
   return (
     <div>
-      Testing : {pathname}
-      <div>
-        {isLoading && <p>Loading...</p>}
-        {data && <HnStoryList items={data} readIds={[]} />}
-      </div>
+      {isLoading && <p>Loading...</p>}
+      {data && <HnStoryList items={data} readIds={[]} />}
     </div>
   );
 }
