@@ -1,3 +1,5 @@
+"use client";
+
 import localforage from "localforage";
 import { create } from "zustand";
 
@@ -47,14 +49,16 @@ type DataStoreActions = {
   initializeFromLocalForage: () => void;
 };
 
-localforage.config({
-  driver: localforage.INDEXEDDB, // Force WebSQL; same as using setDriver()
-  name: "hn_next",
-  version: 1.0,
-  size: 4980736, // Size of database, in bytes. WebSQL-only for now.
-  storeName: "keyvaluepairs", // Should be alphanumeric, with underscores.
-  description: "some description",
-});
+if (typeof window !== "undefined") {
+  localforage.config({
+    driver: localforage.INDEXEDDB, // Force WebSQL; same as using setDriver()
+    name: "hn_next",
+    version: 1.0,
+    size: 4980736, // Size of database, in bytes. WebSQL-only for now.
+    storeName: "keyvaluepairs", // Should be alphanumeric, with underscores.
+    description: "some description",
+  });
+}
 
 export const useDataStore = create<DataStore & DataStoreActions>(
   (set, get) => ({
