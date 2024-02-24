@@ -2,7 +2,7 @@ import React from "react";
 
 import { HnComment } from "./HnComment";
 import { InfiniteScrollContainer } from "./InfiniteScrollContainer";
-import { KidsObj3 } from "@/app/stores/useDataStore";
+import { KidsObj3 } from "@/stores/useDataStore";
 
 interface HnCommentListProps {
   childComments: Array<KidsObj3 | null>;

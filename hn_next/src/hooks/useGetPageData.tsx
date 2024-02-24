@@ -1,7 +1,7 @@
 "use client";
 import { useDataStore } from "../stores/useDataStore";
 import { useCallback } from "react";
-import { useGetSimpleData } from "./page";
+import { useGetSimpleData } from "./useGetSimpleData";
 
 export function useGetPageData(pathname: string) {
   const getContentForPage = useDataStore((s) => s.getContentForPage);

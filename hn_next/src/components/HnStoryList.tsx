@@ -1,7 +1,7 @@
 import React from "react";
 
-import { TrueHash } from "@/app/stores/useDataStore";
-import { HnStorySummary } from "@/app/stores/useDataStore";
+import { TrueHash } from "@/stores/useDataStore";
+import { HnStorySummary } from "@/stores/useDataStore";
 import { HnListItem } from "./HnListItem";
 
 interface HnStoryListProps {
@@ -44,7 +44,7 @@ export class HnStoryList extends React.PureComponent<HnStoryListProps> {
 
     return (
       <div>
-        <div id="list-holder" className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           {items.map((item) => (
             <HnListItem data={item} key={item.id} isRead={readIds[item.id]} />
           ))}

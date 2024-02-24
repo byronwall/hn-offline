@@ -3,7 +3,7 @@ import React from "react";
 import { HnCommentList } from "./HnCommentList";
 import { timeSince } from "@/utils";
 import { cn } from "@/utils";
-import { KidsObj3 } from "@/app/stores/useDataStore";
+import { KidsObj3 } from "@/stores/useDataStore";
 
 export interface HnCommentProps {
   comment: KidsObj3 | null;

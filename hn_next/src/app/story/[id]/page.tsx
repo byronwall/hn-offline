@@ -1,6 +1,6 @@
 "use client";
 
-import { useGetContent } from "@/app/[datatype]/useGetContent";
+import { useGetContent } from "@/hooks/useGetContent";
 import { HnStoryPage } from "@/components/HnStoryPage";
 import { useParams } from "next/navigation";
 

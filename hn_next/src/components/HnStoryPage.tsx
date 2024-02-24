@@ -7,7 +7,7 @@ import { HnCommentList } from "./HnCommentList";
 import { timeSince } from "@/utils";
 
 import dummyItem from "./dummyItem.json";
-import { HnItem } from "@/app/stores/useDataStore";
+import { HnItem } from "@/stores/useDataStore";
 
 interface HnStoryPageState {
   collapsedComments: number[];

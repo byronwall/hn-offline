@@ -4,7 +4,7 @@ import { MessageSquareQuote, ChevronUp } from "lucide-react";
 
 import { getDomain } from "@/utils";
 import { timeSince } from "@/utils";
-import { HnStorySummary } from "@/app/stores/useDataStore";
+import { HnStorySummary } from "@/stores/useDataStore";
 import Link from "next/link";
 import { cn } from "@/utils";
 

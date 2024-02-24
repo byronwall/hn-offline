@@ -105,6 +105,10 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       // remove leading slash
       page = page.slice(1);
 
+      if (page == "") {
+        page = "front";
+      }
+
       const isIn = page in storyLists;
 
       if (!isIn) {

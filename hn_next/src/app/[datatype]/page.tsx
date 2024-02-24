@@ -1,13 +1,13 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { HnItem, useDataStore } from "../stores/useDataStore";
-import { useEffect, useState } from "react";
+import { HnItem, useDataStore } from "../../stores/useDataStore";
+import { useEffect } from "react";
 import Link from "next/link";
 import { HnStoryList } from "@/components/HnStoryList";
-import { useGetPageData } from "./useGetPageData";
+import { useGetPageData } from "../../hooks/useGetPageData";
 
-export default function Home() {
+export default function StoryListPage() {
   // get slug from url using next nav
   const pathname = usePathname();
 
@@ -28,22 +28,4 @@ export default function Home() {
       </div>
     </div>
   );
-}
-
-export function useGetSimpleData<T>(getter: () => Promise<T>) {
-  const [data, setData] = useState<T | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      const newData = await getter();
-      setData(newData);
-      setIsLoading(false);
-    }
-
-    fetchData();
-  }, [getter, setData]);
-
-  return { data, isLoading };
 }
