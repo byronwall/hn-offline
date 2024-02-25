@@ -14,10 +14,12 @@ export async function GET(
   let reqType = params.type;
 
   if (STORY_TYPE.indexOf(reqType as any) === -1) {
-    return new Response("Incorrect story type", { status: 500 });
+    console.log("sending 500", reqType);
+    return NextResponse.json({ error: "Invalid type" });
   }
 
   const results = cachedData[reqType];
+  console.log("sending results", results?.length);
 
   return NextResponse.json(results);
 }

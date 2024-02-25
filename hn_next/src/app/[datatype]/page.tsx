@@ -1,9 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { HnItem, useDataStore } from "../../stores/useDataStore";
+import { useDataStore } from "../../stores/useDataStore";
 import { useEffect } from "react";
-import Link from "next/link";
+
 import { HnStoryList } from "@/components/HnStoryList";
 import { useGetPageData } from "../../hooks/useGetPageData";
 

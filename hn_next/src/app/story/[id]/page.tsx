@@ -5,9 +5,11 @@ import { HnStoryPage } from "@/components/HnStoryPage";
 import { useParams } from "next/navigation";
 
 export default function Home() {
-  const { id: rawId } = useParams();
+  const params = useParams();
 
-  if (Array.isArray(rawId)) {
+  const rawId = params?.id;
+
+  if (Array.isArray(rawId) || !rawId) {
     throw new Error("Unexpected array");
   }
 

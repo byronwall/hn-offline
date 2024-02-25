@@ -102,7 +102,7 @@ export class HnStoryPage extends React.PureComponent<
   }
 
   private handleShareClick = () => {
-    navigator.share({ url: window.location.href });
+    navigator.share?.({ url: window.location.href });
   };
 
   private handleCollapseEvent = (

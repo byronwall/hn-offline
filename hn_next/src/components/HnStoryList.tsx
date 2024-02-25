@@ -44,7 +44,7 @@ export class HnStoryList extends React.PureComponent<HnStoryListProps> {
 
     return (
       <div>
-        <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-[1fr_1fr_1fr_3fr]">
           {items.map((item) => (
             <HnListItem data={item} key={item.id} isRead={readIds[item.id]} />
           ))}

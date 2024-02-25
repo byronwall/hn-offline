@@ -20,15 +20,6 @@ export class HnListItem extends React.PureComponent<HnStoryProps> {
 
     const commentCountNum =
       story.commentCount ?? ((story as any).kids ?? []).length ?? "";
-    const commentCountComp = (
-      <React.Fragment>
-        {" | "}
-        <Link href={"/story/" + story.id} className="flex">
-          <MessageSquareQuote />
-          {commentCountNum}
-        </Link>
-      </React.Fragment>
-    );
 
     const storyLinkEl =
       story.url === undefined ? (
@@ -40,17 +31,28 @@ export class HnListItem extends React.PureComponent<HnStoryProps> {
       );
 
     return (
-      <div className={cn({ isRead: isRead })}>
-        <p>{storyLinkEl}</p>
-        <p className="flex gap-1">
-          <span className="flex">
-            <ChevronUp />
-            {" " + story.score}
-          </span>
-          {commentCountNum !== "" && commentCountComp}
-          <span>{" | " + timeSince(story.time) + " ago"}</span>
-          <span>{" | " + getDomain(story.url)}</span>
-        </p>
+      <div
+        className={cn("grid grid-cols-subgrid col-span-4", { isRead: isRead })}
+      >
+        <p className="col-span-4 mt-1.5 font-medium mb-1">{storyLinkEl}</p>
+
+        <span className="flex gap-1 text-gray-700 ">
+          <ChevronUp className="stroke-gray-500" />
+          {story.score}
+        </span>
+        {commentCountNum !== "" && (
+          <Link
+            href={"/story/" + story.id}
+            className="flex gap-1 text-gray-700"
+          >
+            <MessageSquareQuote className="stroke-gray-500" />
+            {commentCountNum}
+          </Link>
+        )}
+        <span className="text-gray-600 text-right mr-2">
+          {timeSince(story.time)}
+        </span>
+        <span className="truncate text-gray-400">{getDomain(story.url)}</span>
       </div>
     );
   }

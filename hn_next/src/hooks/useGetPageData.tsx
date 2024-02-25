@@ -3,15 +3,17 @@ import { useDataStore } from "../stores/useDataStore";
 import { useCallback } from "react";
 import { useGetSimpleData } from "./useGetSimpleData";
 
-export function useGetPageData(pathname: string) {
+export function useGetPageData(pathname: string | null) {
   const getContentForPage = useDataStore((s) => s.getContentForPage);
   const isInit = useDataStore((s) => s.isLocalForageInitialized);
+  const dataNonce = useDataStore((s) => s.dataNonce);
 
   // TODO: need to wire up isInit automatically
-  const getter = useCallback(
-    () => getContentForPage(pathname),
-    [getContentForPage, pathname, isInit]
-  );
+  const getter = useCallback(() => {
+    if (!pathname) return Promise.resolve(undefined);
+
+    return getContentForPage(pathname);
+  }, [getContentForPage, pathname, isInit, dataNonce]);
 
   return useGetSimpleData(getter);
 }

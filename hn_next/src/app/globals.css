@@ -2,13 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 5px 12px;
-}
-
 pre {
   white-space: pre-wrap;
 }

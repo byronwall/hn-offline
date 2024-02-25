@@ -33,13 +33,13 @@ type StoryPage = "front" | "day" | "week";
 
 type StoryId = number;
 
-type StoryLists = Record<StoryPage, StoryId[]>;
-
 type DataStore = {
-  storyLists: StoryLists;
   rawData: Record<StoryId, HnItem>;
 
   isLocalForageInitialized: boolean;
+
+  dataNonce: number;
+  isLoadingData: boolean;
 };
 
 type DataStoreActions = {
@@ -47,6 +47,15 @@ type DataStoreActions = {
   getContentForPage: (page: string) => Promise<HnStorySummary[] | undefined>;
 
   initializeFromLocalForage: () => void;
+
+  saveStoryList: (
+    page: StoryPage,
+    list: HnStorySummary[],
+    data: HnItem[]
+  ) => void;
+  saveContent: (id: StoryId, content: HnItem) => void;
+
+  refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
 };
 
 if (typeof window !== "undefined") {
@@ -62,6 +71,8 @@ if (typeof window !== "undefined") {
 
 export const useDataStore = create<DataStore & DataStoreActions>(
   (set, get) => ({
+    dataNonce: 0,
+    isLoadingData: false,
     isLocalForageInitialized: false,
     storyLists: {
       front: [],
@@ -69,6 +80,80 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       week: [],
     },
     rawData: {},
+
+    saveContent: (id: StoryId, content: HnItem) => {
+      const { rawData, dataNonce } = get();
+
+      set({
+        rawData: { ...rawData, [id]: content },
+        dataNonce: dataNonce + 1,
+      });
+
+      localforage.setItem("raw_" + id, content);
+    },
+
+    saveStoryList: async (
+      page: StoryPage,
+      storySummaries: HnStorySummary[],
+      data: HnItem[]
+    ) => {
+      const { rawData, dataNonce } = get();
+
+      // also save the new list to localforage
+      localforage.setItem("STORIES_" + page, storySummaries);
+
+      const newRawData: Record<StoryId, HnItem> = {};
+
+      for (const item of data) {
+        newRawData[item.id] = item;
+        await localforage.setItem("raw_" + item.id, item);
+      }
+
+      set({
+        rawData: { ...rawData, ...newRawData },
+        dataNonce: dataNonce + 1,
+      });
+    },
+
+    refreshCurrent: async (url: string) => {
+      // attempt to load from local info
+      const { isLocalForageInitialized, saveContent, saveStoryList } = get();
+
+      console.log("refreshing", url);
+
+      // determine if page is a story or a list
+      const isStory = url.startsWith("/story");
+
+      if (isStory) {
+        const apiUrl = "/api" + url;
+
+        set({ isLoadingData: true });
+        const newContent = await getContentViaFetch(apiUrl);
+        set({ isLoadingData: false });
+
+        if (newContent) {
+          saveContent(newContent.id, newContent);
+        }
+
+        return newContent;
+      }
+
+      const isFrontPage = url === "/" || url === "/front";
+
+      if (isFrontPage) {
+        url = "/topstories";
+      }
+
+      // need to hit topsotries API
+      const apiUrl = "/api/topstories" + url;
+      set({ isLoadingData: true });
+      const { data, storySummaries } = await getSummaryViaFetch(apiUrl);
+      set({ isLoadingData: false });
+
+      saveStoryList(url as StoryPage, storySummaries, data);
+
+      return storySummaries;
+    },
 
     initializeFromLocalForage: async () => {
       // attempt to load from localforage
@@ -78,14 +163,17 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     async getContent(id: StoryId) {
       // attempt to load from local info
-      const { rawData, isLocalForageInitialized } = get();
+      const { rawData, isLocalForageInitialized, saveContent } = get();
 
-      const url = "https://hn.byroni.us/api/story/" + id;
+      const url = "/api/story/" + id;
 
       if (!isLocalForageInitialized) {
         // kick out for SSR
         console.error("localforage not initialized");
         const data = await getContentViaFetch(url);
+
+        if (data) saveContent(id, data);
+
         return data;
       }
 
@@ -101,14 +189,15 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         return item;
       }
 
-      const data = getContentViaFetch(url);
+      const data = await getContentViaFetch(url);
+      if (data) saveContent(id, data);
 
       return data;
     },
 
     async getContentForPage(page: string) {
       // attempt to load from local info
-      const { storyLists, rawData, isLocalForageInitialized } = get();
+      const { isLocalForageInitialized, saveStoryList } = get();
 
       // remove leading slash
       page = page.slice(1);
@@ -119,9 +208,9 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       // no stored list, hit the API
       const urlMap = {
-        front: "/topstories/topstories",
-        day: "/topstories/day",
-        week: "/topstories/week",
+        front: "/api/topstories/topstories",
+        day: "/api/topstories/day",
+        week: "/api/topstories/week",
       };
 
       const urlSlug = urlMap[page as StoryPage];
@@ -131,20 +220,13 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         return undefined;
       }
 
-      const url = "https://hn.byroni.us" + urlSlug;
+      const url = urlSlug;
 
       if (!isLocalForageInitialized) {
         console.log("localforage not initialized");
         const { storySummaries } = await getSummaryViaFetch(url);
 
         return storySummaries;
-      }
-
-      const isIn = page in storyLists;
-
-      if (!isIn) {
-        console.error("error missing type");
-        return undefined;
       }
 
       // load the list from localforage
@@ -158,27 +240,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       const { data, storySummaries } = await getSummaryViaFetch(url);
 
-      const newStoryList = {
-        ...storyLists,
-        [page]: data.map((item) => item.id),
-      };
-
-      // update the cache and localforage
-      set({
-        storyLists: newStoryList,
-      });
-
-      // also save the new list to localforage
-      localforage.setItem("STORIES_" + page, storySummaries);
-
-      const newRawData: Record<StoryId, HnItem> = {};
-
-      for (const item of data) {
-        newRawData[item.id] = item;
-        await localforage.setItem("raw_" + item.id, item);
-      }
-
-      set({ rawData: { ...rawData, ...newRawData } });
+      saveStoryList(page as StoryPage, storySummaries, data);
 
       return storySummaries;
     },
@@ -215,6 +277,12 @@ async function getContentViaFetch(url: string) {
 
 async function getSummaryViaFetch(url: string) {
   const response = await fetch(url);
+
+  if (!response.ok) {
+    console.error(response);
+    return { data: [], storySummaries: [] as HnStorySummary[] };
+  }
+
   const data = (await response.json()) as HnItem[];
 
   // replace the list with the new IDs

@@ -11,10 +11,8 @@ export async function GET(
 
   // load the single story and then return
   if (storyData.length > 0) {
-    NextResponse.json(storyData[0]);
-
-    return;
+    return NextResponse.json(storyData[0]);
   }
 
-  NextResponse.json({ error: "story not found" });
+  return NextResponse.json({ error: "story not found" });
 }
