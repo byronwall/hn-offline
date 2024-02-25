@@ -98,7 +98,6 @@ export class HnComment extends React.Component<HnCommentProps> {
             onUpdateOpen={onUpdateOpen}
             collapsedIds={collapsedIds}
             idToScrollTo={idToScrollTo}
-            isSkeleton={false}
           />
         )}
       </React.Fragment>

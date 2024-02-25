@@ -36,3 +36,6 @@ export function getDomain(url: string | undefined) {
   const domain = matches && matches[1];
   return domain;
 }
+export function _getUnixTimestamp() {
+  return Math.floor(new Date().valueOf() / 1000);
+}
