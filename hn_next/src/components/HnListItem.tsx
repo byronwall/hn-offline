@@ -1,0 +1,59 @@
+import React from "react";
+
+import { MessageSquareQuote, ChevronUp } from "lucide-react";
+
+import { getDomain } from "@/utils";
+import { timeSince } from "@/utils";
+import { HnStorySummary } from "@/stores/useDataStore";
+import Link from "next/link";
+import { cn } from "@/utils";
+
+export interface HnStoryProps {
+  data: HnStorySummary;
+
+  isRead: boolean | undefined;
+}
+
+export class HnListItem extends React.PureComponent<HnStoryProps> {
+  render() {
+    const { data: story, isRead } = this.props;
+
+    const commentCountNum =
+      story.commentCount ?? ((story as any).kids ?? []).length ?? "";
+
+    const storyLinkEl =
+      story.url === undefined ? (
+        <Link href={"/story/" + story.id}>{story.title}</Link>
+      ) : (
+        <a href={story.url} target="_blank" rel="noreferrer">
+          {story.title}
+        </a>
+      );
+
+    return (
+      <div
+        className={cn("grid grid-cols-subgrid col-span-4", { isRead: isRead })}
+      >
+        <p className="col-span-4 mt-1.5 font-medium mb-1">{storyLinkEl}</p>
+
+        <span className="flex gap-1 text-gray-700 ">
+          <ChevronUp className="stroke-gray-500" />
+          {story.score}
+        </span>
+        {commentCountNum !== "" && (
+          <Link
+            href={"/story/" + story.id}
+            className="flex gap-1 text-gray-700"
+          >
+            <MessageSquareQuote className="stroke-gray-500" />
+            {commentCountNum}
+          </Link>
+        )}
+        <span className="text-gray-600 text-right mr-2">
+          {timeSince(story.time)}
+        </span>
+        <span className="truncate text-gray-400">{getDomain(story.url)}</span>
+      </div>
+    );
+  }
+}
