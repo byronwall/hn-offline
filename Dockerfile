@@ -1,29 +1,21 @@
 # Builder Stage
-FROM node:14.15.4-alpine AS builder
+FROM node:18-alpine AS builder
 WORKDIR /usr/src/app
 
 # Install server dependencies
-COPY server/package*.json ./server/
-RUN npm --prefix server ci
-
-# Install client dependencies
-COPY client/package*.json ./client/
-RUN npm --prefix client ci
+COPY hn_next/package*.json ./hn_next/
+RUN npm --prefix hn_next ci
 
 # Build server and client
-COPY server/ ./server/
-RUN npm --prefix server run build
-
-COPY client/ ./client/
-RUN npm --prefix client run build
+COPY hn_next/ ./hn_next/
+RUN npm --prefix hn_next run build
 
 # Final Stage
-FROM node:14.15.4-alpine
+FROM node:18-alpine
 WORKDIR /usr/src/app
 
 # Copy necessary files
-COPY --from=builder /usr/src/app/server ./server
-COPY --from=builder /usr/src/app/client/build ./server/build/static
+COPY --from=builder /usr/src/app/hn_next ./hn_next
 
 # Non-root user
 RUN adduser -D appuser
@@ -38,10 +30,9 @@ RUN mkdir -p /home/appuser/db && echo "{}" > /home/appuser/db/db.json && chown a
 
 # env var called db_path to be used in server/index.js
 ENV db_path /home/appuser/db/db.json
-ENV DEBUG *
 
 # Expose and run
-EXPOSE 3001
-CMD ["npm", "run", "start", "--prefix", "server"]
+EXPOSE 3000
+CMD ["npm", "run", "start", "--prefix", "hn_next"]
 
 
