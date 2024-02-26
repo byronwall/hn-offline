@@ -57,7 +57,7 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
     const validChildren = childComments.filter((comm) => comm !== null);
 
     return (
-      <InfiniteScrollContainer items={validChildren} itemsToAddOnRefresh={3}>
+      <InfiniteScrollContainer items={validChildren} itemsToAddOnRefresh={1}>
         {(childComm, index) => {
           if (childComm === null) {
             return null;
