@@ -100,7 +100,8 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       const { rawData, dataNonce } = get();
 
       // also save the new list to localforage
-      localforage.setItem("STORIES_" + page, storySummaries);
+      console.log("saving to localforage", "STORIES_" + page, storySummaries);
+      await localforage.setItem("STORIES_" + page, storySummaries);
 
       const newRawData: Record<StoryId, HnItem> = {};
 
@@ -138,7 +139,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         return newContent;
       }
 
-      const isFrontPage = url === "/" || url === "/front";
+      const isFrontPage = url === "/";
 
       if (isFrontPage) {
         url = "/topstories";
@@ -148,9 +149,12 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       const apiUrl = "/api/topstories" + url;
       set({ isLoadingData: true });
       const { data, storySummaries } = await getSummaryViaFetch(apiUrl);
+
+      console.log("storySummaries", storySummaries);
+
       set({ isLoadingData: false });
 
-      saveStoryList(url as StoryPage, storySummaries, data);
+      saveStoryList(url.replace("/", "") as StoryPage, storySummaries, data);
 
       return storySummaries;
     },
@@ -203,17 +207,10 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       page = page.slice(1);
 
       if (page == "") {
-        page = "front";
+        page = "topstories";
       }
 
-      // no stored list, hit the API
-      const urlMap = {
-        front: "/api/topstories/topstories",
-        day: "/api/topstories/day",
-        week: "/api/topstories/week",
-      };
-
-      const urlSlug = urlMap[page as StoryPage];
+      const urlSlug = "/api/topstories/" + page;
 
       if (urlSlug === undefined) {
         console.error("error missing type");
@@ -235,6 +232,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       );
 
       if (list) {
+        console.log("loaded from localforage", list, page);
         return list;
       }
 

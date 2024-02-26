@@ -12,6 +12,8 @@ export function useGetPageData(pathname: string | null) {
   const getter = useCallback(() => {
     if (!pathname) return Promise.resolve(undefined);
 
+    console.log("calling for page data", pathname);
+
     return getContentForPage(pathname);
   }, [getContentForPage, pathname, isInit, dataNonce]);
 
