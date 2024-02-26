@@ -7,7 +7,7 @@ import { HnCommentList } from "./HnCommentList";
 import { timeSince } from "@/utils";
 
 import { HnItem } from "@/stores/useDataStore";
-import { ArrowUpRightFromSquare, Share } from "lucide-react";
+import { ArrowUpRightFromSquare } from "lucide-react";
 
 interface HnStoryPageState {
   collapsedComments: number[];
@@ -65,7 +65,7 @@ export class HnStoryPage extends React.PureComponent<
     return (
       <div>
         <h2
-          className="text-2xl font-bold mb-2"
+          className="text-2xl font-bold mb-2 hover:underline"
           style={{ overflowWrap: "break-word" }}
         >
           {storyLinkEl}
