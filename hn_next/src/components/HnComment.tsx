@@ -4,6 +4,7 @@ import { HnCommentList } from "./HnCommentList";
 import { timeSince } from "@/utils";
 import { cn } from "@/utils";
 import { KidsObj3 } from "@/stores/useDataStore";
+import { ArrowUpRightFromSquare } from "lucide-react";
 
 export interface HnCommentProps {
   comment: KidsObj3 | null;
@@ -67,6 +68,32 @@ export class HnComment extends React.Component<HnCommentProps> {
     return this.divRef.current;
   }
 
+  handleShareClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    const { comment } = this.props;
+
+    if (comment === null) {
+      return;
+    }
+
+    // comment text has HTML tags - remove those and share the text
+    let cleanText = comment.text?.replace(/<[^>]*>?/gm, "") || "";
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(cleanText, "text/html");
+
+    // also unescape all HTML entities
+    cleanText = doc.body.textContent || "";
+
+    // share the comment as text with a header line
+    const url = `https://hn.byroni.us/story/${comment.id}`;
+    const shareText = `Comment by ${comment.by} on HN\n ${cleanText}\n\n${url}`;
+    navigator.share?.({
+      title: `HN Comment by ${comment.by}`,
+      text: shareText,
+    });
+  };
+
   render() {
     const { idToScrollTo, comment, isOpen, depth, onUpdateOpen, collapsedIds } =
       this.props;
@@ -118,13 +145,24 @@ export class HnComment extends React.Component<HnCommentProps> {
         <p
           style={{ fontWeight: isOpen ? 450 : 300 }}
           ref={this.divRef}
-          className="font-sans"
+          className="font-sans flex items-center"
         >
           {comment.by}
           {" | "}
 
           {timeSince(comment.time)}
           {" ago"}
+          {"share" in navigator && (
+            <>
+              {" | "}
+              <button
+                onClick={this.handleShareClick}
+                className="hover:text-orange-500 ml-1"
+              >
+                <ArrowUpRightFromSquare size={16} />
+              </button>
+            </>
+          )}
         </p>
 
         {childrenToShow}
