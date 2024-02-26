@@ -20,16 +20,20 @@ export function NavBar() {
   return (
     <nav className="flex w-full justify-between items-center space-x-2 border p-1">
       <div className="flex items-center">
-        <Link href="/" target="_self" className="flex items-center gap-1">
+        <Link
+          href="/"
+          target="_self"
+          className="flex items-center gap-1 hover:underline"
+        >
           <img src="/hn-logo.png" alt="Hacker News Logo" className="w-8 h-8" />
           <h1 className="text-2xl font-bold">Offline</h1>
         </Link>
       </div>
       <div className="flex items-center gap-2">
-        <Link href="/day" target="_self">
+        <Link href="/day" target="_self" className="hover:underline">
           day
         </Link>
-        <Link href="/week" target="_self">
+        <Link href="/week" target="_self" className="hover:underline">
           week
         </Link>
 

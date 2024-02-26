@@ -115,7 +115,11 @@ export class HnComment extends React.Component<HnCommentProps> {
           borderLeftColor: borderColor,
         }}
       >
-        <p style={{ fontWeight: isOpen ? 450 : 300 }} ref={this.divRef}>
+        <p
+          style={{ fontWeight: isOpen ? 450 : 300 }}
+          ref={this.divRef}
+          className="font-sans"
+        >
           {comment.by}
           {" | "}
 

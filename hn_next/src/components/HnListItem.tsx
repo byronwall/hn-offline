@@ -34,7 +34,9 @@ export class HnListItem extends React.PureComponent<HnStoryProps> {
       <div
         className={cn("grid grid-cols-subgrid col-span-4", { isRead: isRead })}
       >
-        <p className="col-span-4 mt-1.5 font-medium mb-1">{storyLinkEl}</p>
+        <p className="col-span-4 mt-1.5 font-medium mb-1 hover:underline">
+          {storyLinkEl}
+        </p>
 
         <span className="flex gap-1 text-gray-700 ">
           <ChevronUp className="stroke-gray-500" />
@@ -43,7 +45,7 @@ export class HnListItem extends React.PureComponent<HnStoryProps> {
         {commentCountNum !== "" && (
           <Link
             href={"/story/" + story.id}
-            className="flex gap-1 text-gray-700"
+            className="flex gap-1 text-gray-700 hover:underline"
           >
             <MessageSquareQuote className="stroke-gray-500" />
             {commentCountNum}

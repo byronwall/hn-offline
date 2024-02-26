@@ -7,6 +7,7 @@ import { HnCommentList } from "./HnCommentList";
 import { timeSince } from "@/utils";
 
 import { HnItem } from "@/stores/useDataStore";
+import { ArrowUpRightFromSquare, Share } from "lucide-react";
 
 interface HnStoryPageState {
   collapsedComments: number[];
@@ -63,7 +64,12 @@ export class HnStoryPage extends React.PureComponent<
 
     return (
       <div>
-        <h2 style={{ overflowWrap: "break-word" }}>{storyLinkEl}</h2>
+        <h2
+          className="text-2xl font-bold mb-2"
+          style={{ overflowWrap: "break-word" }}
+        >
+          {storyLinkEl}
+        </h2>
         <h4>
           <span>{storyData.by}</span>
           <span>{" | "}</span>
@@ -76,27 +82,34 @@ export class HnStoryPage extends React.PureComponent<
           <span>{" | "}</span>
           <span>{getDomain(storyData.url)}</span>
 
-          {
+          {"share" in navigator && (
             <>
               <span>{" | "}</span>
-              <button onClick={this.handleShareClick}>Share</button>
+              <button
+                onClick={this.handleShareClick}
+                className="hover:text-orange-500"
+              >
+                <ArrowUpRightFromSquare size={16} />
+              </button>
             </>
-          }
+          )}
         </h4>
         {storyData.text !== undefined && (
           <p
-            className="top-text"
+            className="user-text"
             dangerouslySetInnerHTML={{ __html: storyData.text }}
           />
         )}
 
-        <HnCommentList
-          childComments={comments}
-          depth={0}
-          collapsedIds={collapsedComments}
-          onUpdateOpen={this.handleCollapseEvent}
-          idToScrollTo={idToScrollTo}
-        />
+        <div className="user-text">
+          <HnCommentList
+            childComments={comments}
+            depth={0}
+            collapsedIds={collapsedComments}
+            onUpdateOpen={this.handleCollapseEvent}
+            idToScrollTo={idToScrollTo}
+          />
+        </div>
       </div>
     );
   }
