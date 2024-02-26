@@ -12,6 +12,7 @@ export default function StoryListPage() {
   const pathname = usePathname();
 
   const initLocal = useDataStore((s) => s.initializeFromLocalForage);
+  const readIds = useDataStore((s) => s.readItems);
 
   const { data, isLoading } = useGetPageData(pathname);
 
@@ -22,7 +23,7 @@ export default function StoryListPage() {
   return (
     <div>
       {isLoading && <p>Loading...</p>}
-      {data && <HnStoryList items={data} readIds={[]} />}
+      {data && <HnStoryList items={data} readIds={readIds} />}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useGetContent } from "@/hooks/useGetContent";
 import { HnStoryPage } from "@/components/HnStoryPage";
 import { useParams } from "next/navigation";
+import { useDataStore } from "@/stores/useDataStore";
 
 export default function Home() {
   const params = useParams();
@@ -17,11 +18,13 @@ export default function Home() {
 
   const { data, isLoading } = useGetContent(id);
 
+  const saveIdToReadList = useDataStore((s) => s.saveIdToReadList);
+
   return (
     <div>
       {isLoading && <p>Loading...</p>}
 
-      <HnStoryPage id={id} onVisitMarker={console.log} storyData={data} />
+      <HnStoryPage id={id} onVisitMarker={saveIdToReadList} storyData={data} />
     </div>
   );
 }

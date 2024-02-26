@@ -35,6 +35,8 @@ type StoryId = number;
 
 type DataStore = {
   rawData: Record<StoryId, HnItem>;
+  readItems: TrueHash;
+  pendingReadItems: number[];
 
   isLocalForageInitialized: boolean;
 
@@ -56,6 +58,8 @@ type DataStoreActions = {
   saveContent: (id: StoryId, content: HnItem) => void;
 
   refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
+
+  saveIdToReadList: (id: number) => void;
 };
 
 if (typeof window !== "undefined") {
@@ -69,6 +73,8 @@ if (typeof window !== "undefined") {
   });
 }
 
+const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
+
 export const useDataStore = create<DataStore & DataStoreActions>(
   (set, get) => ({
     dataNonce: 0,
@@ -80,6 +86,36 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       week: [],
     },
     rawData: {},
+
+    readItems: {},
+    pendingReadItems: [],
+
+    saveIdToReadList: (id: number) => {
+      const { readItems, isLocalForageInitialized, pendingReadItems } = get();
+
+      if (!isLocalForageInitialized) {
+        // don't save data before list is loaded --- will clear it
+        console.log("do not update read list... pending updates");
+
+        set({ pendingReadItems: [...pendingReadItems, id] });
+
+        return;
+      }
+      console.log("new read list", readItems);
+
+      // skip out if already there
+      if (readItems[id]) {
+        return;
+      }
+
+      const newReadList = { ...readItems };
+
+      newReadList[id] = true;
+
+      localforage.setItem(LOCAL_READ_ITEMS, newReadList);
+
+      set({ readItems: newReadList });
+    },
 
     saveContent: (id: StoryId, content: HnItem) => {
       const { rawData, dataNonce } = get();
@@ -160,9 +196,19 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     },
 
     initializeFromLocalForage: async () => {
-      // attempt to load from localforage
+      // load the read items
 
-      set({ isLocalForageInitialized: true });
+      const readItems =
+        (await localforage.getItem<TrueHash>(LOCAL_READ_ITEMS)) || {};
+
+      const { pendingReadItems } = get();
+
+      // add any pending items
+      for (const id of pendingReadItems) {
+        readItems[id] = true;
+      }
+
+      set({ isLocalForageInitialized: true, readItems, pendingReadItems: [] });
     },
 
     async getContent(id: StoryId) {
