@@ -1,10 +1,11 @@
+"use client";
+
 import _ from "lodash";
 import React from "react";
 
-import { getDomain } from "@/utils";
+import { getDomain, isNavigator, timeSince } from "@/utils";
 import { isValidComment } from "./HnComment";
 import { HnCommentList } from "./HnCommentList";
-import { timeSince } from "@/utils";
 
 import { HnItem } from "@/stores/useDataStore";
 import { ArrowUpRightFromSquare } from "lucide-react";
@@ -60,8 +61,6 @@ export class HnStoryPage extends React.PureComponent<
 
     const comments = (storyData.kidsObj || []).filter(isValidComment);
 
-    document.title = `HN: ${storyData.title}`;
-
     return (
       <div>
         <h2
@@ -82,7 +81,7 @@ export class HnStoryPage extends React.PureComponent<
           <span>{" | "}</span>
           <span>{getDomain(storyData.url)}</span>
 
-          {"share" in navigator && (
+          {isNavigator && "share" in navigator && (
             <>
               <span>{" | "}</span>
               <button

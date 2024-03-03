@@ -42,8 +42,6 @@ export async function db_clearOldStories(idsToKeep: number[]) {
     .map((c) => +c)
     .filter((c) => !isNaN(c));
 
-  console.log("all ids in database", allIds);
-
   allIds.forEach((id) => {
     const shouldKeep = _.includes(idsToKeep, id);
 

@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 
 import { TrueHash } from "@/stores/useDataStore";
@@ -39,8 +41,6 @@ export class HnStoryList extends React.PureComponent<HnStoryListProps> {
 
   render() {
     const { items, readIds } = this.props;
-
-    document.title = `HN: Offline`;
 
     return (
       <div>

@@ -1,29 +1,17 @@
-"use client";
+import { getSummaryViaFetch } from "@/stores/getSummaryViaFetch";
 
-import { usePathname } from "next/navigation";
-import { useDataStore } from "../../stores/useDataStore";
-import { useEffect } from "react";
+import { StoryListPage } from "../../components/StoryListPage";
 
-import { HnStoryList } from "@/components/HnStoryList";
-import { useGetPageData } from "../../hooks/useGetPageData";
-
-export default function StoryListPage() {
-  // get slug from url using next nav
-  const pathname = usePathname();
-
-  const initLocal = useDataStore((s) => s.initializeFromLocalForage);
-  const readIds = useDataStore((s) => s.readItems);
-
-  const { data, isLoading } = useGetPageData(pathname);
-
-  useEffect(() => {
-    initLocal();
-  }, [initLocal]);
-
-  return (
-    <div>
-      {isLoading && <p>Loading...</p>}
-      {data && <HnStoryList items={data} readIds={readIds} />}
-    </div>
+export default async function StoryListPageServer({
+  params,
+}: {
+  params: { datatype: string };
+}) {
+  const { data } = await getSummaryViaFetch(
+    "/api/topstories/" + params.datatype
   );
+
+  console.log("ssr data @ server", params.datatype, data);
+
+  return <StoryListPage data={data} />;
 }

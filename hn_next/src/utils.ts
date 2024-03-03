@@ -39,3 +39,5 @@ export function getDomain(url: string | undefined) {
 export function _getUnixTimestamp() {
   return Math.floor(new Date().valueOf() / 1000);
 }
+
+export const isNavigator = typeof navigator !== "undefined";

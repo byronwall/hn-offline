@@ -11,6 +11,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "HN: Offline",
   description: "An alternative client to Hacker News that works offline",
+  icons: ["/hn-logo.png"],
 };
 
 export default function RootLayout({

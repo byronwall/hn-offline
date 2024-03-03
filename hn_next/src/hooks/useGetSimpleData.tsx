@@ -1,8 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 
-export function useGetSimpleData<T>(getter: () => Promise<T>) {
-  const [data, setData] = useState<T | undefined>(undefined);
+export function useGetSimpleData<T>(
+  getter: () => Promise<T>,
+  ssrData: T | undefined = undefined
+) {
+  const [data, setData] = useState<T | undefined>(ssrData);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -13,8 +16,13 @@ export function useGetSimpleData<T>(getter: () => Promise<T>) {
       setIsLoading(false);
     }
 
+    if (ssrData) {
+      // if we have ssr data, use it and don't fetch
+      return;
+    }
+
     fetchData();
-  }, [getter, setData]);
+  }, [getter, setData, ssrData]);
 
   return { data, isLoading };
 }

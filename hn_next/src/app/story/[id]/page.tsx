@@ -1,30 +1,39 @@
-"use client";
+import { getContentViaFetch } from "@/stores/getContentViaFetch";
+import { StoryPageClient } from "../../../components/StoryPageClient";
+import { Metadata, ResolvingMetadata } from "next";
 
-import { useGetContent } from "@/hooks/useGetContent";
-import { HnStoryPage } from "@/components/HnStoryPage";
-import { useParams } from "next/navigation";
-import { useDataStore } from "@/stores/useDataStore";
+type Props = {
+  params: {
+    id: string;
+  };
+};
 
-export default function Home() {
-  const params = useParams();
+export async function generateMetadata(
+  { params }: Props,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  // read route params
+  const id = params.id;
 
-  const rawId = params?.id;
+  // fetch data
+  const data = await getContentViaFetch("/api/story/" + id);
 
-  if (Array.isArray(rawId) || !rawId) {
-    throw new Error("Unexpected array");
+  const parentMetadata = await parent;
+
+  if (!data) {
+    return parentMetadata as Metadata;
   }
 
-  const id = parseInt(rawId, 10);
+  return {
+    ...parentMetadata,
+    title: "HN Offline - " + data.title,
+  } as Metadata;
+}
 
-  const { data, isLoading } = useGetContent(id);
+export default async function StoryListPageServer({ params }: Props) {
+  const data = await getContentViaFetch("/api/story/" + params.id);
 
-  const saveIdToReadList = useDataStore((s) => s.saveIdToReadList);
+  console.log("ssr story data @ server", params.id, data?.title);
 
-  return (
-    <div>
-      {isLoading && <p>Loading...</p>}
-
-      <HnStoryPage id={id} onVisitMarker={saveIdToReadList} storyData={data} />
-    </div>
-  );
+  return <StoryPageClient ssrData={data} />;
 }

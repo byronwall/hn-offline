@@ -18,7 +18,7 @@ export async function GET(
     return NextResponse.json({ error: "Invalid type" });
   }
 
-  const results = cachedData[reqType];
+  const results = cachedData[reqType] ?? [];
   console.log("sending results", results?.length);
 
   return NextResponse.json(results);
