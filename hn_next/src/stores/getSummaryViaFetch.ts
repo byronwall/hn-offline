@@ -4,6 +4,8 @@ import { HnStorySummary, HnItem } from "./useDataStore";
 export async function getSummaryViaFetch(url: string) {
   url = ensureUrlIsFullyQualified(url);
 
+  console.log("Attempt to fetch", { url, env: process.env });
+
   const response = await fetch(url, { cache: "no-store" });
 
   if (!response.ok) {
