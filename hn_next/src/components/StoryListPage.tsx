@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { HnStoryList } from "@/components/HnStoryList";
 import { useGetPageData } from "../hooks/useGetPageData";
 
-export function StoryListPage(props: { data: HnItem[] }) {
+export function StoryListPage(props: { data: HnItem[] | undefined }) {
   // get slug from url using next nav
   const pathname = usePathname();
 

@@ -26,7 +26,11 @@ export async function getSummaryViaFetch(url: string) {
   }
 }
 
-export function mapStoriesToSummaries(data: HnItem[]) {
+export function mapStoriesToSummaries(data: HnItem[] | undefined) {
+  if (!data) {
+    return undefined;
+  }
+
   return data.map<HnStorySummary>((c) => ({
     id: c.id,
     score: c.score,

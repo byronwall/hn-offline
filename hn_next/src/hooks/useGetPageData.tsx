@@ -3,13 +3,22 @@ import { HnItem, useDataStore } from "../stores/useDataStore";
 import { useCallback, useEffect } from "react";
 import { useGetSimpleData } from "./useGetSimpleData";
 import { mapStoriesToSummaries } from "@/stores/getSummaryViaFetch";
+import { usePrevious } from "react-use";
 
-export function useGetPageData(_pathname: string | null, ssrData: HnItem[]) {
+export function useGetPageData(
+  _pathname: string | null,
+  _ssrData: HnItem[] | undefined
+) {
   const pathname = getCleanPathName(_pathname || "");
 
   const getContentForPage = useDataStore((s) => s.getContentForPage);
   const isInit = useDataStore((s) => s.isLocalForageInitialized);
   const dataNonce = useDataStore((s) => s.dataNonce);
+
+  const prevNonce = usePrevious(dataNonce);
+
+  // throw out SSR data if data nonce has changed - client requested new data
+  const ssrData = prevNonce === dataNonce ? _ssrData : undefined;
 
   const saveStoryList = useDataStore((s) => s.saveStoryList);
 
