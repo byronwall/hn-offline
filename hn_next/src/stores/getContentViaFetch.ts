@@ -11,7 +11,7 @@ export async function getContentViaFetch(url: string) {
   }
   const data: HnItem | { error: string } = await response.json();
 
-  if ("error" in data) {
+  if (!data || "error" in data) {
     console.error(data);
 
     return undefined;

@@ -11,7 +11,7 @@ export default async function StoryListPageServer({
     "/api/topstories/" + params.datatype
   );
 
-  console.log("ssr data @ server", params.datatype, data);
+  console.log("ssr data @ server", params.datatype, data.length);
 
   return <StoryListPage data={data} />;
 }
