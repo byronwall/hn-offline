@@ -2,6 +2,11 @@
 
 import localforage from "localforage";
 import { create } from "zustand";
+import {
+  getSummaryViaFetch,
+  mapStoriesToSummaries,
+} from "./getSummaryViaFetch";
+import { getContentViaFetch } from "./getContentViaFetch";
 
 export interface HnItem {
   by: string;
@@ -50,11 +55,7 @@ type DataStoreActions = {
 
   initializeFromLocalForage: () => void;
 
-  saveStoryList: (
-    page: StoryPage,
-    list: HnStorySummary[],
-    data: HnItem[]
-  ) => void;
+  saveStoryList: (page: StoryPage, data: HnItem[]) => void;
   saveContent: (id: StoryId, content: HnItem) => void;
 
   refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
@@ -128,12 +129,10 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       localforage.setItem("raw_" + id, content);
     },
 
-    saveStoryList: async (
-      page: StoryPage,
-      storySummaries: HnStorySummary[],
-      data: HnItem[]
-    ) => {
+    saveStoryList: async (page: StoryPage, data: HnItem[]) => {
       const { rawData, dataNonce } = get();
+
+      const storySummaries = mapStoriesToSummaries(data);
 
       // also save the new list to localforage
       console.log("saving to localforage", "STORIES_" + page, storySummaries);
@@ -190,7 +189,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       set({ isLoadingData: false });
 
-      saveStoryList(url.replace("/", "") as StoryPage, storySummaries, data);
+      saveStoryList(url.replace("/", "") as StoryPage, data);
 
       return storySummaries;
     },
@@ -284,7 +283,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       const { data, storySummaries } = await getSummaryViaFetch(url);
 
-      saveStoryList(page as StoryPage, storySummaries, data);
+      saveStoryList(page as StoryPage, data);
 
       return storySummaries;
     },
@@ -301,43 +300,3 @@ export interface HnStorySummary {
 export type TrueHash = {
   [key: number]: true;
 };
-
-async function getContentViaFetch(url: string) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    console.error(response);
-    return undefined;
-  }
-  const data: HnItem | { error: string } = await response.json();
-
-  if ("error" in data) {
-    console.error(data);
-
-    return undefined;
-  }
-
-  return data;
-}
-
-async function getSummaryViaFetch(url: string) {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    console.error(response);
-    return { data: [], storySummaries: [] as HnStorySummary[] };
-  }
-
-  const data = (await response.json()) as HnItem[];
-
-  // replace the list with the new IDs
-  const storySummaries = data.map<HnStorySummary>((c) => ({
-    id: c.id,
-    score: c.score,
-    title: c.title,
-    url: c.url,
-    commentCount: c.descendants,
-    time: c.time,
-  }));
-
-  return { data, storySummaries };
-}

@@ -1,3 +1,5 @@
+"use client";
+
 import _ from "lodash";
 import React from "react";
 
@@ -59,8 +61,6 @@ export class HnStoryPage extends React.PureComponent<
       );
 
     const comments = (storyData.kidsObj || []).filter(isValidComment);
-
-    document.title = `HN: ${storyData.title}`;
 
     return (
       <div>
