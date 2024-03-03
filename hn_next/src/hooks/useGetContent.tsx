@@ -9,21 +9,19 @@ export function useGetContent(id: number, _ssrData: HnItem | undefined) {
   const saveContent = useDataStore((s) => s.saveContent);
   const dataNonce = useDataStore((s) => s.dataNonce);
 
-  const prevNonce = usePrevious(dataNonce);
-
   // throw out SSR data if data nonce has changed - client requested new data
-  const ssrData = prevNonce === dataNonce ? _ssrData : undefined;
+  const ssrData = dataNonce === 0 ? _ssrData : undefined;
+
+  console.log("useGetContent", dataNonce, _ssrData);
 
   useEffect(() => {
-    if (!ssrData) return;
+    // only save on server render - nonce is 0
+    if (!ssrData || dataNonce !== 0) return;
 
     saveContent(id, ssrData);
-  }, [id, ssrData, saveContent]);
+  }, [id, ssrData, saveContent, dataNonce]);
 
-  const getter = useCallback(
-    () => getContent(id),
-    [getContent, id, isInit, dataNonce]
-  );
+  const getter = useCallback(() => getContent(id), [getContent, id, isInit]);
 
   return useGetSimpleData(getter, ssrData);
 }

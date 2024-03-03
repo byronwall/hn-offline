@@ -7,6 +7,7 @@ import {
   mapStoriesToSummaries,
 } from "./getSummaryViaFetch";
 import { getContentViaFetch } from "./getContentViaFetch";
+import { getCleanPathName } from "@/hooks/getCleanPathName";
 
 export interface HnItem {
   by: string;
@@ -218,7 +219,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       if (!isLocalForageInitialized) {
         // kick out for SSR
-        console.error("localforage not initialized");
+        console.log("localforage not initialized");
         const data = await getContentViaFetch(url);
 
         if (data) saveContent(id, data);
@@ -249,7 +250,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       const { isLocalForageInitialized, saveStoryList } = get();
 
       // remove leading slash
-      page = page.slice(1);
+      page = getCleanPathName(page);
 
       if (page == "") {
         page = "topstories";

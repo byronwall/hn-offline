@@ -18,15 +18,14 @@ WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/hn_next ./hn_next
 
 # Non-root user
-RUN adduser -D appuser
-USER appuser
+USER root
 
 # volume for main JSON db file - appuser home directory
 VOLUME /home/appuser/db
 
 # create path to db file
 # create db file and change ownership to appuser
-RUN mkdir -p /home/appuser/db && echo "{}" > /home/appuser/db/db.json && chown appuser /home/appuser/db/db.json
+RUN mkdir -p /home/appuser/db && echo "{}" > /home/appuser/db/db.json
 
 # env var called db_path to be used in server/index.js
 ENV db_path /home/appuser/db/db.json
