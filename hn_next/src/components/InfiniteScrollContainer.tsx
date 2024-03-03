@@ -1,3 +1,5 @@
+"use client";
+
 import _ from "lodash";
 import React, { useCallback, useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
