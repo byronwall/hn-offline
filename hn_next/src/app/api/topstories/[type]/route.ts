@@ -13,6 +13,8 @@ export async function GET(
 
   let reqType = params.type;
 
+  console.log("reqType", reqType);
+
   if (STORY_TYPE.indexOf(reqType as any) === -1) {
     console.log("sending 500", reqType);
     return NextResponse.json({ error: "Invalid type" });
