@@ -1,6 +1,9 @@
+import { ensureUrlIsFullyQualified } from "./ensureUrlIsFullyQualified";
 import { HnItem } from "./useDataStore";
 
 export async function getContentViaFetch(url: string) {
+  url = ensureUrlIsFullyQualified(url);
+
   const response = await fetch(url);
   if (!response.ok) {
     console.error(response);

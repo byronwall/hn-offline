@@ -1,12 +1,10 @@
+import { ensureUrlIsFullyQualified } from "./ensureUrlIsFullyQualified";
 import { HnStorySummary, HnItem } from "./useDataStore";
 
 export async function getSummaryViaFetch(url: string) {
-  const publicPrefix = process.env.NEXT_PUBLIC_SITE_URL || "";
-  if (!url.startsWith(publicPrefix)) {
-    url = publicPrefix + url;
-  }
+  url = ensureUrlIsFullyQualified(url);
 
-  const response = await fetch(url, { cache: 'no-store' });
+  const response = await fetch(url, { cache: "no-store" });
 
   if (!response.ok) {
     console.error("Failed to fetch", url);

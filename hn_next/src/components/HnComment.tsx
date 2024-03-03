@@ -1,7 +1,9 @@
+"use client";
+
 import React from "react";
 
 import { HnCommentList } from "./HnCommentList";
-import { timeSince } from "@/utils";
+import { isNavigator, timeSince } from "@/utils";
 import { cn } from "@/utils";
 import { KidsObj3 } from "@/stores/useDataStore";
 import { ArrowUpRightFromSquare } from "lucide-react";
@@ -152,7 +154,7 @@ export class HnComment extends React.Component<HnCommentProps> {
 
           {timeSince(comment.time)}
           {" ago"}
-          {"share" in navigator && (
+          {isNavigator && "share" in navigator && (
             <>
               {" | "}
               <button

@@ -1,9 +1,10 @@
 "use client";
+
 import { usePathname } from "next/navigation";
-import { HnItem, useDataStore } from "../../stores/useDataStore";
+import { HnItem, useDataStore } from "../stores/useDataStore";
 import { useEffect } from "react";
 import { HnStoryList } from "@/components/HnStoryList";
-import { useGetPageData } from "../../hooks/useGetPageData";
+import { useGetPageData } from "../hooks/useGetPageData";
 
 export function StoryListPage(props: { data: HnItem[] }) {
   // get slug from url using next nav

@@ -1,6 +1,6 @@
 import { getSummaryViaFetch } from "@/stores/getSummaryViaFetch";
 
-import { StoryListPage } from "./StoryListPage";
+import { StoryListPage } from "../../components/StoryListPage";
 
 export default async function StoryListPageServer({
   params,
