@@ -7,7 +7,7 @@ export async function getSummaryViaFetch(url: string) {
   const response = await fetch(url, { cache: "no-store" });
 
   if (!response.ok) {
-    console.error("Failed to fetch", url);
+    console.error("Failed to fetch", { url, env: process.env });
     console.error(response);
     return { data: [], storySummaries: [] as HnStorySummary[] };
   }
