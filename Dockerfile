@@ -3,19 +3,19 @@ FROM node:18-alpine AS builder
 WORKDIR /usr/src/app
 
 # Install server dependencies
-COPY hn_next/package*.json ./hn_next/
-RUN npm --prefix hn_next ci
+COPY hn_remix/package*.json ./hn_remix/
+RUN npm --prefix hn_remix ci
 
 # Build server and client
-COPY hn_next/ ./hn_next/
-RUN npm --prefix hn_next run build
+COPY hn_remix/ ./hn_remix/
+RUN npm --prefix hn_remix run build
 
 # Final Stage
 FROM node:18-alpine
 WORKDIR /usr/src/app
 
 # Copy necessary files
-COPY --from=builder /usr/src/app/hn_next ./hn_next
+COPY --from=builder /usr/src/app/hn_remix ./hn_remix
 
 # Non-root user
 USER root
@@ -32,6 +32,6 @@ ENV db_path /home/appuser/db/db.json
 
 # Expose and run
 EXPOSE 3000
-CMD ["npm", "run", "start", "--prefix", "hn_next"]
+CMD ["npm", "run", "start", "--prefix", "hn_remix"]
 
 
