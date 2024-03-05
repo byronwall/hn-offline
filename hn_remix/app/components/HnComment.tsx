@@ -1,12 +1,11 @@
-"use client";
-
 import React from "react";
 
 import { HnCommentList } from "./HnCommentList";
-import { isNavigator, timeSince } from "@/utils";
-import { cn } from "@/utils";
+import { isNavigator, timeSince, cn } from "@/utils";
 import { KidsObj3 } from "@/stores/useDataStore";
 import { ArrowUpRightFromSquare } from "lucide-react";
+import sanitizeHtml from "sanitize-html";
+import { decode } from "html-entities";
 
 export interface HnCommentProps {
   comment: KidsObj3 | null;
@@ -79,17 +78,30 @@ export class HnComment extends React.Component<HnCommentProps> {
     }
 
     // comment text has HTML tags - remove those and share the text
-    let cleanText = comment.text?.replace(/<[^>]*>?/gm, "") || "";
+    let cleanText = sanitizeHtml(comment.text || "");
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(cleanText, "text/html");
+    // replace any anchor tags with their hrefs
+    cleanText = cleanText.replace(/<a href="([^"]+)">([^<]+)<\/a>/g, "$1");
 
-    // also unescape all HTML entities
-    cleanText = doc.body.textContent || "";
+    // replace any <p> tags with newlines
+    cleanText = cleanText.replace(/<p>/g, "\n");
+
+    // remove any other tags, opening and closing
+    cleanText = cleanText.replace(/<[^>]+>/g, "");
+
+    // replace html entities using decode
+    cleanText = decode(cleanText);
 
     // share the comment as text with a header line
     const url = `https://hn.byroni.us/story/${comment.id}`;
-    const shareText = `Comment by ${comment.by} on HN\n ${cleanText}\n\n${url}`;
+    const shareText = `Comment by ${comment.by} on HN: ${url}\n\n${cleanText}`;
+
+    console.log("share text", shareText);
+
+    if (!isNavigator) {
+      return;
+    }
+
     navigator.share?.({
       title: `HN Comment by ${comment.by}`,
       text: shareText,
@@ -140,7 +152,6 @@ export class HnComment extends React.Component<HnCommentProps> {
         style={{
           paddingLeft: 12 + Math.max(4 - depth),
           marginLeft: 0,
-
           borderLeftColor: borderColor,
         }}
       >
