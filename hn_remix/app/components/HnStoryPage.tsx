@@ -1,5 +1,5 @@
 import _ from "lodash";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import { getDomain, isNavigator, timeSince } from "@/utils";
 import { isValidComment } from "./HnComment";
@@ -7,189 +7,158 @@ import { HnCommentList } from "./HnCommentList";
 
 import { HnItem } from "@/stores/useDataStore";
 import { ArrowUpRightFromSquare } from "lucide-react";
+import { useNavigate } from "@remix-run/react";
 
-interface HnStoryPageState {
-  collapsedComments: number[];
-  idToScrollTo: number | undefined;
-}
-
-export interface HnStoryPageProps {
+interface HnStoryPageProps {
   id: number | undefined;
-
   onVisitMarker(id: number): void;
-
   storyData?: HnItem;
 }
 
 export const SESSION_COLLAPSED = "SESSION_COLLAPSED";
-export class HnStoryPage extends React.PureComponent<
-  HnStoryPageProps,
-  HnStoryPageState
-> {
-  constructor(props: HnStoryPageProps) {
-    super(props);
 
-    this.state = {
-      collapsedComments: [],
-      idToScrollTo: undefined,
-    };
+export const HnStoryPage: React.FC<HnStoryPageProps> = ({
+  id,
+  onVisitMarker,
+  storyData,
+}) => {
+  const [collapsedComments, setCollapsedComments] = useState<number[]>([]);
+  const [idToScrollTo, setIdToScrollTo] = useState<number | undefined>(
+    undefined
+  );
 
-    this.anchorClickHandler = this.anchorClickHandler.bind(this);
-  }
-
-  render() {
-    const { storyData } = this.props;
-    const { idToScrollTo, collapsedComments } = this.state;
-
-    if (!storyData) {
-      return null;
-    }
-
-    // add this line to remove the state info on scrolling -- prevent scroll on reload
-    if (idToScrollTo) {
-      this.setState({ idToScrollTo: undefined });
-    }
-
-    const storyLinkEl =
-      storyData.url === undefined ? (
-        <span>{storyData.title}</span>
-      ) : (
-        <a href={storyData.url}>{storyData.title}</a>
-      );
-
-    const comments = (storyData.kidsObj || []).filter(isValidComment);
-
-    return (
-      <div>
-        <h2
-          className="text-2xl font-bold mb-2 hover:underline"
-          style={{ overflowWrap: "break-word" }}
-        >
-          {storyLinkEl}
-        </h2>
-        <h4>
-          <span>{storyData.by}</span>
-          <span>{" | "}</span>
-          <span>
-            {storyData.score}
-            {" points"}
-          </span>
-          <span>{" | "}</span>
-          <span>{timeSince(storyData.time)} ago</span>
-          <span>{" | "}</span>
-          <span>{getDomain(storyData.url)}</span>
-
-          {isNavigator && "share" in navigator && (
-            <>
-              <span>{" | "}</span>
-              <button
-                onClick={this.handleShareClick}
-                className="hover:text-orange-500"
-              >
-                <ArrowUpRightFromSquare size={16} />
-              </button>
-            </>
-          )}
-        </h4>
-        {storyData.text !== undefined && (
-          <p
-            className="user-text"
-            dangerouslySetInnerHTML={{ __html: storyData.text }}
-          />
-        )}
-
-        <div className="user-text">
-          <HnCommentList
-            childComments={comments}
-            depth={0}
-            collapsedIds={collapsedComments}
-            onUpdateOpen={this.handleCollapseEvent}
-            idToScrollTo={idToScrollTo}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  private handleShareClick = () => {
+  const handleShareClick = () => {
     navigator.share?.({ url: window.location.href });
   };
 
-  private handleCollapseEvent = (
+  const navigate = useNavigate();
+
+  const handleCollapseEvent = (
     id: number,
     newOpen: boolean,
     scrollId: number | undefined
   ) => {
-    // save the id to session storage
-    const { collapsedComments } = this.state;
     if (newOpen) {
-      // remove from list
-      const newIds = _.cloneDeep(collapsedComments);
-      _.remove(newIds, (c) => c === id);
-
+      const newIds = collapsedComments.filter((c) => c !== id);
       sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newIds));
-      this.setState({ collapsedComments: newIds });
+      setCollapsedComments(newIds);
     } else {
-      const newIds = collapsedComments.concat(id);
-
+      const newIds = [...collapsedComments, id];
       sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newIds));
-      this.setState({ collapsedComments: newIds });
+      setCollapsedComments(newIds);
     }
 
     if (scrollId !== undefined) {
-      this.setState({ idToScrollTo: scrollId });
+      setIdToScrollTo(scrollId);
     }
   };
 
-  componentDidMount() {
-    const { id, onVisitMarker } = this.props;
+  useEffect(() => {
+    const anchorClickHandler = (e: any) => {
+      if (e.target.tagName !== "A") {
+        return;
+      }
+
+      const link = e.target as HTMLAnchorElement;
+
+      const regex = /https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/;
+      const matches = link.href.match(regex);
+
+      if (matches === null) {
+        link.target = "_blank";
+        return;
+      }
+
+      navigate("/story/" + matches[1]);
+      e.preventDefault();
+      return false;
+    };
 
     window.scrollTo({ top: 0 });
-
-    // set the data initially -- kick off async request if needed
-
-    document.body.addEventListener("click", this.anchorClickHandler);
+    document.body.addEventListener("click", anchorClickHandler);
 
     const strCollapsedIds = sessionStorage.getItem(SESSION_COLLAPSED);
-    // load the collapsed comments from session storage
-
     if (strCollapsedIds !== null) {
       const collapsedIds = JSON.parse(strCollapsedIds) as number[];
-
-      this.setState({ collapsedComments: collapsedIds });
+      setCollapsedComments(collapsedIds);
     }
-
-    // save the read stories to localForage
 
     if (id !== undefined) {
       onVisitMarker(id);
     }
-  }
 
-  componentWillUnmount() {
-    document.body.removeEventListener("click", this.anchorClickHandler);
-  }
-  anchorClickHandler(e: any) {
-    if (e.target.tagName !== "A") {
-      return;
+    return () => {
+      document.body.removeEventListener("click", anchorClickHandler);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (idToScrollTo) {
+      setIdToScrollTo(undefined);
     }
+  }, [idToScrollTo]);
 
-    // have a link
-
-    const link = e.target as HTMLAnchorElement;
-
-    const regex = /https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/;
-    const matches = link.href.match(regex);
-
-    if (matches === null) {
-      link.target = "_blank";
-      return;
-    }
-
-    // // this will navigate to the new page
-    // history.push("/story/" + matches[1]);
-
-    // e.preventDefault();
-    // return false;
+  if (!storyData) {
+    return null;
   }
-}
+
+  const storyLinkEl =
+    storyData.url === undefined ? (
+      <span>{storyData.title}</span>
+    ) : (
+      <a href={storyData.url}>{storyData.title}</a>
+    );
+
+  const comments = (storyData.kidsObj || []).filter(isValidComment);
+
+  return (
+    <div>
+      <h2
+        className="text-2xl font-bold mb-2 hover:underline"
+        style={{ overflowWrap: "break-word" }}
+      >
+        {storyLinkEl}
+      </h2>
+      <h4>
+        <span>{storyData.by}</span>
+        <span>{" | "}</span>
+        <span>
+          {storyData.score}
+          {" points"}
+        </span>
+        <span>{" | "}</span>
+        <span>{timeSince(storyData.time)} ago</span>
+        <span>{" | "}</span>
+        <span>{getDomain(storyData.url)}</span>
+
+        {isNavigator && "share" in navigator && (
+          <>
+            <span>{" | "}</span>
+            <button
+              onClick={handleShareClick}
+              className="hover:text-orange-500"
+            >
+              <ArrowUpRightFromSquare size={16} />
+            </button>
+          </>
+        )}
+      </h4>
+      {storyData.text !== undefined && (
+        <p
+          className="user-text"
+          dangerouslySetInnerHTML={{ __html: storyData.text }}
+        />
+      )}
+
+      <div className="user-text">
+        <HnCommentList
+          childComments={comments}
+          depth={0}
+          collapsedIds={collapsedComments}
+          onUpdateOpen={handleCollapseEvent}
+          idToScrollTo={idToScrollTo}
+        />
+      </div>
+    </div>
+  );
+};
