@@ -4,9 +4,12 @@ import { useLoaderData } from "@remix-run/react";
 import { StoryListPage } from "~/components/StoryListPage";
 import { loader as listLoader } from "./api.topstories.$type";
 
-export const meta: MetaFunction = () => {
+export const meta: MetaFunction = ({ params }) => {
+  // capitalize the first letter of the type
+  const type = params.type?.charAt(0).toUpperCase() + params.type?.slice(1);
+
   return [
-    { title: "New Remix App" },
+    { title: "HN Offline: " + type },
     { name: "description", content: "Welcome to Remix!" },
   ];
 };

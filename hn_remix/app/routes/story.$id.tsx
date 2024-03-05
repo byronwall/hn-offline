@@ -1,6 +1,4 @@
-// routes/story/$id.tsx
-
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { StoryPageClient } from "~/components/StoryPageClient";
 import { loader as storyLoader } from "./api.story.$id";
@@ -13,6 +11,10 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
   return data;
 }
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
+  return [{ title: "HN Offline: " + data.title }];
+};
 
 /*
 export const clientLoader = async ({ params }: ClientLoaderFunctionArgs) => {
