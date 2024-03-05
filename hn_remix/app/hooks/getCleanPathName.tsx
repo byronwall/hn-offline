@@ -1,5 +1,3 @@
-"use client";
-
 export function getCleanPathName(pathname: string) {
   // remove leading slash if present
   if (pathname.startsWith("/")) {

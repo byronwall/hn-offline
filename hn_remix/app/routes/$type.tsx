@@ -1,9 +1,11 @@
 import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { ClientLoaderFunctionArgs, useLoaderData } from "@remix-run/react";
 
-import { StoryListPage } from "~/components/StoryListPage";
-import { loader as listLoader } from "./api.topstories.$type";
+import { useEffect, useMemo } from "react";
+import HnStoryList from "~/components/HnStoryList";
+import { mapStoriesToSummaries } from "~/stores/getSummaryViaFetch";
 import { useDataStore } from "~/stores/useDataStore";
+import { loader as listLoader } from "./api.topstories.$type";
 
 export const meta: MetaFunction = ({ params }) => {
   // capitalize the first letter of the type
@@ -20,11 +22,15 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
   console.log("loader", type, new Date());
 
-  return await listLoader({
+  const res = await listLoader({
     params: {
       type,
     },
   });
+
+  const storyData = await res.json();
+
+  return { data: storyData, source: "server", page: type };
 }
 
 export const clientLoader = async ({ params }: ClientLoaderFunctionArgs) => {
@@ -32,14 +38,30 @@ export const clientLoader = async ({ params }: ClientLoaderFunctionArgs) => {
   // will not call the server loader function
   console.log("clientLoader", params.id);
 
-  const data = useDataStore.getState().getContentForPage(params.type);
+  const data = await useDataStore.getState().getContentForPage(params.type);
 
-  return data;
+  return { data, source: "client", page: params.type };
 };
 
-export default function Index() {
+export default function HnStoryListServer() {
   // loader data
-  const data = useLoaderData();
+  const { data, source, page } = useLoaderData();
 
-  return <StoryListPage data={data} />;
+  const saveStoryList = useDataStore((s) => s.saveStoryList);
+
+  useEffect(() => {
+    if (source === "server") {
+      saveStoryList(page, data);
+    }
+  }, [data, page, saveStoryList, source]);
+
+  const realData = useMemo(() => {
+    if (source === "client") {
+      return data;
+    }
+
+    return mapStoriesToSummaries(data);
+  }, [data, source]);
+
+  return <HnStoryList items={realData} />;
 }

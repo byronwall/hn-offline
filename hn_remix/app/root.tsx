@@ -11,12 +11,21 @@ import {
 
 import styles from "./tailwind.css";
 import { NavBar } from "./components/NavBar";
+import { useDataStore } from "./stores/useDataStore";
+import { useEffect } from "react";
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
   { rel: "stylesheet", href: styles },
 ];
 
 export default function App() {
+  // initialize local storage at top
+  const initLocalForage = useDataStore((s) => s.initializeFromLocalForage);
+
+  useEffect(() => {
+    initLocalForage();
+  }, [initLocalForage]);
+
   return (
     <html lang="en">
       <head>

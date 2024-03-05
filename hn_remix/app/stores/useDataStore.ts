@@ -154,7 +154,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     refreshCurrent: async (url: string) => {
       // attempt to load from local info
-      const { isLocalForageInitialized, saveContent, saveStoryList } = get();
+      const { saveContent, saveStoryList } = get();
 
       console.log("refreshing", url);
 

@@ -1,17 +1,15 @@
-import _ from "lodash";
 import React, { useEffect, useState } from "react";
 
 import { getDomain, isNavigator, timeSince } from "@/utils";
 import { isValidComment } from "./HnComment";
 import { HnCommentList } from "./HnCommentList";
 
-import { HnItem } from "@/stores/useDataStore";
-import { ArrowUpRightFromSquare } from "lucide-react";
+import { HnItem, useDataStore } from "@/stores/useDataStore";
 import { useNavigate } from "@remix-run/react";
+import { ArrowUpRightFromSquare } from "lucide-react";
 
 interface HnStoryPageProps {
   id: number | undefined;
-  onVisitMarker(id: number): void;
   storyData?: HnItem;
 }
 
@@ -19,13 +17,15 @@ export const SESSION_COLLAPSED = "SESSION_COLLAPSED";
 
 export const HnStoryPage: React.FC<HnStoryPageProps> = ({
   id,
-  onVisitMarker,
+
   storyData,
 }) => {
   const [collapsedComments, setCollapsedComments] = useState<number[]>([]);
   const [idToScrollTo, setIdToScrollTo] = useState<number | undefined>(
     undefined
   );
+
+  const onVisitMarker = useDataStore((s) => s.saveIdToReadList);
 
   const handleShareClick = () => {
     navigator.share?.({ url: window.location.href });
