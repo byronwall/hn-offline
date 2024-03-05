@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { ClientLoaderFunctionArgs, useLoaderData } from "@remix-run/react";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import HnStoryList from "~/components/HnStoryList";
 import { mapStoriesToSummaries } from "~/stores/getSummaryViaFetch";
 import { useDataStore } from "~/stores/useDataStore";
@@ -48,20 +48,30 @@ export default function HnStoryListServer() {
   const { data, source, page } = useLoaderData();
 
   const saveStoryList = useDataStore((s) => s.saveStoryList);
+  const dataNonce = useDataStore((s) => s.dataNonce);
+  const getContentForPage = useDataStore((s) => s.getContentForPage);
+
+  const [activeSource, setActiveSource] = useState(source);
+  const [realData, setRealData] = useState(
+    source === "client" ? data : undefined
+  );
 
   useEffect(() => {
-    if (source === "server") {
+    if (activeSource === "server") {
       saveStoryList(page, data);
+      setActiveSource("client");
     }
-  }, [data, page, saveStoryList, source]);
+  }, [activeSource, data, page, saveStoryList]);
 
-  const realData = useMemo(() => {
-    if (source === "client") {
-      return data;
+  useEffect(() => {
+    async function fetchData() {
+      if (activeSource === "client") {
+        const data = await getContentForPage(page);
+        setRealData(data);
+      }
     }
+    fetchData();
+  }, [dataNonce, getContentForPage, page, activeSource]);
 
-    return mapStoriesToSummaries(data);
-  }, [data, source]);
-
-  return <HnStoryList items={realData} />;
+  return realData && <HnStoryList items={realData} />;
 }
