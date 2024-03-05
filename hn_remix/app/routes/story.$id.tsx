@@ -1,7 +1,8 @@
 import { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { ClientLoaderFunctionArgs, useLoaderData } from "@remix-run/react";
 import { StoryPageClient } from "~/components/StoryPageClient";
 import { loader as storyLoader } from "./api.story.$id";
+import { useDataStore } from "~/stores/useDataStore";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   // this action will run only on a SSR request - direct load of URL
@@ -16,15 +17,15 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
   return [{ title: "HN Offline: " + data.title }];
 };
 
-/*
 export const clientLoader = async ({ params }: ClientLoaderFunctionArgs) => {
   // this action will run only on a CSR request - client side navigation
   // will not call the server loader function
   console.log("clientLoader", params.id);
 
-  return { id: params.id, source: "client" };
+  const data = useDataStore.getState().getContent(params.id);
+
+  return data;
 };
-*/
 
 export default function Story() {
   const data = useLoaderData();
