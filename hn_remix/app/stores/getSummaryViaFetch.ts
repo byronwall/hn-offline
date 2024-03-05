@@ -1,14 +1,11 @@
-import { ensureUrlIsFullyQualified } from "./ensureUrlIsFullyQualified";
-import { HnStorySummary, HnItem } from "./useDataStore";
+import { HnItem, HnStorySummary } from "./useDataStore";
 
 export async function getSummaryViaFetch(url: string) {
   try {
-    url = ensureUrlIsFullyQualified(url);
-
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(url);
 
     if (!response.ok) {
-      console.error("Failed to fetch", { url, env: process.env });
+      console.error("Failed to fetch", { url });
       console.error(response);
       return { data: [], storySummaries: [] as HnStorySummary[] };
     }
