@@ -1,14 +1,21 @@
 // Names of the two caches used in this version of the service worker.
 // Change to v2, etc. when you update any of the local resources, which will
 // in turn trigger the install event again.
-const PRECACHE = "precache-v1";
-const RUNTIME = "runtime";
+const PRECACHE = "precache-v2";
+const RUNTIME = "runtime-v2";
 
 // A list of local resources we always want to be cached.
 const PRECACHE_URLS = [
   "index.html",
   "./", // Alias for index.html
 ];
+
+self.addEventListener("visibilitychange", function () {
+  if (document.visibilityState === "visible") {
+    console.log("APP resumed");
+    window.location.reload();
+  }
+});
 
 // The install handler takes care of precaching the resources we always need.
 self.addEventListener("install", (event) => {
