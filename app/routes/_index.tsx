@@ -13,6 +13,22 @@ export const meta: MetaFunction = () => {
       name: "description",
       content: "Hacker News client built for offline usage",
     },
+    {
+      name: "manifest",
+      content: "/manifest.json",
+    },
+    {
+      name: "apple-mobile-web-app-capable",
+      content: "yes",
+    },
+    {
+      name: "apple-mobile-web-app-status-bar-style",
+      content: "black",
+    },
+    {
+      name: "apple-mobile-web-app-title",
+      content: "HN Offline",
+    },
   ];
 };
 
