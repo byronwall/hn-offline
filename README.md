@@ -42,8 +42,8 @@ cd server && yarn build && yarn start
 
 ### Mobile
 
-![Mobile screenshot](mobile.png)
+![Mobile screenshot](docs/mobile.png)
 
 ### Desktop
 
-![Desktop screenshot](desktop.png)
+![Desktop screenshot](docs/desktop.png)
