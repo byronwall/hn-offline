@@ -27,7 +27,11 @@ export function HnListItem({ data: story }: HnStoryProps) {
 
   return (
     <div
-      className={cn("grid grid-cols-subgrid col-span-4", { isRead: isRead })}
+      className={cn(
+        "grid grid-cols-subgrid col-span-4",
+
+        { "opacity-20": isRead }
+      )}
     >
       <p className="col-span-4 mt-1.5 font-medium mb-1 hover:underline">
         {storyLinkEl}
