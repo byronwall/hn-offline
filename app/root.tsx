@@ -1,5 +1,5 @@
 import { cssBundleHref } from "@remix-run/css-bundle";
-import type { LinksFunction } from "@remix-run/node";
+import type { LinksFunction, MetaFunction } from "@remix-run/node";
 import {
   Links,
   LiveReload,
@@ -13,10 +13,37 @@ import styles from "./tailwind.css";
 import { NavBar } from "./components/NavBar";
 import { useDataStore } from "./stores/useDataStore";
 import { useEffect } from "react";
+
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
   { rel: "stylesheet", href: styles },
 ];
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "HN Offline" },
+    {
+      name: "description",
+      content: "Hacker News client built for offline usage",
+    },
+    {
+      name: "manifest",
+      content: "/manifest.json",
+    },
+    {
+      name: "apple-mobile-web-app-capable",
+      content: "yes",
+    },
+    {
+      name: "apple-mobile-web-app-status-bar-style",
+      content: "black",
+    },
+    {
+      name: "apple-mobile-web-app-title",
+      content: "HN Offline",
+    },
+  ];
+};
 
 export default function App() {
   // initialize local storage at top
