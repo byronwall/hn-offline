@@ -4,10 +4,17 @@ import { useEffect, useState } from "react";
 import { HnStoryPage } from "~/components/HnStoryPage";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
 import { loader as storyLoader } from "./api.story.$id";
+import { getDomain } from "~/utils";
 
-export const meta: MetaFunction<typeof loader> = ({ data }) => {
-  return [{ title: "HN Offline: " + data.title }];
-};
+export const meta: MetaFunction<typeof loader> = ({ data }) => [
+  { title: "HN Offline: " + data.title },
+  {
+    name: "description",
+    content: `${data.score} points at ${getDomain(data.url)} by ${data.by} - ${
+      data.descendants
+    } comments`,
+  },
+];
 
 export async function loader({ params }: LoaderFunctionArgs) {
   // this action will run only on a SSR request - direct load of URL

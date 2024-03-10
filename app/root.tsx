@@ -3,6 +3,7 @@ import type { LinksFunction } from "@remix-run/node";
 import {
   Links,
   LiveReload,
+  Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
@@ -18,6 +19,11 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: styles },
 ];
 
+export const meta = () => [
+  { title: "HN Offline" },
+  { name: "description", content: "Hacker News Offline" },
+];
+
 export default function App() {
   // initialize local storage at top
   const initLocalForage = useDataStore((s) => s.initializeFromLocalForage);
@@ -31,16 +37,12 @@ export default function App() {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta title="HN Offline" />
-        <meta
-          name="description"
-          content="Hacker News client built for offline usage"
-        />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         <meta name="apple-mobile-web-app-title" content="HN Offline" />
         <Links />
+        <Meta />
       </head>
       <body className="bg-orange-50">
         <main className="bg-white mx-auto flex min-h-screen flex-col items-center justify-between pb-24 max-w-[640px] w-full ">
