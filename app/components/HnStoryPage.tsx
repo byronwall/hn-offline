@@ -7,6 +7,7 @@ import { HnCommentList } from "./HnCommentList";
 import { HnItem, useDataStore } from "@/stores/useDataStore";
 import { useNavigate } from "@remix-run/react";
 import { ArrowUpRightFromSquare } from "lucide-react";
+import { useGetContent } from "./useGetContent";
 
 interface HnStoryPageProps {
   id: number | undefined;
@@ -17,13 +18,16 @@ export const SESSION_COLLAPSED = "SESSION_COLLAPSED";
 
 export const HnStoryPage: React.FC<HnStoryPageProps> = ({
   id,
-
-  storyData,
+  storyData: _storyData,
 }) => {
   const [collapsedComments, setCollapsedComments] = useState<number[]>([]);
   const [idToScrollTo, setIdToScrollTo] = useState<number | undefined>(
     undefined
   );
+
+  const storyData = useGetContent(id!, _storyData);
+
+  console.log("HnStoryPage", { id, storyData });
 
   const onVisitMarker = useDataStore((s) => s.saveIdToReadList);
 

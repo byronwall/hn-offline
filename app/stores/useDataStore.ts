@@ -51,7 +51,10 @@ type DataStore = {
 };
 
 type DataStoreActions = {
-  getContent: (id: StoryId) => Promise<HnItem | undefined>;
+  getContent: (
+    id: StoryId,
+    fromLocalStorageOnly?: boolean
+  ) => Promise<HnItem | undefined>;
   getContentForPage: (page: string) => Promise<HnStorySummary[] | undefined>;
 
   initializeFromLocalForage: () => void;
@@ -211,15 +214,22 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       set({ isLocalForageInitialized: true, readItems, pendingReadItems: [] });
     },
 
-    async getContent(id: StoryId) {
+    async getContent(id: StoryId, fromLocalStorageOnly = false) {
       // attempt to load from local info
       const { rawData, isLocalForageInitialized, saveContent } = get();
+      console.log("getContent", id);
 
       const url = "/api/story/" + id;
 
       if (!isLocalForageInitialized) {
         // kick out for SSR
         console.log("localforage not initialized");
+
+        if (fromLocalStorageOnly) {
+          console.log("fromLocalStorageOnly");
+          return undefined;
+        }
+
         const data = await getContentViaFetch(url);
 
         if (data) saveContent(id, data);
