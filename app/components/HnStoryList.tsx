@@ -2,10 +2,14 @@ import { HnStorySummary } from "@/stores/useDataStore";
 import { HnListItem } from "./HnListItem";
 
 interface HnStoryListProps {
-  items: HnStorySummary[];
+  items?: HnStorySummary[];
 }
 
 export function HnStoryList({ items }: HnStoryListProps) {
+  if (!items) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div>
       <div className="grid grid-cols-[1fr_1fr_1fr_3fr]">
@@ -16,5 +20,3 @@ export function HnStoryList({ items }: HnStoryListProps) {
     </div>
   );
 }
-
-export default HnStoryList;

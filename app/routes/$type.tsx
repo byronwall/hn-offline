@@ -1,11 +1,10 @@
 import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { ClientLoaderFunctionArgs, useLoaderData } from "@remix-run/react";
 
-import { useEffect, useMemo, useState } from "react";
-import HnStoryList from "~/components/HnStoryList";
-import { mapStoriesToSummaries } from "~/stores/getSummaryViaFetch";
-import { useDataStore } from "~/stores/useDataStore";
+import { HnStoryList } from "~/components/HnStoryList";
+import { HnItem, HnStorySummary, useDataStore } from "~/stores/useDataStore";
 import { loader as listLoader } from "./api.topstories.$type";
+import { useGetContentForPage } from "./useGetContentForPage";
 
 export const meta: MetaFunction = ({ params }) => {
   // capitalize the first letter of the type
@@ -13,8 +12,14 @@ export const meta: MetaFunction = ({ params }) => {
 
   return [
     { title: "HN Offline: " + type },
-    { name: "description", content: "Welcome to Remix!" },
+    { name: "description", content: "Hacker News " + type + " page" },
   ];
+};
+
+type PageLoaderData = {
+  rawStoryData?: HnItem[];
+  summaryData?: HnStorySummary[];
+  page?: string;
 };
 
 export async function loader({ params }: LoaderFunctionArgs) {
@@ -30,7 +35,12 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
   const storyData = await res.json();
 
-  return { data: storyData, source: "server", page: type };
+  const response: PageLoaderData = {
+    rawStoryData: storyData,
+    page: type,
+  };
+
+  return response;
 }
 
 export const clientLoader = async ({ params }: ClientLoaderFunctionArgs) => {
@@ -40,38 +50,23 @@ export const clientLoader = async ({ params }: ClientLoaderFunctionArgs) => {
 
   const data = await useDataStore.getState().getContentForPage(params.type);
 
-  return { data, source: "client", page: params.type };
+  const response: PageLoaderData = {
+    summaryData: data,
+    page: params.type,
+  };
+
+  return response;
 };
 
 export default function HnStoryListServer() {
   // loader data
-  const { data, source, page } = useLoaderData();
+  const { rawStoryData, summaryData, page } = useLoaderData<PageLoaderData>();
 
-  const saveStoryList = useDataStore((s) => s.saveStoryList);
-  const dataNonce = useDataStore((s) => s.dataNonce);
-  const getContentForPage = useDataStore((s) => s.getContentForPage);
+  const realData = useGetContentForPage(page!, rawStoryData);
 
-  const [activeSource, setActiveSource] = useState(source);
-  const [realData, setRealData] = useState(
-    source === "client" ? data : undefined
-  );
+  // real data wins since it responds to refreshes
+  // summary data is the initial data from the client loader
+  const dataToUse = realData ?? summaryData;
 
-  useEffect(() => {
-    if (activeSource === "server") {
-      saveStoryList(page, data);
-      setActiveSource("client");
-    }
-  }, [activeSource, data, page, saveStoryList]);
-
-  useEffect(() => {
-    async function fetchData() {
-      if (activeSource === "client") {
-        const data = await getContentForPage(page);
-        setRealData(data);
-      }
-    }
-    fetchData();
-  }, [dataNonce, getContentForPage, page, activeSource]);
-
-  return realData && <HnStoryList items={realData} />;
+  return <HnStoryList items={dataToUse} />;
 }
