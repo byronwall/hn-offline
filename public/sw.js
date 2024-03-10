@@ -55,6 +55,10 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   // Skip cross-origin requests, like those for Google Analytics.
   if (!event.request.url.startsWith(self.location.origin)) return;
+
+  // kickout for local resources
+  if (event.request.url.includes("localhost")) return;
+
   // Skip caching if the URL starts with "api"
   if (event.request.url.startsWith(self.location.origin + "/api")) {
     return;
