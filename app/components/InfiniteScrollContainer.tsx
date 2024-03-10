@@ -1,6 +1,3 @@
-"use client";
-
-import _ from "lodash";
 import React, { useCallback, useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
@@ -16,26 +13,35 @@ export function InfiniteScrollContainer<TItemType>(
 ) {
   const { items, itemsToAddOnRefresh, children } = props;
 
-  const [itemsToShow, setItemsToShow] = useState<TItemType[]>([]);
+  const [itemsToShow, setItemsToShow] = useState<TItemType[]>(
+    items.slice(0, 2)
+  );
+
+  const [isShowingMore, setIsShowingMore] = useState(false);
 
   const handleNextItems = useCallback(() => {
     // need to add NUMBER_OF_ITEMS_TO_LOAD more items at a time
+
+    if (isShowingMore) {
+      console.log("isShowingMore true = skip more items");
+      return;
+    }
 
     const currentLength = itemsToShow.length;
 
     const newItemsToShow = items.slice(0, currentLength + itemsToAddOnRefresh);
 
-    setItemsToShow(newItemsToShow);
-
-    console.log("handleNextItems", newItemsToShow);
-  }, [items, itemsToAddOnRefresh, itemsToShow]);
+    setIsShowingMore(true);
+    setTimeout(() => {
+      console.log("handleNextItems", newItemsToShow);
+      setItemsToShow(newItemsToShow);
+      setIsShowingMore(false);
+    }, 100);
+  }, [isShowingMore, items, itemsToAddOnRefresh, itemsToShow.length]);
 
   const hasMore = itemsToShow.length < items.length;
 
-  const { ref, inView, entry } = useInView({
-    /* Optional options */
-    threshold: 0,
-  });
+  const { ref, inView } = useInView({ threshold: 0 });
 
   useEffect(() => {
     if (inView && hasMore) {
@@ -46,6 +52,11 @@ export function InfiniteScrollContainer<TItemType>(
   return (
     <div>
       {itemsToShow.map((item, index) => children(item, index))}
+      {isShowingMore && hasMore && (
+        <div className="text-center bg-gradient-to-r from-white to-orange-500 p-1">
+          See me? More coming...
+        </div>
+      )}
       <div ref={ref} />
     </div>
   );
