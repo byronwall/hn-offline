@@ -1,14 +1,11 @@
-"use client";
-
+import { getCleanPathName } from "@/hooks/getCleanPathName";
 import localforage from "localforage";
 import { create } from "zustand";
+import { getContentViaFetch } from "./getContentViaFetch";
 import {
   getSummaryViaFetch,
   mapStoriesToSummaries,
 } from "./getSummaryViaFetch";
-import { getContentViaFetch } from "./getContentViaFetch";
-import { getCleanPathName } from "@/hooks/getCleanPathName";
-import { max } from "lodash";
 
 export interface HnItem {
   by: string;
@@ -49,6 +46,8 @@ type DataStore = {
 
   dataNonce: number;
   isLoadingData: boolean;
+
+  shouldHideReadItems: boolean;
 };
 
 type DataStoreActions = {
@@ -73,6 +72,8 @@ type DataStoreActions = {
   getAllLocalContent: () => Promise<HnStorySummary[] | undefined>;
 
   purgeLocalForage: () => void;
+
+  setShouldHideReadItems: (shouldHide: boolean) => void;
 };
 
 if (typeof window !== "undefined") {
@@ -100,6 +101,12 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     },
     rawData: {},
 
+    shouldHideReadItems: false,
+
+    setShouldHideReadItems: (shouldHide: boolean) => {
+      set({ shouldHideReadItems: shouldHide });
+    },
+
     readItems: {},
     pendingReadItems: [],
 
@@ -118,7 +125,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       const keys = await localforage.keys();
 
       // bad ones have a / in them - remove them
-      const badStoryLists = keys.filter((key) => key.includes("/"))
+      const badStoryLists = keys.filter((key) => key.includes("/"));
       for (const key of badStoryLists) {
         console.log("removing bad key", key);
         await localforage.removeItem(key);
