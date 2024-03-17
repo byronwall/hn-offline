@@ -8,6 +8,7 @@ import {
 } from "./getSummaryViaFetch";
 import { getContentViaFetch } from "./getContentViaFetch";
 import { getCleanPathName } from "@/hooks/getCleanPathName";
+import { max } from "lodash";
 
 export interface HnItem {
   by: string;
@@ -41,7 +42,7 @@ type StoryId = number;
 
 type DataStore = {
   rawData: Record<StoryId, HnItem>;
-  readItems: TrueHash;
+  readItems: TimestampHash;
   pendingReadItems: number[];
 
   isLocalForageInitialized: boolean;
@@ -70,6 +71,8 @@ type DataStoreActions = {
   saveIdToReadList: (id: number) => void;
 
   getAllLocalContent: () => Promise<HnStorySummary[] | undefined>;
+
+  purgeLocalForage: () => void;
 };
 
 if (typeof window !== "undefined") {
@@ -99,6 +102,68 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     readItems: {},
     pendingReadItems: [],
+
+    purgeLocalForage: async () => {
+      // goal is to remove stories that are not current or recently read
+
+      console.log("purging localforage");
+
+      const { readItems } = get();
+
+      const idsToKeep = new Set<number>();
+
+      // get the three main story lists - front, day, week
+      // add those ids to the keep list
+
+      const keys = await localforage.keys();
+
+      // bad ones have a / in them - remove them
+      const badStoryLists = keys.filter((key) => key.includes("/"))
+      for (const key of badStoryLists) {
+        console.log("removing bad key", key);
+        await localforage.removeItem(key);
+      }
+
+      const storyIds = keys.filter((key) => key.startsWith("STORIES_"));
+
+      for (const key of storyIds) {
+        const list = await localforage.getItem<HnStorySummary[]>(key);
+
+        if (list) {
+          console.log("list to keep", list.length, key);
+          for (const item of list) {
+            idsToKeep.add(item.id);
+          }
+        }
+      }
+
+      // get the 50 most recent read items
+      const readItemsArray = Object.entries(readItems).sort(
+        (a, b) => b[1] - a[1]
+      );
+
+      console.log("readItemsArray", readItemsArray);
+
+      const maxToKeep = Math.min(50, readItemsArray.length);
+
+      for (let i = 0; i < maxToKeep; i++) {
+        idsToKeep.add(Number(readItemsArray[i][0]));
+      }
+
+      // get all keys starting with RAW_
+      const rawKeys = keys.filter((key) => key.startsWith("raw_"));
+
+      console.log("all keys", rawKeys.length, idsToKeep.size);
+
+      for (const key of rawKeys) {
+        const id = Number(key.replace("raw_", ""));
+
+        if (!idsToKeep.has(id)) {
+          console.log("deleting", id);
+          await localforage.removeItem(key);
+        }
+      }
+    },
 
     getAllLocalContent: async () => {
       const { isLocalForageInitialized } = get();
@@ -148,7 +213,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       const newReadList = { ...readItems };
 
-      newReadList[id] = true;
+      newReadList[id] = Date.now();
 
       localforage.setItem(LOCAL_READ_ITEMS, newReadList);
 
@@ -233,18 +298,21 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     initializeFromLocalForage: async () => {
       // load the read items
+      const { purgeLocalForage } = get();
 
       const readItems =
-        (await localforage.getItem<TrueHash>(LOCAL_READ_ITEMS)) || {};
+        (await localforage.getItem<TimestampHash>(LOCAL_READ_ITEMS)) || {};
 
       const { pendingReadItems } = get();
 
       // add any pending items
       for (const id of pendingReadItems) {
-        readItems[id] = true;
+        readItems[id] = Date.now();
       }
 
       set({ isLocalForageInitialized: true, readItems, pendingReadItems: [] });
+
+      await purgeLocalForage();
     },
 
     async getContent(id: StoryId, fromLocalStorageOnly = false) {
@@ -347,6 +415,4 @@ export interface HnStorySummary {
   commentCount: number | undefined;
   time: number;
 }
-export type TrueHash = {
-  [key: number]: true;
-};
+export type TimestampHash = Record<number, number>;
