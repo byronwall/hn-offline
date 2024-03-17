@@ -11,7 +11,17 @@ import { hydrateRoot } from "react-dom/client";
 // load service worker @ sw.js
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js");
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => {
+        // registration worked
+        console.log("Registration succeeded.");
+        registration.update();
+      })
+      .catch((error) => {
+        // registration failed
+        console.error(`Registration failed with ${error}`);
+      });
   });
 }
 
