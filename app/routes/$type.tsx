@@ -46,7 +46,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export const clientLoader = async ({ params }: ClientLoaderFunctionArgs) => {
   // this action will run only on a CSR request - client side navigation
   // will not call the server loader function
-  console.log("clientLoader", params.id);
+  console.log("clientLoader page", params.id);
 
   const data = await useDataStore.getState().getContentForPage(params.type);
 

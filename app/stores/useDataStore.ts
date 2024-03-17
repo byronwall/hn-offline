@@ -68,6 +68,8 @@ type DataStoreActions = {
   refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
 
   saveIdToReadList: (id: number) => void;
+
+  getAllLocalContent: () => Promise<HnStorySummary[] | undefined>;
 };
 
 if (typeof window !== "undefined") {
@@ -97,6 +99,34 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     readItems: {},
     pendingReadItems: [],
+
+    getAllLocalContent: async () => {
+      const { isLocalForageInitialized } = get();
+
+      if (!isLocalForageInitialized) {
+        console.log("localforage not initialized");
+        return undefined;
+      }
+
+      // get all keys starting with RAW_
+      const keys = await localforage.keys();
+      const rawKeys = keys.filter((key) => key.startsWith("raw_"));
+
+      const data: HnItem[] = [];
+
+      for (const key of rawKeys) {
+        const item = await localforage.getItem<HnItem>(key);
+
+        if (item) {
+          data.push(item);
+        }
+      }
+
+      // get summaries and return
+      const summaries = mapStoriesToSummaries(data);
+
+      return summaries;
+    },
 
     saveIdToReadList: (id: number) => {
       const { readItems, isLocalForageInitialized, pendingReadItems } = get();

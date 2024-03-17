@@ -29,6 +29,9 @@ export function NavBar() {
         </Link>
       </div>
       <div className="flex items-center gap-2">
+        <Link to="/local" className="hover:underline">
+          local
+        </Link>
         <Link to="/day" className="hover:underline">
           day
         </Link>
