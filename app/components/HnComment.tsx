@@ -6,6 +6,7 @@ import { KidsObj3 } from "@/stores/useDataStore";
 import { ArrowUpRightFromSquare } from "lucide-react";
 import sanitizeHtml from "sanitize-html";
 import { decode } from "html-entities";
+import { StoryContext } from "./HnStoryPage";
 
 export interface HnCommentProps {
   comment: KidsObj3 | null;
@@ -146,40 +147,54 @@ export class HnComment extends React.Component<HnCommentProps> {
 
     const borderColor = depth < colors.length ? colors[depth] : "#bbb";
     return (
-      <div
-        className={cn("bp3-card", { collapsed: !isOpen })}
-        onClick={this.handleCardClick}
-        style={{
-          paddingLeft: 12 + Math.max(4 - depth),
-          marginLeft: 0,
-          borderLeftColor: borderColor,
-        }}
-      >
-        <p
-          style={{ fontWeight: isOpen ? 450 : 300 }}
-          ref={this.divRef}
-          className="font-sans flex items-center"
-        >
-          {comment.by}
-          {" | "}
+      <StoryContext.Consumer>
+        {(storyData) => {
+          const isCommentByStoryAuthor = storyData?.by === comment.by;
 
-          {timeSince(comment.time)}
-          {" ago"}
-          {isNavigator && "share" in navigator && (
-            <>
-              {" | "}
-              <button
-                onClick={this.handleShareClick}
-                className="hover:text-orange-500 ml-1"
+          return (
+            <div
+              className={cn("bp3-card", { collapsed: !isOpen })}
+              onClick={this.handleCardClick}
+              style={{
+                paddingLeft: 12 + Math.max(4 - depth),
+                marginLeft: 0,
+                borderLeftColor: borderColor,
+              }}
+            >
+              <p
+                style={{ fontWeight: isOpen ? 450 : 300 }}
+                ref={this.divRef}
+                className={cn("font-sans flex items-center gap-1")}
               >
-                <ArrowUpRightFromSquare size={16} />
-              </button>
-            </>
-          )}
-        </p>
+                <span
+                  className={cn({
+                    "text-orange-700 font-bold": isCommentByStoryAuthor,
+                  })}
+                >
+                  {comment.by}
+                </span>
+                <span>{"|"}</span>
 
-        {childrenToShow}
-      </div>
+                {timeSince(comment.time)}
+                {" ago"}
+                {isNavigator && "share" in navigator && (
+                  <>
+                    <span>{"|"}</span>
+                    <button
+                      onClick={this.handleShareClick}
+                      className="hover:text-orange-500 ml-1"
+                    >
+                      <ArrowUpRightFromSquare size={16} />
+                    </button>
+                  </>
+                )}
+              </p>
+
+              {childrenToShow}
+            </div>
+          );
+        }}
+      </StoryContext.Consumer>
     );
   }
   private handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
 
 import { getDomain, isNavigator, timeSince } from "@/utils";
 import { isValidComment } from "./HnComment";
@@ -15,6 +15,9 @@ interface HnStoryPageProps {
 }
 
 export const SESSION_COLLAPSED = "SESSION_COLLAPSED";
+
+// context to track the current story data
+export const StoryContext = createContext<HnItem | undefined>(undefined);
 
 export const HnStoryPage: React.FC<HnStoryPageProps> = ({
   id,
@@ -155,13 +158,15 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
       )}
 
       <div className="user-text">
-        <HnCommentList
-          childComments={comments}
-          depth={0}
-          collapsedIds={collapsedComments}
-          onUpdateOpen={handleCollapseEvent}
-          idToScrollTo={idToScrollTo}
-        />
+        <StoryContext.Provider value={storyData}>
+          <HnCommentList
+            childComments={comments}
+            depth={0}
+            collapsedIds={collapsedComments}
+            onUpdateOpen={handleCollapseEvent}
+            idToScrollTo={idToScrollTo}
+          />
+        </StoryContext.Provider>
       </div>
     </div>
   );
