@@ -149,7 +149,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
       </h4>
       {storyData.text !== undefined && (
         <p
-          className="user-text"
+          className="user-text break-all"
           dangerouslySetInnerHTML={{ __html: storyData.text }}
         />
       )}
