@@ -88,6 +88,7 @@ if (typeof window !== "undefined") {
 }
 
 const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
+const SHOULD_HIDE_READ_ITEMS = "SHOULD_HIDE_READ_ITEMS";
 
 export const useDataStore = create<DataStore & DataStoreActions>(
   (set, get) => ({
@@ -103,8 +104,11 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     shouldHideReadItems: false,
 
-    setShouldHideReadItems: (shouldHide: boolean) => {
+    setShouldHideReadItems: async (shouldHide: boolean) => {
       set({ shouldHideReadItems: shouldHide });
+
+      // save via localforage
+      await localforage.setItem(SHOULD_HIDE_READ_ITEMS, shouldHide);
     },
 
     readItems: {},
@@ -317,7 +321,16 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         readItems[id] = Date.now();
       }
 
-      set({ isLocalForageInitialized: true, readItems, pendingReadItems: [] });
+      // get the shouldHideReadItems
+      const shouldHideReadItems =
+        (await localforage.getItem<boolean>(SHOULD_HIDE_READ_ITEMS)) || false;
+
+      set({
+        isLocalForageInitialized: true,
+        readItems,
+        pendingReadItems: [],
+        shouldHideReadItems,
+      });
 
       await purgeLocalForage();
     },
