@@ -48,6 +48,8 @@ type DataStore = {
   isLoadingData: boolean;
 
   shouldHideReadItems: boolean;
+
+  storyListSaveCount: number;
 };
 
 type DataStoreActions = {
@@ -100,6 +102,9 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       day: [],
       week: [],
     },
+
+    storyListSaveCount: 0,
+
     rawData: {},
 
     shouldHideReadItems: false,
@@ -261,6 +266,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       set({
         rawData: { ...rawData, ...newRawData },
         dataNonce: dataNonce + 1,
+        storyListSaveCount: get().storyListSaveCount + 1,
       });
     },
 
@@ -311,6 +317,8 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       // load the read items
       const { purgeLocalForage } = get();
 
+      console.log("initializeFromLocalForage");
+
       const readItems =
         (await localforage.getItem<TimestampHash>(LOCAL_READ_ITEMS)) || {};
 
@@ -324,6 +332,12 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       // get the shouldHideReadItems
       const shouldHideReadItems =
         (await localforage.getItem<boolean>(SHOULD_HIDE_READ_ITEMS)) || false;
+
+      console.log(
+        "initializeFromLocalForage done",
+        readItems,
+        shouldHideReadItems
+      );
 
       set({
         isLocalForageInitialized: true,

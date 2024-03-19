@@ -64,6 +64,13 @@ export default function HnStoryListServer() {
 
   const realData = useGetContentForPage(page!, rawStoryData);
 
+  console.log("HnStoryListServer", {
+    page,
+    realData,
+    summaryData,
+    rawStoryData,
+  });
+
   // real data wins since it responds to refreshes
   // summary data is the initial data from the client loader
   const dataToUse = realData ?? summaryData;

@@ -5,10 +5,7 @@ const PRECACHE = "precache-v3";
 const RUNTIME = "runtime-v3";
 
 // A list of local resources we always want to be cached.
-const PRECACHE_URLS = [
-  "index.html",
-  "./", // Alias for index.html
-];
+const PRECACHE_URLS = [];
 
 self.addEventListener("visibilitychange", function () {
   if (document.visibilityState === "visible") {

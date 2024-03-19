@@ -2,12 +2,14 @@ import { useDataStore } from "@/stores/useDataStore";
 import { cn } from "@/utils";
 import { Link, useLocation } from "@remix-run/react";
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function NavBar() {
   const url = useLocation().pathname;
   const refreshCurrent = useDataStore((s) => s.refreshCurrent);
   const isLoadingData = useDataStore((s) => s.isLoadingData);
   const isInit = useDataStore((s) => s.isLocalForageInitialized);
+  const storyListSaveCount = useDataStore((s) => s.storyListSaveCount);
 
   const shouldHideReadItems = useDataStore((s) => s.shouldHideReadItems);
   const setShouldHideReadItems = useDataStore((s) => s.setShouldHideReadItems);
@@ -22,6 +24,21 @@ export function NavBar() {
     refreshCurrent(url);
   };
 
+  const [didCountChange, setDidCountChange] = useState(false);
+
+  useEffect(() => {
+    if (storyListSaveCount > 0) {
+      setDidCountChange(true);
+    }
+    // timer to reset in 1 second
+    const timer = setTimeout(() => {
+      setDidCountChange(false);
+    }, 2000);
+
+    // Clear timeout if the component is unmounted
+    return () => clearTimeout(timer);
+  }, [storyListSaveCount]);
+
   const isListUrl =
     url === "/" || url === "/local" || url === "/day" || url === "/week";
 
@@ -35,9 +52,14 @@ export function NavBar() {
             className={cn(
               "w-8 h-8",
               { "animate-spin": isLoadingData },
+              { "animate-bounce": didCountChange },
               { "opacity-20": !isInit },
               { "opacity-100": isInit }
             )}
+            style={{
+              // rotate 30 deg for each save count
+              transform: `rotate(${storyListSaveCount * 30}deg)`,
+            }}
           />
           <h1 className="text-2xl font-bold">Offline</h1>
         </Link>
