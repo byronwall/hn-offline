@@ -182,11 +182,10 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     },
 
     getAllLocalContent: async () => {
-      const { isLocalForageInitialized } = get();
+      const { isLocalForageInitialized, initializeFromLocalForage } = get();
 
       if (!isLocalForageInitialized) {
-        console.log("localforage not initialized");
-        return undefined;
+        await initializeFromLocalForage();
       }
 
       // get all keys starting with RAW_
@@ -209,16 +208,13 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       return summaries;
     },
 
-    saveIdToReadList: (id: number) => {
-      const { readItems, isLocalForageInitialized, pendingReadItems } = get();
+    saveIdToReadList: async (id: number) => {
+      const { readItems, isLocalForageInitialized, initializeFromLocalForage } =
+        get();
 
       if (!isLocalForageInitialized) {
         // don't save data before list is loaded --- will clear it
-        console.log("do not update read list... pending updates");
-
-        set({ pendingReadItems: [...pendingReadItems, id] });
-
-        return;
+        await initializeFromLocalForage();
       }
       console.log("new read list", readItems);
 
@@ -315,7 +311,12 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     initializeFromLocalForage: async () => {
       // load the read items
-      const { purgeLocalForage } = get();
+      const { purgeLocalForage, isLocalForageInitialized } = get();
+
+      if (isLocalForageInitialized) {
+        console.log("already initialized");
+        return;
+      }
 
       console.log("initializeFromLocalForage");
 
@@ -346,12 +347,18 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         shouldHideReadItems,
       });
 
-      await purgeLocalForage();
+      // do a purge in the future, 1 seconds
+      setTimeout(purgeLocalForage, 1000);
     },
 
     async getContent(id: StoryId, fromLocalStorageOnly = false) {
       // attempt to load from local info
-      const { rawData, isLocalForageInitialized, saveContent } = get();
+      const {
+        rawData,
+        isLocalForageInitialized,
+        saveContent,
+        initializeFromLocalForage,
+      } = get();
       console.log("getContent", id);
 
       const url = "/api/story/" + id;
@@ -360,16 +367,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         // kick out for SSR
         console.log("localforage not initialized");
 
-        if (fromLocalStorageOnly) {
-          console.log("fromLocalStorageOnly");
-          return undefined;
-        }
-
-        const data = await getContentViaFetch(url);
-
-        if (data) saveContent(id, data);
-
-        return data;
+        await initializeFromLocalForage();
       }
 
       // check if we have the item in the cache
@@ -384,6 +382,11 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         return item;
       }
 
+      if (fromLocalStorageOnly) {
+        console.log("fromLocalStorageOnly");
+        return undefined;
+      }
+
       const data = await getContentViaFetch(url);
       if (data) saveContent(id, data);
 
@@ -392,7 +395,11 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     async getContentForPage(page: string, fromLocalStorageOnly = false) {
       // attempt to load from local info
-      const { isLocalForageInitialized, saveStoryList } = get();
+      const {
+        isLocalForageInitialized,
+        saveStoryList,
+        initializeFromLocalForage,
+      } = get();
 
       // remove leading slash
       page = getCleanPathName(page);
@@ -413,14 +420,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       if (!isLocalForageInitialized) {
         console.log("localforage not initialized");
 
-        if (fromLocalStorageOnly) {
-          console.log("fromLocalStorageOnly");
-          return undefined;
-        }
-
-        const { storySummaries } = await getSummaryViaFetch(url);
-
-        return storySummaries;
+        await initializeFromLocalForage();
       }
 
       // load the list from localforage
@@ -431,6 +431,11 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       if (list) {
         console.log("loaded from localforage", list, page);
         return list;
+      }
+
+      if (fromLocalStorageOnly) {
+        console.log("fromLocalStorageOnly");
+        return undefined;
       }
 
       const { data, storySummaries } = await getSummaryViaFetch(url);

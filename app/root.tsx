@@ -25,13 +25,6 @@ export const meta = () => [
 ];
 
 export default function App() {
-  // initialize local storage at top
-  const initLocalForage = useDataStore((s) => s.initializeFromLocalForage);
-
-  useEffect(() => {
-    initLocalForage();
-  }, [initLocalForage]);
-
   return (
     <html lang="en">
       <head>
