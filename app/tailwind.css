@@ -12,6 +12,10 @@
   @apply text-slate-700 hover:underline hover:text-slate-600;
 }
 
+a.active {
+  @apply text-slate-700 font-bold border-b border-b-orange-200;
+}
+
 pre {
   white-space: pre-wrap;
 }

@@ -1,6 +1,6 @@
 import { useDataStore } from "@/stores/useDataStore";
 import { cn } from "@/utils";
-import { Link, useLocation } from "@remix-run/react";
+import { Link, NavLink, useLocation } from "@remix-run/react";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -45,7 +45,7 @@ export function NavBar() {
   return (
     <nav className="flex w-full justify-between items-center space-x-2 border p-1">
       <div className="flex items-center">
-        <Link to="/" className="flex items-center gap-1 hover:underline">
+        <NavLink to="/" className="flex items-center gap-1 hover:underline">
           <img
             src="/favicon-32x32.png"
             alt="Hacker News Logo"
@@ -62,7 +62,7 @@ export function NavBar() {
             }}
           />
           <h1 className="text-2xl font-bold">Offline</h1>
-        </Link>
+        </NavLink>
       </div>
 
       {isListUrl && (
@@ -81,15 +81,15 @@ export function NavBar() {
       )}
 
       <div className="flex items-center gap-2">
-        <Link to="/local" className="hover:underline">
+        <NavLink to="/local" className="hover:underline">
           local
-        </Link>
-        <Link to="/day" className="hover:underline">
+        </NavLink>
+        <NavLink to="/day" className="hover:underline">
           day
-        </Link>
-        <Link to="/week" className="hover:underline">
+        </NavLink>
+        <NavLink to="/week" className="hover:underline">
           week
-        </Link>
+        </NavLink>
 
         <Loader2
           size="24"
