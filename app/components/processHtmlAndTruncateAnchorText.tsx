@@ -1,4 +1,8 @@
 export function processHtmlAndTruncateAnchorText(html: string) {
+  if (document === undefined) {
+    return html;
+  }
+
   const el = document.createElement("div");
   el.innerHTML = html;
 
