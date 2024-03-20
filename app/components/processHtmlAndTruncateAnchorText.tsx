@@ -1,12 +1,10 @@
 export function processHtmlAndTruncateAnchorText(html: string) {
-  if (document === undefined) {
+  if (typeof document === "undefined") {
     return html;
   }
 
   const el = document.createElement("div");
   el.innerHTML = html;
-
-  console.log("processHtmlAndTruncateAnchorText", { html, el });
 
   const anchors = el.querySelectorAll("a");
 
