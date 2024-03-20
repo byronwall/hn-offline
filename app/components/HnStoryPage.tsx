@@ -8,6 +8,7 @@ import { HnItem, useDataStore } from "@/stores/useDataStore";
 import { useNavigate } from "@remix-run/react";
 import { ArrowUpRightFromSquare } from "lucide-react";
 import { useGetContent } from "./useGetContent";
+import { processHtmlAndTruncateAnchorText } from "./processHtmlAndTruncateAnchorText";
 
 interface HnStoryPageProps {
   id: number | undefined;
@@ -29,6 +30,8 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
   );
 
   const storyData = useGetContent(id!, _storyData);
+
+  const textToRender = processHtmlAndTruncateAnchorText(storyData?.text || "");
 
   console.log("HnStoryPage", { id, storyData });
 
@@ -152,8 +155,8 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
       </h4>
       {storyData.text !== undefined && (
         <p
-          className="user-text break-all"
-          dangerouslySetInnerHTML={{ __html: storyData.text }}
+          className="user-text break-words "
+          dangerouslySetInnerHTML={{ __html: textToRender }}
         />
       )}
 
