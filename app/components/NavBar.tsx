@@ -56,10 +56,6 @@ export function NavBar() {
               { "opacity-20": !isInit },
               { "opacity-100": isInit }
             )}
-            style={{
-              // rotate 30 deg for each save count
-              transform: `rotate(${storyListSaveCount * 30}deg)`,
-            }}
           />
           <h1 className="text-2xl font-bold">Offline</h1>
         </NavLink>
