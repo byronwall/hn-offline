@@ -175,12 +175,6 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     },
 
     getAllLocalContent: async () => {
-      const { isLocalForageInitialized, initializeFromLocalForage } = get();
-
-      if (!isLocalForageInitialized) {
-        await initializeFromLocalForage();
-      }
-
       // get all keys starting with RAW_
       const keys = await localforage.keys();
       const rawKeys = keys.filter((key) => key.startsWith("raw_"));
@@ -219,7 +213,6 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       }
 
       const newReadList = { ...readItems };
-
       newReadList[id] = Date.now();
 
       await localforage.setItem(LOCAL_READ_ITEMS, newReadList);
@@ -347,21 +340,10 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     async getContent(id: StoryId, fromLocalStorageOnly = false) {
       // attempt to load from local info
-      const {
-        isLocalForageInitialized,
-        saveContent,
-        initializeFromLocalForage,
-      } = get();
+      const { saveContent } = get();
       console.log("getContent", id);
 
       const url = "/api/story/" + id;
-
-      if (!isLocalForageInitialized) {
-        // kick out for SSR
-        console.log("localforage not initialized");
-
-        await initializeFromLocalForage();
-      }
 
       // load the item from localforage
       const item = await localforage.getItem<HnItem>("raw_" + id);
@@ -386,11 +368,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
     async getContentForPage(page: string, fromLocalStorageOnly = false) {
       // attempt to load from local info
-      const {
-        isLocalForageInitialized,
-        saveStoryList,
-        initializeFromLocalForage,
-      } = get();
+      const { saveStoryList } = get();
 
       // remove leading slash
       page = getCleanPathName(page);
@@ -407,12 +385,6 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       }
 
       const url = urlSlug;
-
-      if (!isLocalForageInitialized) {
-        console.log("localforage not initialized");
-
-        await initializeFromLocalForage();
-      }
 
       // load the list from localforage
       const list = await localforage.getItem<HnStorySummary[]>(
