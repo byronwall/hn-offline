@@ -33,12 +33,11 @@ export interface KidsObj3 {
   dead?: boolean;
 }
 
-type StoryPage = "front" | "day" | "week";
+export type StoryPage = "front" | "day" | "week";
 
 type StoryId = number;
 
 type DataStore = {
-  rawData: Record<StoryId, HnItem>;
   readItems: TimestampHash;
   pendingReadItems: number[];
 
@@ -57,25 +56,26 @@ type DataStoreActions = {
     id: StoryId,
     fromLocalStorageOnly?: boolean
   ) => Promise<HnItem | undefined>;
+
   getContentForPage: (
     page: string,
     fromLocalStorageOnly?: boolean
   ) => Promise<HnStorySummary[] | undefined>;
 
-  initializeFromLocalForage: () => void;
+  initializeFromLocalForage: () => Promise<void>;
 
-  saveStoryList: (page: StoryPage, data: HnItem[]) => void;
-  saveContent: (id: StoryId, content: HnItem) => void;
+  saveStoryList: (page: StoryPage, data: HnItem[]) => Promise<void>;
+  saveContent: (id: StoryId, content: HnItem) => Promise<void>;
 
   refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
 
-  saveIdToReadList: (id: number) => void;
+  saveIdToReadList: (id: number) => Promise<void>;
 
   getAllLocalContent: () => Promise<HnStorySummary[] | undefined>;
 
-  purgeLocalForage: () => void;
+  purgeLocalForage: () => Promise<void>;
 
-  setShouldHideReadItems: (shouldHide: boolean) => void;
+  setShouldHideReadItems: (shouldHide: boolean) => Promise<void>;
 };
 
 if (typeof window !== "undefined") {
@@ -97,15 +97,8 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     dataNonce: 0,
     isLoadingData: false,
     isLocalForageInitialized: false,
-    storyLists: {
-      front: [],
-      day: [],
-      week: [],
-    },
 
     storyListSaveCount: 0,
-
-    rawData: {},
 
     shouldHideReadItems: false,
 
@@ -209,13 +202,15 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     },
 
     saveIdToReadList: async (id: number) => {
-      const { readItems, isLocalForageInitialized, initializeFromLocalForage } =
-        get();
+      const { readItems, isLocalForageInitialized, pendingReadItems } = get();
 
       if (!isLocalForageInitialized) {
         // don't save data before list is loaded --- will clear it
-        await initializeFromLocalForage();
+        console.log("localforage not initialized for saveIdToReadList");
+        set({ pendingReadItems: [...pendingReadItems, id] });
+        return;
       }
+
       console.log("new read list", readItems);
 
       // skip out if already there
@@ -227,24 +222,25 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       newReadList[id] = Date.now();
 
-      localforage.setItem(LOCAL_READ_ITEMS, newReadList);
+      await localforage.setItem(LOCAL_READ_ITEMS, newReadList);
 
       set({ readItems: newReadList });
     },
 
-    saveContent: (id: StoryId, content: HnItem) => {
-      const { rawData, dataNonce } = get();
+    saveContent: async (id: StoryId, content: HnItem) => {
+      const { dataNonce } = get();
+
+      await localforage.setItem("raw_" + id, content);
+
+      console.log("saved to localforage", "raw_" + id, content);
 
       set({
-        rawData: { ...rawData, [id]: content },
         dataNonce: dataNonce + 1,
       });
-
-      localforage.setItem("raw_" + id, content);
     },
 
     saveStoryList: async (page: StoryPage, data: HnItem[]) => {
-      const { rawData, dataNonce } = get();
+      const { dataNonce } = get();
 
       const storySummaries = mapStoriesToSummaries(data);
 
@@ -252,15 +248,13 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       console.log("saving to localforage", "STORIES_" + page, storySummaries);
       await localforage.setItem("STORIES_" + page, storySummaries);
 
-      const newRawData: Record<StoryId, HnItem> = {};
-
       for (const item of data) {
-        newRawData[item.id] = item;
         await localforage.setItem("raw_" + item.id, item);
       }
 
+      console.log("saved to localforage", "STORIES_" + page, storySummaries);
+
       set({
-        rawData: { ...rawData, ...newRawData },
         dataNonce: dataNonce + 1,
         storyListSaveCount: get().storyListSaveCount + 1,
       });
@@ -295,7 +289,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         url = "/topstories";
       }
 
-      // need to hit topsotries API
+      // need to hit topstories API
       const apiUrl = "/api/topstories" + url;
       set({ isLoadingData: true });
       const { data, storySummaries } = await getSummaryViaFetch(apiUrl);
@@ -304,7 +298,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       set({ isLoadingData: false });
 
-      saveStoryList(url.replace("/", "") as StoryPage, data);
+      await saveStoryList(url.replace("/", "") as StoryPage, data);
 
       return storySummaries;
     },
@@ -321,7 +315,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       console.log("initializeFromLocalForage");
 
       const readItems =
-        (await localforage.getItem<TimestampHash>(LOCAL_READ_ITEMS)) || {};
+        (await localforage.getItem<TimestampHash>(LOCAL_READ_ITEMS)) ?? {};
 
       const { pendingReadItems } = get();
 
@@ -354,7 +348,6 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     async getContent(id: StoryId, fromLocalStorageOnly = false) {
       // attempt to load from local info
       const {
-        rawData,
         isLocalForageInitialized,
         saveContent,
         initializeFromLocalForage,
@@ -370,15 +363,11 @@ export const useDataStore = create<DataStore & DataStoreActions>(
         await initializeFromLocalForage();
       }
 
-      // check if we have the item in the cache
-      if (id in rawData) {
-        return rawData[id];
-      }
-
       // load the item from localforage
       const item = await localforage.getItem<HnItem>("raw_" + id);
 
       if (item) {
+        console.log("found item in localforage", item);
         return item;
       }
 
@@ -388,7 +377,9 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       }
 
       const data = await getContentViaFetch(url);
-      if (data) saveContent(id, data);
+      if (data) {
+        await saveContent(id, data);
+      }
 
       return data;
     },
@@ -440,7 +431,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       const { data, storySummaries } = await getSummaryViaFetch(url);
 
-      saveStoryList(page as StoryPage, data);
+      await saveStoryList(page as StoryPage, data);
 
       return storySummaries;
     },

@@ -7,18 +7,17 @@ export function useGetContent(id: number, initialSsrData: HnItem | undefined) {
   );
 
   const saveContent = useDataStore((s) => s.saveContent);
-  useEffect(() => {
-    if (initialSsrData !== undefined) {
-      saveContent(id, initialSsrData);
-    }
-  }, []);
-
   const getContent = useDataStore((s) => s.getContent);
   const dataNonce = useDataStore((s) => s.dataNonce);
 
   useEffect(() => {
     async function fetchData() {
-      console.log("useGetContent fetchData", id, dataNonce);
+      if (initialSsrData !== undefined && dataNonce === 0) {
+        console.log("saving ssr content", id, dataNonce);
+        await saveContent(id, initialSsrData);
+      }
+
+      console.log("useGetContent", id, dataNonce);
       const data = await getContent(id, true);
       if (data) {
         setStoryData(data);
