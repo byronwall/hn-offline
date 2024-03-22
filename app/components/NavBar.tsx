@@ -66,7 +66,7 @@ export function NavBar() {
           <label className="inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
-              checked={shouldHideReadItems ?? false}
+              checked={shouldHideReadItems}
               onChange={toggleHideReadItems}
               className="peer sr-only"
             />

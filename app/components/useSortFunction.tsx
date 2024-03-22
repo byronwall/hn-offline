@@ -5,20 +5,27 @@ export function useSortFunction(
   sortType: string | undefined
 ) {
   const shouldHideReadItems = useDataStore((s) => s.shouldHideReadItems);
+
   const readItems = useDataStore((s) => s.readItems);
-  if (!sortType || !items) {
+
+  if (!items) {
     return items;
   }
+
   const itemsToRender = shouldHideReadItems
-    ? items.filter((item) => !readItems[item.id])
+    ? items.filter((item) => readItems[item.id] === undefined)
     : items;
 
+  if (!sortType) {
+    return itemsToRender;
+  }
+
   if (sortType === "score") {
-    itemsToRender.sort((a, b) => b.score - a.score);
+    return itemsToRender.toSorted((a, b) => b.score - a.score);
   }
 
   if (sortType === "read-then-points") {
-    itemsToRender.sort((a, b) => {
+    return itemsToRender.toSorted((a, b) => {
       const aIsRead = readItems[a.id] !== undefined;
       const bIsRead = readItems[b.id] !== undefined;
 
