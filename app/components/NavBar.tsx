@@ -1,6 +1,6 @@
 import { useDataStore } from "@/stores/useDataStore";
 import { cn } from "@/utils";
-import { Link, NavLink, useLocation } from "@remix-run/react";
+import { NavLink, useLocation } from "@remix-run/react";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -66,7 +66,7 @@ export function NavBar() {
           <label className="inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
-              checked={shouldHideReadItems}
+              checked={shouldHideReadItems ?? false}
               onChange={toggleHideReadItems}
               className="peer sr-only"
             />

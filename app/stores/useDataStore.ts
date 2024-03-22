@@ -179,7 +179,7 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       return undefined;
     },
 
-    setShouldHideReadItems: async (shouldHide: boolean) => {
+    setShouldHideReadItems: async (shouldHide = false) => {
       set({ shouldHideReadItems: shouldHide });
 
       // save via localforage
