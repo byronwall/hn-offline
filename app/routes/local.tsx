@@ -4,5 +4,5 @@ import { useGetLocalData } from "./useGetLocalData";
 export default function LocalPage() {
   const dataToUse = useGetLocalData();
 
-  return <HnStoryList items={dataToUse} />;
+  return <HnStoryList items={dataToUse} sortType="read-then-points" />;
 }

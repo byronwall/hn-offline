@@ -1,21 +1,18 @@
-import { HnStorySummary, useDataStore } from "@/stores/useDataStore";
+import { HnStorySummary } from "@/stores/useDataStore";
 import { HnListItem } from "./HnListItem";
+import { useSortFunction } from "./useSortFunction";
 
 interface HnStoryListProps {
   items?: HnStorySummary[];
+  sortType?: "score" | "read-then-points";
 }
 
-export function HnStoryList({ items }: HnStoryListProps) {
-  const shouldHideReadItems = useDataStore((s) => s.shouldHideReadItems);
-  const readItems = useDataStore((s) => s.readItems);
+export function HnStoryList({ items, sortType }: HnStoryListProps) {
+  const itemsToRender = useSortFunction(items, sortType);
 
-  if (!items) {
+  if (!itemsToRender) {
     return <div>Loading...</div>;
   }
-
-  const itemsToRender = shouldHideReadItems
-    ? items.filter((item) => !readItems[item.id])
-    : items;
 
   return (
     <div>
