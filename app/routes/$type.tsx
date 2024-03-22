@@ -75,5 +75,5 @@ export default function HnStoryListServer() {
   // summary data is the initial data from the client loader
   const dataToUse = realData ?? summaryData;
 
-  return <HnStoryList items={dataToUse} />;
+  return <HnStoryList items={dataToUse} page={page} />;
 }

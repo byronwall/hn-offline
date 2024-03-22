@@ -41,7 +41,7 @@ export default function Story() {
 
   return (
     <div>
-      <HnStoryPage id={id} storyData={data} />
+      <HnStoryPage id={id} storyData={data} key={id} />
     </div>
   );
 }

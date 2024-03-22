@@ -49,6 +49,7 @@ type DataStore = {
   shouldHideReadItems: boolean;
 
   storyListSaveCount: number;
+  activeStoryList: StoryPage | undefined;
 };
 
 type DataStoreActions = {
@@ -76,6 +77,11 @@ type DataStoreActions = {
   purgeLocalForage: () => Promise<void>;
 
   setShouldHideReadItems: (shouldHide: boolean) => Promise<void>;
+
+  setActiveStoryList: (list: StoryPage | undefined) => void;
+
+  getNextStoryId: (id: number) => Promise<number | undefined>;
+  getPreviousStoryId: (id: number) => Promise<number | undefined>;
 };
 
 if (typeof window !== "undefined") {
@@ -101,6 +107,77 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     storyListSaveCount: 0,
 
     shouldHideReadItems: false,
+
+    activeStoryList: undefined,
+    setActiveStoryList: (list) => {
+      set({ activeStoryList: list });
+    },
+
+    getNextStoryId: async (activeStoryId: number) => {
+      const { activeStoryList } = get();
+
+      if (activeStoryList === undefined || activeStoryId === undefined) {
+        return undefined;
+      }
+
+      const { readItems, getContentForPage } = get();
+
+      const storyList = await getContentForPage(activeStoryList);
+
+      if (!storyList) {
+        return undefined;
+      }
+
+      const storyIndex = storyList.findIndex(
+        (story) => story.id === activeStoryId
+      );
+
+      if (storyIndex === -1) {
+        return undefined;
+      }
+
+      // find the next story that is not read
+      for (let i = storyIndex + 1; i < storyList.length; i++) {
+        if (!readItems[storyList[i].id]) {
+          return storyList[i].id;
+        }
+      }
+
+      return undefined;
+    },
+
+    getPreviousStoryId: async (activeStoryId: number) => {
+      const { activeStoryList } = get();
+
+      if (activeStoryList === undefined || activeStoryId === undefined) {
+        return undefined;
+      }
+
+      const { readItems, getContentForPage } = get();
+
+      const storyList = await getContentForPage(activeStoryList);
+
+      if (!storyList) {
+        return undefined;
+      }
+
+      const storyIndex = storyList.findIndex(
+        (story) => story.id === activeStoryId
+      );
+
+      if (storyIndex === -1) {
+        return undefined;
+      }
+
+      // find the next story that is not read
+      for (let i = storyIndex - 1; i >= 0; i--) {
+        if (!readItems[storyList[i].id]) {
+          return storyList[i].id;
+        }
+      }
+
+      return undefined;
+    },
 
     setShouldHideReadItems: async (shouldHide: boolean) => {
       set({ shouldHideReadItems: shouldHide });
