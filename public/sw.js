@@ -1,11 +1,12 @@
 // Names of the two caches used in this version of the service worker.
 // Change to v2, etc. when you update any of the local resources, which will
 // in turn trigger the install event again.
-const PRECACHE = "precache-v12";
-const RUNTIME = "runtime-v12";
+const PRECACHE = "precache-v13";
+const RUNTIME = "runtime-v13";
 
 // A list of local resources we always want to be cached.
-const PRECACHE_URLS = [];
+// need these available so the site can work offline on all major pages
+const PRECACHE_URLS = ["/", "/day", "/week", "/local"];
 
 self.addEventListener("visibilitychange", function () {
   if (document.visibilityState === "visible") {
