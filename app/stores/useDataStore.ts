@@ -315,9 +315,30 @@ export const useDataStore = create<DataStore & DataStoreActions>(
 
       const storySummaries = mapStoriesToSummaries(data);
 
+      // check if the timestamp is more recent than current
+      // current saved at TIMESTAMP_{page}
+      const currentTimestamp = await localforage.getItem<number>(
+        "TIMESTAMP_" + page
+      );
+
+      // get max from data
+      const dataTimestamp = data.reduce((acc, item) => {
+        return Math.max(acc, item.time);
+      }, 0);
+
+      console.log("currentTimestamp", currentTimestamp, dataTimestamp);
+
+      if (currentTimestamp && currentTimestamp >= dataTimestamp) {
+        console.log("no need to save, current is newer or same");
+        return;
+      }
+
       // also save the new list to localforage
       console.log("saving to localforage", "STORIES_" + page, storySummaries);
       await localforage.setItem("STORIES_" + page, storySummaries);
+
+      // save the timestamp
+      await localforage.setItem("TIMESTAMP_" + page, dataTimestamp);
 
       for (const item of data) {
         await localforage.setItem("raw_" + item.id, item);
