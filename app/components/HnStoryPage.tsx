@@ -159,7 +159,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
       </h4>
 
       {/* link to next story */}
-      <div className="flex justify-between bg-orange-100 px-2 font-semibold sticky top-0">
+      <div className="flex justify-between bg-orange-100 px-2 font-semibold sticky top-[42px] -m-1">
         <div>
           {nextPrevIds?.prevId && (
             <Link
