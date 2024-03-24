@@ -78,7 +78,7 @@ type DataStoreActions = {
 
   setShouldHideReadItems: (shouldHide: boolean) => Promise<void>;
 
-  setActiveStoryList: (list: StoryPage | undefined) => void;
+  setActiveStoryList: (list: StoryPage | undefined) => Promise<void>;
 
   getNextStoryId: (id: number) => Promise<number | undefined>;
   getPreviousStoryId: (id: number) => Promise<number | undefined>;
@@ -97,6 +97,7 @@ if (typeof window !== "undefined") {
 
 const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
 const SHOULD_HIDE_READ_ITEMS = "SHOULD_HIDE_READ_ITEMS";
+const ACTIVE_STORY_LIST = "ACTIVE_STORY_LIST";
 
 export const useDataStore = create<DataStore & DataStoreActions>(
   (set, get) => ({
@@ -109,8 +110,11 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     shouldHideReadItems: false,
 
     activeStoryList: undefined,
-    setActiveStoryList: (list) => {
+    setActiveStoryList: async (list) => {
       set({ activeStoryList: list });
+
+      // save via localforage
+      await localforage.setItem(ACTIVE_STORY_LIST, list);
     },
 
     getNextStoryId: async (activeStoryId: number) => {
@@ -420,17 +424,23 @@ export const useDataStore = create<DataStore & DataStoreActions>(
       const shouldHideReadItems =
         (await localforage.getItem<boolean>(SHOULD_HIDE_READ_ITEMS)) || false;
 
-      console.log(
-        "initializeFromLocalForage done",
+      // get the active story list
+      const activeStoryList =
+        (await localforage.getItem<StoryPage | undefined>(ACTIVE_STORY_LIST)) ??
+        "day";
+
+      console.log("initializeFromLocalForage done", {
         readItems,
-        shouldHideReadItems
-      );
+        shouldHideReadItems,
+        activeStoryList,
+      });
 
       set({
         isLocalForageInitialized: true,
         readItems,
         pendingReadItems: [],
         shouldHideReadItems,
+        activeStoryList,
       });
 
       // do a purge in the future, 1 seconds

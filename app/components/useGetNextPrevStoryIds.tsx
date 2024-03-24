@@ -3,8 +3,12 @@ import { useAsync } from "./useAsync";
 
 export function useGetNextPrevStoryIds(id: number) {
   // get the current ID from the URL
-  const getNext = useDataStore((s) => s.getNextStoryId);
-  const getPrev = useDataStore((s) => s.getPreviousStoryId);
+  // manually tracking the active list since it will update with local storage
+  const { getNext, getPrev, activeList } = useDataStore((s) => ({
+    getNext: s.getNextStoryId,
+    activeList: s.activeStoryList,
+    getPrev: s.getPreviousStoryId,
+  }));
 
   // get the story data from the store
   const nextPrevIds = useAsync(async () => {
@@ -15,7 +19,7 @@ export function useGetNextPrevStoryIds(id: number) {
     const nextId = await getNext(id);
     const prevId = await getPrev(id);
     return { nextId, prevId };
-  }, [id]);
+  }, [id, activeList]);
 
   return nextPrevIds.value;
 }

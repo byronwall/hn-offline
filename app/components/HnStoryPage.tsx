@@ -126,7 +126,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
   const comments = (storyData.kidsObj || []).filter(isValidComment);
 
   return (
-    <div>
+    <div className="relative">
       <h2
         className="text-2xl font-bold mb-2 hover:underline"
         style={{ overflowWrap: "break-word" }}
@@ -159,7 +159,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
       </h4>
 
       {/* link to next story */}
-      <div className="flex justify-between bg-orange-100 px-2 font-semibold">
+      <div className="flex justify-between bg-orange-100 px-2 font-semibold sticky top-0">
         <div>
           {nextPrevIds?.prevId && (
             <Link

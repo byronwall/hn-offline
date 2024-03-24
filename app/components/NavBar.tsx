@@ -1,7 +1,7 @@
 import { useDataStore } from "@/stores/useDataStore";
 import { cn } from "@/utils";
 import { NavLink, useLocation } from "@remix-run/react";
-import { Loader2 } from "lucide-react";
+import { Shell } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function NavBar() {
@@ -76,7 +76,7 @@ export function NavBar() {
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 text-xl">
         <NavLink to="/local" className="hover:underline">
           local
         </NavLink>
@@ -87,8 +87,8 @@ export function NavBar() {
           week
         </NavLink>
 
-        <Loader2
-          size="24"
+        <Shell
+          size="32"
           color="black"
           className={cn(
             "hover:cursor-pointer hover:stroke-blue-500 transition-colors duration-300 ease-in-out",

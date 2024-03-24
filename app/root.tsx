@@ -43,9 +43,11 @@ export default function App() {
         <Links />
         <Meta />
       </head>
-      <body className="bg-orange-50">
+      <body className="bg-orange-50 relative">
         <main className="bg-white mx-auto flex min-h-screen flex-col items-center justify-between pb-24 max-w-[640px] w-full ">
-          <NavBar />
+          <div className="sticky top-0 bg-white z-10 w-full">
+            <NavBar />
+          </div>
 
           <div className="border flex-1 w-full p-1">
             <Outlet />
