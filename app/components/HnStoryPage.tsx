@@ -127,67 +127,66 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
 
   return (
     <div className="relative">
-      <div className="flex flex-col gap-2">
-        <h2
-          className="text-2xl font-bold hover:underline"
-          style={{ overflowWrap: "break-word" }}
-        >
-          {storyLinkEl}
-        </h2>
-        <h4>
-          <span>{storyData.by}</span>
-          <span>{" | "}</span>
-          <span>
-            {storyData.score}
-            {" points"}
-          </span>
-          <span>{" | "}</span>
-          <span>{timeSince(storyData.time)} ago</span>
-          <span>{" | "}</span>
-          <span>{getDomain(storyData.url)}</span>
-          {isNavigator && "share" in navigator && (
-            <>
-              <span>{" | "}</span>
-              <button
-                onClick={handleShareClick}
-                className="hover:text-orange-500"
-              >
-                <ArrowUpRightFromSquare size={16} />
-              </button>
-            </>
-          )}
-        </h4>
-        <div className="flex justify-between bg-orange-100 px-2 font-semibold sticky top-[42px] -m-1">
-          <div>
-            {nextPrevIds?.prevId && (
-              <Link
-                to={`/story/${nextPrevIds?.prevId}`}
-                className="hover:underline"
-                replace
-              >
-                {"<"} Previous
-              </Link>
-            )}
-          </div>
-          <div>
-            {nextPrevIds?.nextId && (
-              <Link
-                to={`/story/${nextPrevIds?.nextId}`}
-                className="hover:underline"
-                replace
-              >
-                Next {">"}
-              </Link>
-            )}
-          </div>
-        </div>
-        {storyData.text !== undefined && (
-          <p
-            className="user-text break-words "
-            dangerouslySetInnerHTML={{ __html: textToRender }}
-          />
+      <h2
+        className="text-2xl font-bold hover:underline mb-2"
+        style={{ overflowWrap: "break-word" }}
+      >
+        {storyLinkEl}
+      </h2>
+      <h4 className="mb-2">
+        <span>{storyData.by}</span>
+        <span>{" | "}</span>
+        <span>
+          {storyData.score}
+          {" points"}
+        </span>
+        <span>{" | "}</span>
+        <span>{timeSince(storyData.time)} ago</span>
+        <span>{" | "}</span>
+        <span>{getDomain(storyData.url)}</span>
+        {isNavigator && "share" in navigator && (
+          <>
+            <span>{" | "}</span>
+            <button
+              onClick={handleShareClick}
+              className="hover:text-orange-500"
+            >
+              <ArrowUpRightFromSquare size={16} />
+            </button>
+          </>
         )}
+      </h4>
+      <div className="flex justify-between bg-orange-100 px-2 font-semibold sticky top-[42px] -m-1">
+        <div>
+          {nextPrevIds?.prevId && (
+            <Link
+              to={`/story/${nextPrevIds?.prevId}`}
+              className="hover:underline"
+              replace
+            >
+              {"<"} Previous
+            </Link>
+          )}
+        </div>
+        <div>
+          {nextPrevIds?.nextId && (
+            <Link
+              to={`/story/${nextPrevIds?.nextId}`}
+              className="hover:underline"
+              replace
+            >
+              Next {">"}
+            </Link>
+          )}
+        </div>
       </div>
+      {storyData.text !== undefined && (
+        <p
+          className="user-text break-words "
+          dangerouslySetInnerHTML={{ __html: textToRender }}
+        />
+      )}
+
       <div className="user-text">
         <StoryContext.Provider value={storyData}>
           <HnCommentList
