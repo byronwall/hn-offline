@@ -5,9 +5,9 @@
  */
 
 import { RemixBrowser } from "@remix-run/react";
-import { startTransition, StrictMode } from "react";
+import * as Sentry from "@sentry/remix";
+import { StrictMode, startTransition } from "react";
 import { hydrateRoot } from "react-dom/client";
-import * as Sentry from "@sentry/browser";
 
 // TODO: make this an environment variable
 Sentry.init({

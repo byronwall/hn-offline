@@ -12,11 +12,14 @@ import { RemixServer } from "@remix-run/react";
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
 
-import Sentry from "@sentry/node";
+import * as Sentry from "@sentry/remix";
+import { wrapRemixHandleError } from "@sentry/remix";
 
 Sentry.init({
   dsn: "https://5326405b04dd46e88f2733b37cf23e60@occ4w04.apps.byroni.us/34",
 });
+
+export const handleError = wrapRemixHandleError;
 
 const ABORT_DELAY = 5_000;
 

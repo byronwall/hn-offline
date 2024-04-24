@@ -21,7 +21,6 @@ export function useSortFunction(
   }
 
   if (sortType === "score") {
-    // const test = itemsToRender.toSorted();
     return toSortedShim(itemsToRender, (a, b) => b.score - a.score);
   }
 
