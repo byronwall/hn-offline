@@ -21,11 +21,12 @@ export function useSortFunction(
   }
 
   if (sortType === "score") {
-    return itemsToRender.toSorted((a, b) => b.score - a.score);
+    // const test = itemsToRender.toSorted();
+    return toSortedShim(itemsToRender, (a, b) => b.score - a.score);
   }
 
   if (sortType === "read-then-points") {
-    return itemsToRender.toSorted((a, b) => {
+    return toSortedShim(itemsToRender, (a, b) => {
       const aIsRead = readItems[a.id] !== undefined;
       const bIsRead = readItems[b.id] !== undefined;
 
@@ -48,4 +49,8 @@ export function useSortFunction(
   }
 
   return itemsToRender;
+}
+
+function toSortedShim<T>(arr: T[], compareFn: (a: T, b: T) => number): T[] {
+  return arr.slice().sort(compareFn);
 }
