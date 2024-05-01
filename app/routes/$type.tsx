@@ -68,6 +68,13 @@ export default function HnStoryListServer() {
   // summary data is the initial data from the client loader
   const dataToUse = realData ?? summaryData;
 
+  const isInit = useDataStore((s) => s.isLocalForageInitialized);
+  if (!isInit) {
+    // prevent rendering if no local storage
+    // this prevents a bump when local storage comes through
+    return null;
+  }
+
   return (
     <HnStoryList
       items={dataToUse}
