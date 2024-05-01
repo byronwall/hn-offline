@@ -44,6 +44,12 @@ export default function App() {
         <meta name="apple-mobile-web-app-title" content="HN Offline" />
         <Links />
         <Meta />
+
+        <script
+          defer
+          src="https://as8ws0w.apps.byroni.us/script.js"
+          data-website-id="b0a4cc50-7c62-4999-b77f-e277452a636c"
+        ></script>
       </head>
       <body className="bg-orange-50 relative">
         <main className="bg-white mx-auto flex min-h-screen flex-col items-center justify-between pb-24 max-w-[640px] w-full ">
