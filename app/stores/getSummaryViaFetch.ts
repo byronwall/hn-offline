@@ -24,7 +24,7 @@ export async function getSummaryViaFetch(url: string) {
 }
 
 export function mapStoriesToSummaries(data: HnItem[] | undefined) {
-  if (!data) {
+  if (!data || !Array.isArray(data)) {
     return undefined;
   }
 
