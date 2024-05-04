@@ -59,7 +59,7 @@ export const clientLoader = async ({ params }: ClientLoaderFunctionArgs) => {
 
 export default function Story() {
   const data = useLoaderData<HnItem>();
-  const id = data.id;
+  const id = data?.id;
 
   return (
     <div>
