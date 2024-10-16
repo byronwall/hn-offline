@@ -169,6 +169,7 @@ export class HnComment extends React.Component<HnCommentProps> {
                 <span
                   className={cn({
                     "text-orange-700 font-bold": isCommentByStoryAuthor,
+                    truncate: true,
                   })}
                 >
                   {comment.by}
