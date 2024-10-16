@@ -1,6 +1,6 @@
 import React, { createContext, useEffect, useState } from "react";
 
-import { getDomain, isNavigator, timeSince } from "@/utils";
+import { cn, getDomain, isNavigator, timeSince } from "@/utils";
 import { isValidComment } from "./HnComment";
 import { HnCommentList } from "./HnCommentList";
 
@@ -109,6 +109,8 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
     }
   }, [idToScrollTo]);
 
+  const [isTextCollapsed, setIsTextCollapsed] = useState(false);
+
   if (!storyData) {
     return null;
   }
@@ -130,36 +132,52 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
       >
         {storyLinkEl}
       </h2>
-      <h4 className="mb-2">
-        <span>{storyData.by}</span>
-        <span>{" | "}</span>
-        <span>
-          {storyData.score}
-          {" points"}
-        </span>
-        <span>{" | "}</span>
-        <span>{timeSince(storyData.time)} ago</span>
-        <span>{" | "}</span>
-        <span>{getDomain(storyData.url)}</span>
-        {isNavigator && "share" in navigator && (
-          <>
-            <span>{" | "}</span>
-            <button
-              onClick={handleShareClick}
-              className="hover:text-orange-500"
-            >
-              <ArrowUpRightFromSquare size={16} />
-            </button>
-          </>
-        )}
-      </h4>
 
-      {storyData.text !== undefined && (
-        <p
-          className="user-text break-words "
-          dangerouslySetInnerHTML={{ __html: textToRender }}
-        />
-      )}
+      <div
+        className={cn(
+          { "border-l-2 border-orange-500 px-2": storyData.text },
+          {
+            collapsed: isTextCollapsed,
+          }
+        )}
+        onClick={() => {
+          if (!storyData.text) {
+            return;
+          }
+          setIsTextCollapsed(!isTextCollapsed);
+        }}
+      >
+        <h4 className="mb-2">
+          <span>{storyData.by}</span>
+          <span>{" | "}</span>
+          <span>
+            {storyData.score}
+            {" points"}
+          </span>
+          <span>{" | "}</span>
+          <span>{timeSince(storyData.time)} ago</span>
+          <span>{" | "}</span>
+          <span>{getDomain(storyData.url)}</span>
+          {isNavigator && "share" in navigator && (
+            <>
+              <span>{" | "}</span>
+              <button
+                onClick={handleShareClick}
+                className="hover:text-orange-500"
+              >
+                <ArrowUpRightFromSquare size={16} />
+              </button>
+            </>
+          )}
+        </h4>
+
+        {storyData.text !== undefined && !isTextCollapsed && (
+          <p
+            className="user-text break-words "
+            dangerouslySetInnerHTML={{ __html: textToRender }}
+          />
+        )}
+      </div>
 
       <div className="user-text">
         <StoryContext.Provider value={storyData}>
