@@ -144,7 +144,15 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
           if (!storyData.text) {
             return;
           }
-          setIsTextCollapsed(!isTextCollapsed);
+
+          const newIsCollapsed = !isTextCollapsed;
+
+          setIsTextCollapsed(newIsCollapsed);
+
+          // scroll to first comment if it exists
+          if (newIsCollapsed && comments.length > 0) {
+            setIdToScrollTo(comments[0]?.id);
+          }
         }}
       >
         <h4 className="mb-2">
