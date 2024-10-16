@@ -5,14 +5,9 @@
  */
 
 import { RemixBrowser } from "@remix-run/react";
-import * as Sentry from "@sentry/remix";
+
 import { StrictMode, startTransition } from "react";
 import { hydrateRoot } from "react-dom/client";
-
-// TODO: make this an environment variable
-Sentry.init({
-  dsn: "https://3b80771b89684f458ac049432eaf81b5@occ4w04.apps.byroni.us/1",
-});
 
 // load service worker @ sw.js
 if ("serviceWorker" in navigator) {
