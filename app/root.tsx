@@ -10,7 +10,6 @@ import {
   useRouteError,
 } from "@remix-run/react";
 
-import { captureRemixErrorBoundaryError } from "@sentry/remix";
 import { useEffect } from "react";
 import { NavBar } from "./components/NavBar";
 import { useDataStore } from "./stores/useDataStore";
@@ -71,9 +70,5 @@ export default function App() {
 }
 
 export const ErrorBoundary = () => {
-  const error = useRouteError();
-
-  captureRemixErrorBoundaryError(error);
-
   return <div> Major Error </div>;
 };
