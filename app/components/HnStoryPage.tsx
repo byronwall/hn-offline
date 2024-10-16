@@ -5,12 +5,11 @@ import { isValidComment } from "./HnComment";
 import { HnCommentList } from "./HnCommentList";
 
 import { HnItem, useDataStore } from "@/stores/useDataStore";
-import { Link, useNavigate } from "@remix-run/react";
+import { useNavigate } from "@remix-run/react";
 import { ArrowUpRightFromSquare } from "lucide-react";
 
 import { processHtmlAndTruncateAnchorText } from "./processHtmlAndTruncateAnchorText";
 import { useGetContent } from "./useGetContent";
-import { useGetNextPrevStoryIds } from "./useGetNextPrevStoryIds";
 
 interface HnStoryPageProps {
   id: number | undefined;
@@ -110,8 +109,6 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
     }
   }, [idToScrollTo]);
 
-  const nextPrevIds = useGetNextPrevStoryIds(id!);
-
   if (!storyData) {
     return null;
   }
@@ -156,30 +153,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
           </>
         )}
       </h4>
-      <div className="flex justify-between bg-orange-100 px-2 font-semibold sticky top-[42px] -m-1">
-        <div>
-          {nextPrevIds?.prevId && (
-            <Link
-              to={`/story/${nextPrevIds?.prevId}`}
-              className="hover:underline"
-              replace
-            >
-              {"<"} Previous
-            </Link>
-          )}
-        </div>
-        <div>
-          {nextPrevIds?.nextId && (
-            <Link
-              to={`/story/${nextPrevIds?.nextId}`}
-              className="hover:underline"
-              replace
-            >
-              Next {">"}
-            </Link>
-          )}
-        </div>
-      </div>
+
       {storyData.text !== undefined && (
         <p
           className="user-text break-words "
