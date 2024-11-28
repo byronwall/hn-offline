@@ -135,7 +135,10 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
 
       <div
         className={cn(
-          { "border-l-2 border-orange-500 px-2": storyData.text },
+          {
+            "border-l-4 border-orange-500 px-2 rounded-tl rounded-bl":
+              storyData.text,
+          },
           {
             collapsed: isTextCollapsed,
           }
