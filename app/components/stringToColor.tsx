@@ -16,7 +16,7 @@ export function stringToColor(
     return colorMap[str];
   }
 
-  const minLightness: number = 50; // Increased to avoid dark colors
+  const minLightness: number = 40;
   const maxLightness: number = 80;
 
   let hash = 0;
