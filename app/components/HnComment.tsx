@@ -7,6 +7,7 @@ import { ArrowUpRightFromSquare } from "lucide-react";
 import sanitizeHtml from "sanitize-html";
 import { decode } from "html-entities";
 import { StoryContext } from "./HnStoryPage";
+import { stringToColor } from "./stringToColor";
 
 export interface HnCommentProps {
   comment: KidsObj3 | null;
@@ -24,15 +25,6 @@ export interface HnCommentProps {
   idToScrollTo: number | undefined;
   nextChildId: number | undefined;
 }
-
-const colors = [
-  "#bc8672",
-  "#c5be53",
-  "#d46850",
-  "#8c7f3b",
-  "#dec392",
-  "#c9893a",
-];
 
 export class HnComment extends React.Component<HnCommentProps> {
   divRef: React.RefObject<HTMLDivElement>;
@@ -145,11 +137,11 @@ export class HnComment extends React.Component<HnCommentProps> {
       </React.Fragment>
     );
 
-    const borderColor = depth < colors.length ? colors[depth] : "#bbb";
     return (
       <StoryContext.Consumer>
         {(storyData) => {
           const isCommentByStoryAuthor = storyData?.by === comment.by;
+          const borderColor = stringToColor(comment.by, isCommentByStoryAuthor);
 
           return (
             <div
@@ -159,6 +151,9 @@ export class HnComment extends React.Component<HnCommentProps> {
                 paddingLeft: 12 + Math.max(4 - depth),
                 marginLeft: 0,
                 borderLeftColor: borderColor,
+                borderLeftWidth: 4,
+                borderTopLeftRadius: 4,
+                borderBottomLeftRadius: 4,
               }}
             >
               <p
