@@ -1,11 +1,20 @@
 const colorMap: Record<string, string> = {};
 
+const MIN_SATURATION = 30;
+const MAX_SATURATION = 75;
+
+const MIN_HUE = 0;
+const MAX_HUE = 360;
+
+const MIN_LIGHTNESS = 40;
+const MAX_LIGHTNESS = 80;
+
 export function stringToColor(
   str: string | undefined,
   isCommentByStoryAuthor: boolean
 ) {
   if (str === undefined) {
-    return "#000000";
+    return "#000";
   }
 
   if (isCommentByStoryAuthor) {
@@ -16,17 +25,16 @@ export function stringToColor(
     return colorMap[str];
   }
 
-  const minLightness: number = 40;
-  const maxLightness: number = 80;
-
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
 
-  const h = hash % 360;
-  const s = 70 + (hash % 30); // Saturation between 70% and 100%
-  const l = minLightness + (hash % (maxLightness - minLightness)); // Lightness between minLightness and maxLightness
+  hash = Math.abs(hash);
+
+  const h = MIN_HUE + (hash % (MAX_HUE - MIN_HUE)); // Hue between MIN_HUE and MAX_HUE
+  const s = MIN_SATURATION + (hash % (MAX_SATURATION - MIN_SATURATION)); // Saturation between MIN_SATURATION and MAX_SATURATION
+  const l = MIN_LIGHTNESS + (hash % (MAX_LIGHTNESS - MIN_LIGHTNESS)); // Lightness between minLightness and maxLightness
 
   const color = `hsl(${h}, ${s}%, ${l}%)`;
 

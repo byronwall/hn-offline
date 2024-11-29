@@ -198,6 +198,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
             collapsedIds={collapsedComments}
             onUpdateOpen={handleCollapseEvent}
             idToScrollTo={idToScrollTo}
+            authorChain={[]}
           />
         </StoryContext.Provider>
       </div>
