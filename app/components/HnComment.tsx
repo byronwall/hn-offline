@@ -24,6 +24,8 @@ export interface HnCommentProps {
   collapsedIds: number[];
   idToScrollTo: number | undefined;
   nextChildId: number | undefined;
+
+  authorChain: (string | undefined)[];
 }
 
 export class HnComment extends React.Component<HnCommentProps> {
@@ -102,11 +104,35 @@ export class HnComment extends React.Component<HnCommentProps> {
   };
 
   render() {
-    const { idToScrollTo, comment, isOpen, depth, onUpdateOpen, collapsedIds } =
-      this.props;
+    const {
+      idToScrollTo,
+      comment,
+      isOpen,
+      depth,
+      onUpdateOpen,
+      collapsedIds,
+      authorChain,
+    } = this.props;
 
     if (comment === null) {
       return null;
+    }
+
+    const depthMatchInAuthorChain = authorChain.lastIndexOf(
+      comment.by || undefined
+    );
+
+    const shouldShowBar = depthMatchInAuthorChain >= 0;
+
+    // ensure that line goes across the varying padding + 4px border
+    const widths = [20, 19, 18, 17, 16, 16, 16, 16, 16, 16, 16, 16, 16];
+
+    // negative sum from depth to matching depth
+    let leftPos = 0;
+    if (shouldShowBar) {
+      leftPos = widths
+        .slice(depthMatchInAuthorChain, depth)
+        .reduce((acc, val) => acc - val, 0);
     }
 
     // TODO: don't modify this array here
@@ -132,6 +158,7 @@ export class HnComment extends React.Component<HnCommentProps> {
             onUpdateOpen={onUpdateOpen}
             collapsedIds={collapsedIds}
             idToScrollTo={idToScrollTo}
+            authorChain={[...authorChain, comment.by]}
           />
         )}
       </React.Fragment>
@@ -145,7 +172,7 @@ export class HnComment extends React.Component<HnCommentProps> {
 
           return (
             <div
-              className={cn("bp3-card", { collapsed: !isOpen })}
+              className={cn("bp3-card relative", { collapsed: !isOpen })}
               onClick={this.handleCardClick}
               style={{
                 paddingLeft: 12 + Math.max(4 - depth),
@@ -156,6 +183,20 @@ export class HnComment extends React.Component<HnCommentProps> {
                 borderBottomLeftRadius: 4,
               }}
             >
+              {shouldShowBar && isOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    left: leftPos,
+                    width: Math.abs(leftPos + 4),
+                    backgroundColor: borderColor,
+                    height: 7,
+                    borderTop: "2px solid white",
+                    borderBottom: "2px solid white",
+                  }}
+                ></div>
+              )}
               <p
                 style={{ fontWeight: isOpen ? 450 : 300 }}
                 ref={this.divRef}

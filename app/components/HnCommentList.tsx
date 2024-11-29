@@ -18,6 +18,7 @@ interface HnCommentListProps {
 
   collapsedIds: number[];
   idToScrollTo: number | undefined;
+  authorChain: (string | undefined)[];
 }
 
 export class HnCommentList extends React.Component<HnCommentListProps, {}> {
@@ -52,7 +53,8 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
   };
 
   render() {
-    const { childComments, collapsedIds, depth, idToScrollTo } = this.props;
+    const { childComments, collapsedIds, depth, idToScrollTo, authorChain } =
+      this.props;
 
     const validChildren = childComments.filter((comm) => comm !== null);
 
@@ -75,6 +77,7 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
             }
             collapsedIds={collapsedIds}
             idToScrollTo={idToScrollTo}
+            authorChain={authorChain}
           />
         </div>
       ));
@@ -104,6 +107,7 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
                 }
                 collapsedIds={collapsedIds}
                 idToScrollTo={idToScrollTo}
+                authorChain={authorChain}
               />
             </div>
           );
