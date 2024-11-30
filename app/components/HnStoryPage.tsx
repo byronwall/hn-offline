@@ -1,7 +1,7 @@
 import React, { createContext, useEffect, useState } from "react";
 
 import { cn, getDomain, isNavigator, timeSince } from "@/utils";
-import { isValidComment } from "./HnComment";
+import { isValidComment } from "./isValidComment";
 import { HnCommentList } from "./HnCommentList";
 
 import { HnItem, useDataStore } from "@/stores/useDataStore";
@@ -10,6 +10,7 @@ import { ArrowUpRightFromSquare } from "lucide-react";
 
 import { processHtmlAndTruncateAnchorText } from "./processHtmlAndTruncateAnchorText";
 import { useGetContent } from "./useGetContent";
+import { useCommentStore } from "~/features/comments/indexedDb";
 
 interface HnStoryPageProps {
   id: number | undefined;
@@ -25,10 +26,12 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
   id,
   storyData: _storyData,
 }) => {
-  const [collapsedComments, setCollapsedComments] = useState<number[]>([]);
   const [idToScrollTo, setIdToScrollTo] = useState<number | undefined>(
     undefined
   );
+
+  const updateCollapsedState = useCommentStore((s) => s.updateCollapsedState);
+  const collapsedComments = useCommentStore((s) => s.collapsedIds);
 
   const storyData = useGetContent(id!, _storyData);
 
@@ -49,15 +52,9 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
     newOpen: boolean,
     scrollId: number | undefined
   ) => {
-    if (newOpen) {
-      const newIds = collapsedComments.filter((c) => c !== id);
-      sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newIds));
-      setCollapsedComments(newIds);
-    } else {
-      const newIds = [...collapsedComments, id];
-      sessionStorage.setItem(SESSION_COLLAPSED, JSON.stringify(newIds));
-      setCollapsedComments(newIds);
-    }
+    updateCollapsedState(id, !newOpen);
+
+    console.log("handleCollapseEvent", { id, newOpen, scrollId });
 
     if (scrollId !== undefined) {
       setIdToScrollTo(scrollId);
@@ -87,12 +84,6 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
 
     window.scrollTo({ top: 0 });
     document.body.addEventListener("click", anchorClickHandler);
-
-    const strCollapsedIds = sessionStorage.getItem(SESSION_COLLAPSED);
-    if (strCollapsedIds !== null) {
-      const collapsedIds = JSON.parse(strCollapsedIds) as number[];
-      setCollapsedComments(collapsedIds);
-    }
 
     if (id !== undefined) {
       onVisitMarker(id);

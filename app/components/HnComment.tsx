@@ -8,6 +8,7 @@ import sanitizeHtml from "sanitize-html";
 import { decode } from "html-entities";
 import { StoryContext } from "./HnStoryPage";
 import { stringToColor } from "./stringToColor";
+import { isValidComment } from "./isValidComment";
 
 export interface HnCommentProps {
   comment: KidsObj3 | null;
@@ -43,7 +44,7 @@ export class HnComment extends React.Component<HnCommentProps> {
     const { idToScrollTo, comment } = this.props;
     if (idToScrollTo === comment?.id) {
       const dims = this.divRef.current?.offsetTop;
-      console.log("scrolling to me", dims);
+      console.log("***scrolling to me", dims);
 
       if (dims !== undefined) {
         window.scrollTo({ behavior: "smooth", top: dims - 80 });
@@ -256,16 +257,4 @@ export class HnComment extends React.Component<HnCommentProps> {
 
     onUpdateOpen(comment.id, newIsOpen, undefined, comment, nextChildId);
   };
-}
-
-export function isValidComment(comment: KidsObj3 | null) {
-  // TODO: these items need to be removed somewhere else
-  if (comment === null) {
-    return false;
-  }
-  const isBad =
-    comment.deleted &&
-    (comment.kidsObj === undefined || comment.kidsObj.length === 0);
-
-  return !isBad;
 }
