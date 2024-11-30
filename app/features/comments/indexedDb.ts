@@ -11,7 +11,10 @@ interface Comment {
 interface CommentStore {
   collapsedIds: Record<number, true>;
   fetchInitialCollapsedState: () => void;
-  updateCollapsedState: (commentId: number, collapsed: boolean) => void;
+  updateCollapsedState: (
+    commentId: number | undefined,
+    collapsed: boolean
+  ) => void;
   cleanUpOldEntries: () => void;
 }
 
@@ -52,6 +55,10 @@ export const useCommentStore = create<CommentStore>()((set) => ({
   },
 
   updateCollapsedState: async (commentId, collapsed) => {
+    if (!commentId) {
+      return;
+    }
+
     if (!db) {
       db = await openCommentsDatabase();
     }
