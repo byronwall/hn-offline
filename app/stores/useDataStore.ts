@@ -50,6 +50,8 @@ type DataStore = {
 
   storyListSaveCount: number;
   activeStoryList: StoryPage | undefined;
+
+  scrollToId: number | undefined;
 };
 
 type DataStoreActions = {
@@ -82,6 +84,9 @@ type DataStoreActions = {
 
   getNextStoryId: (id: number) => Promise<number | undefined>;
   getPreviousStoryId: (id: number) => Promise<number | undefined>;
+
+  clearScrollToId: () => void;
+  setScrollToId: (id: number) => void;
 };
 
 if (typeof window !== "undefined") {
@@ -108,6 +113,14 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     storyListSaveCount: 0,
 
     shouldHideReadItems: false,
+
+    scrollToId: undefined,
+    setScrollToId: (id) => {
+      set({ scrollToId: id });
+    },
+    clearScrollToId: () => {
+      set({ scrollToId: undefined });
+    },
 
     activeStoryList: undefined,
     setActiveStoryList: async (list) => {

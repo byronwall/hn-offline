@@ -7,13 +7,13 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useRouteError,
 } from "@remix-run/react";
 
 import { useEffect } from "react";
 import { NavBar } from "./components/NavBar";
 import { useDataStore } from "./stores/useDataStore";
 import styles from "./tailwind.css";
+import { useCommentStore } from "./features/comments/indexedDb";
 
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
@@ -27,9 +27,15 @@ export const meta = () => [
 
 export default function App() {
   const initLocalForage = useDataStore((s) => s.initializeFromLocalForage);
+
+  const fetchInitialCollapsedState = useCommentStore(
+    (s) => s.fetchInitialCollapsedState
+  );
+
   useEffect(() => {
     console.log("App useEffect initLocalForage");
     initLocalForage();
+    fetchInitialCollapsedState();
   }, []);
 
   return (
@@ -51,7 +57,8 @@ export default function App() {
         ></script>
       </head>
       <body className="bg-orange-50 relative">
-        <main className="bg-white mx-auto flex min-h-screen flex-col items-center justify-between pb-24 max-w-[640px] w-full ">
+        {/* the padding bottom ensures that a full screen of blank is available when forcing scrolls */}
+        <main className="bg-white mx-auto flex min-h-screen flex-col items-center justify-between max-w-[640px] w-full pb-[90vh]">
           <div className="sticky top-0 bg-white z-10 w-full">
             <NavBar />
           </div>

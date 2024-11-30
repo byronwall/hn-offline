@@ -50,6 +50,7 @@ pre {
 }
 
 .collapsed {
+  --flash-color: #ff6600;
   animation: flash-background 3s;
 }
 
@@ -59,7 +60,7 @@ pre {
   }
   /* Adding a step in the middle */
   25% {
-    background: #ff6600;
+    background: var(--flash-color);
   }
   100% {
     background: white;
