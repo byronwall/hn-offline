@@ -87,7 +87,16 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
     };
   }, []);
 
-  const [isTextCollapsed, setIsTextCollapsed] = useState(false);
+  const collapsedIds = useCommentStore((s) => s.collapsedIds);
+
+  const _isOpen = collapsedIds[storyData?.id] !== true;
+  const [isTextOpen, setIsTextCollapsed] = useState(_isOpen);
+
+  useEffect(() => {
+    setIsTextCollapsed(_isOpen);
+  }, [_isOpen]);
+
+  const isTextCollapsed = isTextOpen === false;
 
   if (!storyData) {
     return null;
@@ -101,6 +110,25 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
     );
 
   const comments = (storyData.kidsObj || []).filter(isValidComment);
+
+  function handleStoryTextClick() {
+    if (!storyData?.text) {
+      return;
+    }
+
+    const newIsCollapsed = !isTextCollapsed;
+
+    setIsTextCollapsed(newIsCollapsed);
+    updateCollapsedState(storyData.id, newIsCollapsed);
+
+    // scroll to first comment if it exists
+    // schedule out 200ms to allow the collapse animation to finish
+    setTimeout(() => {
+      if (newIsCollapsed && comments.length > 0 && comments[0]?.id) {
+        setIdToScrollTo(comments[0]?.id);
+      }
+    }, 100);
+  }
 
   return (
     <div className="relative">
@@ -121,20 +149,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
             collapsed: isTextCollapsed,
           }
         )}
-        onClick={() => {
-          if (!storyData.text) {
-            return;
-          }
-
-          const newIsCollapsed = !isTextCollapsed;
-
-          setIsTextCollapsed(newIsCollapsed);
-
-          // scroll to first comment if it exists
-          if (newIsCollapsed && comments.length > 0 && comments[0]?.id) {
-            setIdToScrollTo(comments[0]?.id);
-          }
-        }}
+        onClick={handleStoryTextClick}
       >
         <h4 className="mb-2">
           <span>{storyData.by}</span>
