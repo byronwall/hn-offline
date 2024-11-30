@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { devtools } from "zustand/middleware";
 
 // Define the Comment interface used in both the hook and the store
 interface Comment {
@@ -10,7 +9,7 @@ interface Comment {
 
 // Define the store state interface
 interface CommentStore {
-  collapsedIds: number[];
+  collapsedIds: Record<number, true>;
   fetchInitialCollapsedState: () => void;
   updateCollapsedState: (commentId: number, collapsed: boolean) => void;
   cleanUpOldEntries: () => void;
@@ -19,108 +18,116 @@ interface CommentStore {
 let db: IDBDatabase | null = null;
 
 // Create the Zustand store with middleware for devtools
-export const useCommentStore = create<CommentStore>()(
-  devtools((set) => ({
-    collapsedIds: [],
+export const useCommentStore = create<CommentStore>()((set) => ({
+  collapsedIds: {},
 
-    fetchInitialCollapsedState: async () => {
-      console.log("fetchInitialCollapsedState");
-      try {
-        // Open the indexedDB database if it hasn't been opened yet
-        if (!db) {
-          db = await openCommentsDatabase();
-        }
-
-        const collapsedIds = await getInitialCollapsedState(db);
-
-        console.log("Initial collapsed state fetched: ", collapsedIds);
-        set({ collapsedIds });
-
-        // Clean up old entries in 1 second
-        setTimeout(() => {
-          set((state) => {
-            state.cleanUpOldEntries();
-            return state;
-          });
-        }, 1000);
-      } catch (error) {
-        console.error("Error fetching initial collapsed states: ", error);
-      }
-    },
-
-    updateCollapsedState: async (commentId, collapsed) => {
+  fetchInitialCollapsedState: async () => {
+    console.log("fetchInitialCollapsedState");
+    try {
+      // Open the indexedDB database if it hasn't been opened yet
       if (!db) {
         db = await openCommentsDatabase();
       }
 
-      const transaction = db.transaction(["comments"], "readwrite");
-      const store = transaction.objectStore("comments");
+      const collapsedIdsArr = await getInitialCollapsedState(db);
+      const collapsedIds: Record<number, true> = {};
 
-      if (collapsed) {
-        const request = store.put({
-          id: commentId,
-          collapsed,
-          timestamp: Date.now(),
-        } as Comment);
+      collapsedIdsArr.forEach((id) => {
+        collapsedIds[id] = true;
+      });
 
-        request.onsuccess = function () {
-          console.log("Collapse state updated.");
-          set((state) => ({
-            collapsedIds: [...state.collapsedIds, commentId],
-          }));
-        };
+      console.log("Initial collapsed state fetched: ", collapsedIds);
+      set({ collapsedIds });
 
-        request.onerror = function () {
-          console.error("Error updating collapse state: ", request.error);
-        };
-      } else {
-        const request = store.delete(commentId);
+      // Clean up old entries in 1 second
+      setTimeout(() => {
+        set((state) => {
+          state.cleanUpOldEntries();
+          return state;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error("Error fetching initial collapsed states: ", error);
+    }
+  },
 
-        request.onsuccess = function () {
-          console.log("Collapse state removed.");
-          set((state) => ({
-            collapsedIds: state.collapsedIds.filter((id) => id !== commentId),
-          }));
-        };
+  updateCollapsedState: async (commentId, collapsed) => {
+    if (!db) {
+      db = await openCommentsDatabase();
+    }
 
-        request.onerror = function () {
-          console.error("Error removing collapse state: ", request.error);
-        };
-      }
-    },
+    const transaction = db.transaction(["comments"], "readwrite");
+    const store = transaction.objectStore("comments");
 
-    cleanUpOldEntries: async () => {
-      if (!db) {
-        db = await openCommentsDatabase();
-      }
+    if (collapsed) {
+      const request = store.put({
+        id: commentId,
+        collapsed,
+        timestamp: Date.now(),
+      } as Comment);
 
-      const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      const transaction = db.transaction(["comments"], "readwrite");
-      const store = transaction.objectStore("comments");
-      const index = store.index("timestamp");
-
-      const request = index.openCursor(IDBKeyRange.upperBound(oneWeekAgo));
-
-      request.onsuccess = function (event: Event) {
-        const cursor = (event.target as IDBRequest).result;
-
-        // log how items are being deleted
-        if (cursor) {
-          console.log("Cleaning up old entry: ", cursor.value);
-        }
-
-        if (cursor) {
-          store.delete(cursor.primaryKey);
-          cursor.continue();
-        }
+      request.onsuccess = function () {
+        console.log("Collapse state updated.");
+        set((state) => ({
+          collapsedIds: { ...state.collapsedIds, [commentId]: true },
+        }));
       };
 
       request.onerror = function () {
-        console.error("Error cleaning up old entries: ", request.error);
+        console.error("Error updating collapse state: ", request.error);
       };
-    },
-  }))
-);
+    } else {
+      const request = store.delete(commentId);
+
+      request.onsuccess = function () {
+        console.log("Collapse state removed.");
+        set((state) => {
+          const newCollapsedIds = { ...state.collapsedIds };
+          delete newCollapsedIds[commentId];
+
+          return {
+            collapsedIds: newCollapsedIds,
+          };
+        });
+      };
+
+      request.onerror = function () {
+        console.error("Error removing collapse state: ", request.error);
+      };
+    }
+  },
+
+  cleanUpOldEntries: async () => {
+    if (!db) {
+      db = await openCommentsDatabase();
+    }
+
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const transaction = db.transaction(["comments"], "readwrite");
+    const store = transaction.objectStore("comments");
+    const index = store.index("timestamp");
+
+    const request = index.openCursor(IDBKeyRange.upperBound(oneWeekAgo));
+
+    request.onsuccess = function (event: Event) {
+      const cursor = (event.target as IDBRequest).result;
+
+      // log how items are being deleted
+      if (cursor) {
+        console.log("Cleaning up old entry: ", cursor.value);
+      }
+
+      if (cursor) {
+        store.delete(cursor.primaryKey);
+        cursor.continue();
+      }
+    };
+
+    request.onerror = function () {
+      console.error("Error cleaning up old entries: ", request.error);
+    };
+  },
+}));
 
 // Function to get the initial collapsed state, returning a Promise of string[]
 function getInitialCollapsedState(db: IDBDatabase): Promise<number[]> {

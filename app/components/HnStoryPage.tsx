@@ -26,12 +26,9 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
   id,
   storyData: _storyData,
 }) => {
-  const [idToScrollTo, setIdToScrollTo] = useState<number | undefined>(
-    undefined
-  );
-
   const updateCollapsedState = useCommentStore((s) => s.updateCollapsedState);
-  const collapsedComments = useCommentStore((s) => s.collapsedIds);
+
+  const setIdToScrollTo = useDataStore((s) => s.setScrollToId);
 
   const storyData = useGetContent(id!, _storyData);
 
@@ -94,12 +91,6 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
     };
   }, []);
 
-  useEffect(() => {
-    if (idToScrollTo) {
-      setIdToScrollTo(undefined);
-    }
-  }, [idToScrollTo]);
-
   const [isTextCollapsed, setIsTextCollapsed] = useState(false);
 
   if (!storyData) {
@@ -144,7 +135,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
           setIsTextCollapsed(newIsCollapsed);
 
           // scroll to first comment if it exists
-          if (newIsCollapsed && comments.length > 0) {
+          if (newIsCollapsed && comments.length > 0 && comments[0]?.id) {
             setIdToScrollTo(comments[0]?.id);
           }
         }}
@@ -186,9 +177,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
           <HnCommentList
             childComments={comments}
             depth={0}
-            collapsedIds={collapsedComments}
             onUpdateOpen={handleCollapseEvent}
-            idToScrollTo={idToScrollTo}
             authorChain={[]}
           />
         </StoryContext.Provider>

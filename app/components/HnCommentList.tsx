@@ -16,22 +16,12 @@ interface HnCommentListProps {
     nextChildId: number | undefined
   ): void;
 
-  collapsedIds: number[];
-  idToScrollTo: number | undefined;
   authorChain: (string | undefined)[];
 }
 
 export class HnCommentList extends React.Component<HnCommentListProps, {}> {
-  childRefs: Array<React.RefObject<HnComment>> = [];
-
   constructor(props: HnCommentListProps) {
     super(props);
-    props.childComments.forEach((item) => {
-      if (item === null) {
-        return;
-      }
-      this.childRefs[item.id] = React.createRef();
-    });
   }
 
   handleUpdateOpen: (
@@ -53,8 +43,7 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
   };
 
   render() {
-    const { childComments, collapsedIds, depth, idToScrollTo, authorChain } =
-      this.props;
+    const { childComments, depth, authorChain } = this.props;
 
     const validChildren = childComments.filter((comm) => comm !== null);
 
@@ -66,17 +55,7 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
             comment={childComm}
             depth={depth}
             nextChildId={validChildren[index + 1]?.id}
-            ref={this.childRefs[childComm!.id]}
             onUpdateOpen={this.handleUpdateOpen}
-            isOpen={
-              !(
-                collapsedIds.findIndex(
-                  (c) => childComm !== null && c === childComm.id
-                ) >= 0
-              )
-            }
-            collapsedIds={collapsedIds}
-            idToScrollTo={idToScrollTo}
             authorChain={authorChain}
           />
         </div>
@@ -96,17 +75,7 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
                 comment={childComm}
                 depth={depth}
                 nextChildId={validChildren[index + 1]?.id}
-                ref={this.childRefs[childComm.id]}
                 onUpdateOpen={this.handleUpdateOpen}
-                isOpen={
-                  !(
-                    collapsedIds.findIndex(
-                      (c) => childComm !== null && c === childComm.id
-                    ) >= 0
-                  )
-                }
-                collapsedIds={collapsedIds}
-                idToScrollTo={idToScrollTo}
                 authorChain={authorChain}
               />
             </div>

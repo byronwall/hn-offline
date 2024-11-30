@@ -57,7 +57,8 @@ export default function App() {
         ></script>
       </head>
       <body className="bg-orange-50 relative">
-        <main className="bg-white mx-auto flex min-h-screen flex-col items-center justify-between pb-24 max-w-[640px] w-full ">
+        {/* the padding bottom ensures that a full screen of blank is available when forcing scrolls */}
+        <main className="bg-white mx-auto flex min-h-screen flex-col items-center justify-between max-w-[640px] w-full pb-[90vh]">
           <div className="sticky top-0 bg-white z-10 w-full">
             <NavBar />
           </div>
