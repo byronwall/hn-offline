@@ -34,8 +34,6 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
 
   const textToRender = processHtmlAndTruncateAnchorText(storyData?.text || "");
 
-  console.log("HnStoryPage", { id, storyData });
-
   const onVisitMarker = useDataStore((s) => s.saveIdToReadList);
 
   const handleShareClick = () => {
@@ -50,8 +48,6 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
     scrollId: number | undefined
   ) => {
     updateCollapsedState(id, !newOpen);
-
-    console.log("handleCollapseEvent", { id, newOpen, scrollId });
 
     if (scrollId !== undefined) {
       setIdToScrollTo(scrollId);
