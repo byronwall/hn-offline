@@ -23,7 +23,6 @@ export function InfiniteScrollContainer<TItemType>(
     // need to add NUMBER_OF_ITEMS_TO_LOAD more items at a time
 
     if (isShowingMore) {
-      console.log("isShowingMore true = skip more items");
       return;
     }
 
@@ -33,7 +32,6 @@ export function InfiniteScrollContainer<TItemType>(
 
     setIsShowingMore(true);
     setTimeout(() => {
-      console.log("handleNextItems", newItemsToShow);
       setItemsToShow(newItemsToShow);
       setIsShowingMore(false);
     }, 100);

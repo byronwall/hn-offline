@@ -1,4 +1,4 @@
-import { orderBy, uniq } from "lodash";
+import { orderBy, uniq } from "lodash-es";
 import { HnItem, KidsObj3 } from "~/stores/useDataStore";
 
 export function getColorsForStory(story: HnItem): Record<string, string> {
@@ -12,8 +12,6 @@ export function getColorsForStory(story: HnItem): Record<string, string> {
   hueMap[story.by] = 30;
 
   let initialHue = Math.floor(Math.random() * 360);
-
-  console.log("initialHue", initialHue);
 
   // if color is within 30 of the HN orange, shift it
   const delta = Math.abs(30 - initialHue);
@@ -31,15 +29,11 @@ export function getColorsForStory(story: HnItem): Record<string, string> {
     hueMap[comment?.by || ""] = hue;
   });
 
-  console.log("hueMap", { ...hueMap, initTopLevelComments });
-
   // now go into the children
   // keep track of the chain of hues being used
   // goal is to avoid collisions to any parent and immediate siblings
-  // TODO: do the work
-  processCommentsForObj(story.kidsObj || [], hueMap, []);
 
-  console.log("final hue map", hueMap);
+  processCommentsForObj(story.kidsObj || [], hueMap, []);
 
   // convert hue map to color map
   const colorMap: Record<string, string> = {};
