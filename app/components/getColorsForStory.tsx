@@ -40,7 +40,8 @@ export function getColorsForStory(story: HnItem): Record<string, string> {
 
   for (const user in hueMap) {
     const hue = hueMap[user];
-    colorMap[user] = getRandHslForHue(hue);
+    colorMap[user] =
+      user === story.by ? "hsl(30, 100%, 50%)" : getRandHslForHue(hue);
   }
 
   return colorMap;
