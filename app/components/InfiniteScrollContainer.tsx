@@ -50,11 +50,7 @@ export function InfiniteScrollContainer<TItemType>(
   return (
     <div>
       {itemsToShow.map((item, index) => children(item, index))}
-      {isShowingMore && hasMore && (
-        <div className="text-center bg-gradient-to-r from-white to-orange-500 p-1">
-          See me? More coming...
-        </div>
-      )}
+
       <div ref={ref} />
     </div>
   );
