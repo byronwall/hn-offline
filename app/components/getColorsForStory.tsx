@@ -70,7 +70,7 @@ function processCommentsForObj(
 
     // keep the last 3 sibling hues
     siblingHues.push(currentHue);
-    if (siblingHues.length > 3) {
+    if (siblingHues.length > 4) {
       siblingHues.shift();
     }
 
@@ -93,7 +93,7 @@ function processCommentsForObj(
 function getRandHslForHue(hue: number): string {
   // sat between 30 and 70
   // light between 30 and 70
-  const newSat = Math.random() * 20 + 60;
+  const newSat = Math.random() * 20 + 50;
   const newLight = Math.random() * 20 + 40;
 
   return `hsl(${hue}, ${newSat}%, ${newLight}%)`;
