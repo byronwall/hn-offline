@@ -37,6 +37,9 @@ export type StoryPage = "front" | "day" | "week";
 
 type StoryId = number;
 
+type CommentAuthor = string;
+type CommentColor = string;
+
 type DataStore = {
   readItems: TimestampHash;
   pendingReadItems: number[];
@@ -52,6 +55,8 @@ type DataStore = {
   activeStoryList: StoryPage | undefined;
 
   scrollToId: number | undefined;
+
+  colorMap: Record<CommentAuthor, CommentColor>;
 };
 
 type DataStoreActions = {
@@ -87,6 +92,8 @@ type DataStoreActions = {
 
   clearScrollToId: () => void;
   setScrollToId: (id: number) => void;
+
+  setColorMap: (map: Record<CommentAuthor, CommentColor>) => void;
 };
 
 if (typeof window !== "undefined") {
@@ -113,6 +120,11 @@ export const useDataStore = create<DataStore & DataStoreActions>(
     storyListSaveCount: 0,
 
     shouldHideReadItems: false,
+
+    colorMap: {},
+    setColorMap: (map) => {
+      set({ colorMap: map });
+    },
 
     scrollToId: undefined,
     setScrollToId: (id) => {

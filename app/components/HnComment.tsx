@@ -39,6 +39,8 @@ export function HnComment({
   const scrollToId = useDataStore((s) => s.scrollToId);
   const collapsedIds = useCommentStore((s) => s.collapsedIds);
 
+  const colorMap = useDataStore((s) => s.colorMap);
+
   const _isOpen = collapsedIds[comment?.id] !== true;
 
   const [isOpen, setIsOpen] = useState(_isOpen);
@@ -148,7 +150,7 @@ export function HnComment({
     <StoryContext.Consumer>
       {(storyData) => {
         const isCommentByStoryAuthor = storyData?.by === comment.by;
-        const borderColor = stringToColor(comment.by, isCommentByStoryAuthor);
+        const borderColor = colorMap[comment.by] ?? "#000";
 
         return (
           <div
