@@ -1,11 +1,12 @@
 import * as fs from "fs";
+
 import _ from "lodash";
+
+import { _getUnixTimestamp } from "~/lib/utils";
+import { Item, ItemExt, TopStories, TopStoriesType } from "~/models/interfaces";
 
 import { AlgoliaApi, HITS_PER_PAGE } from "./algolia";
 import { HackerNewsApi } from "./api";
-import { _getUnixTimestamp } from "@/utils";
-import { ItemExt, TopStories, TopStoriesType } from "../models/interfaces";
-import { Item } from "@/models/interfaces";
 
 type ItemHash = {
   [id: number]: ItemExt;

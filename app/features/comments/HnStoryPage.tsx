@@ -1,16 +1,15 @@
-import React, { createContext, useEffect, useState } from "react";
-
-import { cn, getDomain, isNavigator, timeSince } from "@/utils";
-import { isValidComment } from "./isValidComment";
-import { HnCommentList } from "./HnCommentList";
-
-import { HnItem, useDataStore } from "@/stores/useDataStore";
 import { useNavigate } from "@remix-run/react";
 import { ArrowUpRightFromSquare } from "lucide-react";
+import React, { createContext, useEffect, useState } from "react";
 
-import { processHtmlAndTruncateAnchorText } from "./processHtmlAndTruncateAnchorText";
-import { useGetContent } from "./useGetContent";
-import { useCommentStore } from "~/features/comments/indexedDb";
+import { useGetContent } from "~/hooks/useGetContent";
+import { isValidComment } from "~/lib/isValidComment";
+import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
+import { cn, getDomain, isNavigator, timeSince } from "~/lib/utils";
+import { useCommentStore } from "~/stores/useCommentStore";
+import { HnItem, useDataStore } from "~/stores/useDataStore";
+
+import { HnCommentList } from "./HnCommentList";
 
 interface HnStoryPageProps {
   id: number | undefined;

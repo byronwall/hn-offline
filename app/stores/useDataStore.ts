@@ -1,11 +1,12 @@
-import { getCleanPathName } from "@/hooks/getCleanPathName";
 import localforage from "localforage";
 import { create } from "zustand";
-import { getContentViaFetch } from "./getContentViaFetch";
+
+import { getCleanPathName } from "~/lib/getCleanPathName";
+import { getContentViaFetch } from "~/lib/getContentViaFetch";
 import {
   getSummaryViaFetch,
   mapStoriesToSummaries,
-} from "./getSummaryViaFetch";
+} from "~/lib/getSummaryViaFetch";
 
 export interface HnItem {
   by: string;

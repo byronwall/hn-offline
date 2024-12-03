@@ -1,13 +1,18 @@
 import { create } from "zustand";
 
-// Define the Comment interface used in both the hook and the store
-interface Comment {
+import {
+  getInitialCollapsedState,
+  openCommentsDatabase,
+} from "~/lib/indexedDb";
+
+let db: IDBDatabase | null = null;
+
+export interface Comment {
   id: number;
   collapsed: boolean;
   timestamp: number;
 }
 
-// Define the store state interface
 interface CommentStore {
   collapsedIds: Record<number, true>;
   fetchInitialCollapsedState: () => void;
@@ -18,9 +23,6 @@ interface CommentStore {
   cleanUpOldEntries: () => void;
 }
 
-let db: IDBDatabase | null = null;
-
-// Create the Zustand store with middleware for devtools
 export const useCommentStore = create<CommentStore>()((set) => ({
   collapsedIds: {},
 
@@ -135,53 +137,3 @@ export const useCommentStore = create<CommentStore>()((set) => ({
     };
   },
 }));
-
-// Function to get the initial collapsed state, returning a Promise of string[]
-function getInitialCollapsedState(db: IDBDatabase): Promise<number[]> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(["comments"], "readonly");
-    const store = transaction.objectStore("comments");
-    const request = store.openCursor();
-    const initialCollapsedIds: number[] = [];
-
-    request.onsuccess = function (event: Event) {
-      const cursor = (event.target as IDBRequest).result;
-      if (cursor) {
-        const comment: Comment = cursor.value;
-        if (comment.collapsed) {
-          initialCollapsedIds.push(comment.id);
-        }
-        cursor.continue();
-      } else {
-        resolve(initialCollapsedIds);
-      }
-    };
-
-    request.onerror = function () {
-      reject(request.error);
-    };
-  });
-}
-
-export function openCommentsDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("CommentsDatabase", 1);
-
-    request.onupgradeneeded = (event) => {
-      const db = request.result;
-      if (event.oldVersion < 1) {
-        // Create object store if it doesn't exist
-        const store = db.createObjectStore("comments", { keyPath: "id" });
-        store.createIndex("timestamp", "timestamp");
-      }
-    };
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onerror = () => {
-      reject(request.error);
-    };
-  });
-}

@@ -1,4 +1,4 @@
-import { HnItem, HnStorySummary } from "./useDataStore";
+import { HnItem, HnStorySummary } from "~/stores/useDataStore";
 
 export async function getSummaryViaFetch(url: string) {
   try {
