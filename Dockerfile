@@ -2,6 +2,10 @@
 FROM node:18-alpine AS builder
 WORKDIR /usr/src/app
 
+# Install curl
+# apt-get install -y curl
+CMD apk add --no-cache curl
+
 # Install server dependencies
 COPY package*.json .
 RUN npm ci
