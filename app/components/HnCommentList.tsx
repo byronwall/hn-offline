@@ -1,8 +1,6 @@
-import React from "react";
-
+import { KidsObj3 } from "@/stores/useDataStore";
 import { HnComment } from "./HnComment";
 import { InfiniteScrollContainer } from "./InfiniteScrollContainer";
-import { KidsObj3 } from "@/stores/useDataStore";
 
 interface HnCommentListProps {
   childComments: Array<KidsObj3 | null>;
@@ -19,20 +17,19 @@ interface HnCommentListProps {
   authorChain: (string | undefined)[];
 }
 
-export class HnCommentList extends React.Component<HnCommentListProps, {}> {
-  constructor(props: HnCommentListProps) {
-    super(props);
-  }
-
-  handleUpdateOpen: (
+export function HnCommentList({
+  childComments,
+  depth,
+  onUpdateOpen,
+  authorChain,
+}: HnCommentListProps) {
+  function handleUpdateOpen(
     id: number,
-    newIsOpen: boolean,
+    newOpen: boolean,
     scrollId: number | undefined,
     comment: KidsObj3 | null,
     nextChildId: number | undefined
-  ) => void = (id, newOpen, scrollId, comment, nextChildId) => {
-    const { onUpdateOpen } = this.props;
-
+  ) {
     return onUpdateOpen(
       id,
       newOpen,
@@ -40,46 +37,46 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
       comment,
       nextChildId
     );
-  };
+  }
 
-  render() {
-    const { childComments, depth, authorChain } = this.props;
+  const validChildren = childComments.filter((comm) => comm !== null);
 
-    const validChildren = childComments.filter((comm) => comm !== null);
-
-    if (depth > 0) {
-      // do not use infinite scroll for child comments - just render them all
-      return validChildren.map((childComm, index) => (
-        <HnComment
-          key={childComm!.id}
-          comment={childComm}
-          depth={depth}
-          nextChildId={validChildren[index + 1]?.id}
-          onUpdateOpen={this.handleUpdateOpen}
-          authorChain={authorChain}
-        />
-      ));
-    }
-
+  if (depth > 0) {
+    // do not use infinite scroll for child comments - just render them all
     return (
-      <InfiniteScrollContainer items={validChildren} itemsToAddOnRefresh={1}>
-        {(childComm, index) => {
-          if (childComm === null) {
-            return null;
-          }
-
-          return (
-            <HnComment
-              key={childComm.id}
-              comment={childComm}
-              depth={depth}
-              nextChildId={validChildren[index + 1]?.id}
-              onUpdateOpen={this.handleUpdateOpen}
-              authorChain={authorChain}
-            />
-          );
-        }}
-      </InfiniteScrollContainer>
+      <>
+        {validChildren.map((childComm, index) => (
+          <HnComment
+            key={childComm!.id}
+            comment={childComm}
+            depth={depth}
+            nextChildId={validChildren[index + 1]?.id}
+            onUpdateOpen={handleUpdateOpen}
+            authorChain={authorChain}
+          />
+        ))}
+      </>
     );
   }
+
+  return (
+    <InfiniteScrollContainer items={validChildren} itemsToAddOnRefresh={1}>
+      {(childComm, index) => {
+        if (childComm === null) {
+          return null;
+        }
+
+        return (
+          <HnComment
+            key={childComm.id}
+            comment={childComm}
+            depth={depth}
+            nextChildId={validChildren[index + 1]?.id}
+            onUpdateOpen={handleUpdateOpen}
+            authorChain={authorChain}
+          />
+        );
+      }}
+    </InfiniteScrollContainer>
+  );
 }
