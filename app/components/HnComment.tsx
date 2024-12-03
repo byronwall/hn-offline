@@ -3,12 +3,11 @@ import { decode } from "html-entities";
 import { ArrowUpRightFromSquare } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import sanitizeHtml from "sanitize-html";
+import { useCommentStore } from "~/features/comments/indexedDb";
 import { KidsObj3, useDataStore } from "~/stores/useDataStore";
 import { HnCommentList } from "./HnCommentList";
 import { StoryContext } from "./HnStoryPage";
 import { isValidComment } from "./isValidComment";
-import { stringToColor } from "./stringToColor";
-import { useCommentStore } from "~/features/comments/indexedDb";
 
 export interface HnCommentProps {
   comment: KidsObj3 | null;
@@ -61,7 +60,7 @@ export function HnComment({
 
     // add scrollY to get the absolute position
     // subtract 80 to give a pleasant offset
-    const newTop = window.scrollY + dims - 80;
+    const newTop = window.scrollY + dims - 88;
 
     window.scrollTo({
       top: newTop,
