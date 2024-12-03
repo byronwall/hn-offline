@@ -48,10 +48,10 @@ export function InfiniteScrollContainer<TItemType>(
   }, [handleNextItems, hasMore, inView]);
 
   return (
-    <div>
+    <>
       {itemsToShow.map((item, index) => children(item, index))}
 
       <div ref={ref} />
-    </div>
+    </>
   );
 }

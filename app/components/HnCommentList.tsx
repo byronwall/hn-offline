@@ -50,15 +50,14 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
     if (depth > 0) {
       // do not use infinite scroll for child comments - just render them all
       return validChildren.map((childComm, index) => (
-        <div key={childComm!.id}>
-          <HnComment
-            comment={childComm}
-            depth={depth}
-            nextChildId={validChildren[index + 1]?.id}
-            onUpdateOpen={this.handleUpdateOpen}
-            authorChain={authorChain}
-          />
-        </div>
+        <HnComment
+          key={childComm!.id}
+          comment={childComm}
+          depth={depth}
+          nextChildId={validChildren[index + 1]?.id}
+          onUpdateOpen={this.handleUpdateOpen}
+          authorChain={authorChain}
+        />
       ));
     }
 
@@ -70,15 +69,14 @@ export class HnCommentList extends React.Component<HnCommentListProps, {}> {
           }
 
           return (
-            <div key={childComm.id}>
-              <HnComment
-                comment={childComm}
-                depth={depth}
-                nextChildId={validChildren[index + 1]?.id}
-                onUpdateOpen={this.handleUpdateOpen}
-                authorChain={authorChain}
-              />
-            </div>
+            <HnComment
+              key={childComm.id}
+              comment={childComm}
+              depth={depth}
+              nextChildId={validChildren[index + 1]?.id}
+              onUpdateOpen={this.handleUpdateOpen}
+              authorChain={authorChain}
+            />
           );
         }}
       </InfiniteScrollContainer>
