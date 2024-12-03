@@ -1,7 +1,7 @@
 // https://github.com/michaelbull/aurelia-hacker-news/blob/master/src/services/api.ts
 
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, get } from "firebase/database";
+import { get, getDatabase, ref } from "firebase/database";
 
 import { Item } from "@/models/interfaces";
 
@@ -28,16 +28,16 @@ export class HackerNewsApi {
   }
 
   fetchItemsOnPage(items: number[], page: number): Promise<Item[]> {
-    let start = (page - 1) * STORIES_PER_PAGE;
-    let end = page * STORIES_PER_PAGE;
+    const start = (page - 1) * STORIES_PER_PAGE;
+    const end = page * STORIES_PER_PAGE;
     return this.fetchItems(items.slice(start, end));
   }
 
   async fetchItems(ids: number[]): Promise<Item[]> {
-    let result: Item[] = [];
+    const result: Item[] = [];
 
-    for (let id of ids) {
-      let item = await this.fetchItem(id);
+    for (const id of ids) {
+      const item = await this.fetchItem(id);
 
       if (item !== null) {
         result.push(item);

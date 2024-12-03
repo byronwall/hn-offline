@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+
+import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
 import {
   HnItem,
   HnStorySummary,
   StoryPage,
   useDataStore,
 } from "~/stores/useDataStore";
-import { mapStoriesToSummaries } from "~/stores/getSummaryViaFetch";
 
 export function useGetContentForPage(
   page: string,

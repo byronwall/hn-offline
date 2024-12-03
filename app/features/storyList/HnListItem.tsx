@@ -1,9 +1,9 @@
-import { MessageSquareQuote, ChevronUp } from "lucide-react";
-
-import { getDomain, timeSince, cn } from "@/utils";
-import { HnStorySummary, useDataStore } from "@/stores/useDataStore";
-
 import { Link } from "@remix-run/react";
+import { ChevronUp, MessageSquareQuote } from "lucide-react";
+
+import { HnStorySummary, useDataStore } from "@/stores/useDataStore";
+import { cn, getDomain, timeSince } from "@/utils";
+
 
 export interface HnStoryProps {
   data: HnStorySummary;

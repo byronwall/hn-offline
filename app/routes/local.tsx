@@ -1,4 +1,5 @@
-import { HnStoryList } from "~/components/HnStoryList";
+import { HnStoryList } from "~/features/storyList/HnStoryList";
+
 import { useGetLocalData } from "./useGetLocalData";
 
 export default function LocalPage() {

@@ -1,6 +1,7 @@
-import { HnItem, useDataStore } from "@/stores/useDataStore";
 import { useEffect, useState } from "react";
-import { getColorsForStory } from "./getColorsForStory";
+
+import { HnItem, useDataStore } from "@/stores/useDataStore";
+import { getColorsForStory } from "~/lib/getColorsForStory";
 
 export function useGetContent(id: number, initialSsrData: HnItem | undefined) {
   const [storyData, setStoryData] = useState<HnItem | undefined>(

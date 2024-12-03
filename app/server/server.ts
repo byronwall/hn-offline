@@ -1,5 +1,7 @@
 import * as path from "path";
 
+import { ItemExt, STORY_TYPE, TopStoriesType } from "~/models/interfaces";
+
 import {
   _getFullDataForIds,
   db_clearOldStories,
@@ -8,7 +10,7 @@ import {
   reloadDatabase,
   saveDatabase,
 } from "./database";
-import { ItemExt, STORY_TYPE, TopStoriesType } from "../models/interfaces";
+
 
 const log = console.log;
 

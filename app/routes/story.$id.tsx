@@ -1,6 +1,7 @@
 import { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { ClientLoaderFunctionArgs, useLoaderData } from "@remix-run/react";
-import { HnStoryPage } from "~/components/HnStoryPage";
+
+import { HnStoryPage } from "~/features/storyPage/HnStoryPage";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
 import { getDomain } from "~/utils";
 

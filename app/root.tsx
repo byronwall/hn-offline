@@ -1,5 +1,4 @@
 import { cssBundleHref } from "@remix-run/css-bundle";
-import type { LinksFunction } from "@remix-run/node";
 import {
   Links,
   LiveReload,
@@ -8,12 +7,14 @@ import {
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
-
 import { useEffect } from "react";
+
 import { NavBar } from "./components/NavBar";
+import { useCommentStore } from "./stores/useCommentStore";
 import { useDataStore } from "./stores/useDataStore";
 import styles from "./tailwind.css";
-import { useCommentStore } from "./features/comments/indexedDb";
+
+import type { LinksFunction } from "@remix-run/node";
 
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),

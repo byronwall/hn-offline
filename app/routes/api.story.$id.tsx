@@ -1,4 +1,5 @@
-import { LoaderFunctionArgs, json } from "@remix-run/node";
+import { json, LoaderFunctionArgs } from "@remix-run/node";
+
 import { _getFullDataForIds } from "~/server/database";
 
 export async function loader({ params }: LoaderFunctionArgs) {

@@ -1,10 +1,12 @@
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { ClientLoaderFunctionArgs, useLoaderData } from "@remix-run/react";
 
-import { HnStoryList } from "~/components/HnStoryList";
+import { HnStoryList } from "~/features/storyList/HnStoryList";
 import { HnItem, HnStorySummary, useDataStore } from "~/stores/useDataStore";
+
 import { loader as listLoader } from "./api.topstories.$type";
 import { useGetContentForPage } from "./useGetContentForPage";
+
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 
 export const meta: MetaFunction = ({ params }) => {
   // capitalize the first letter of the type

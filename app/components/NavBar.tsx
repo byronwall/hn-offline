@@ -1,8 +1,9 @@
-import { useDataStore } from "@/stores/useDataStore";
-import { cn } from "@/utils";
 import { NavLink, useLocation } from "@remix-run/react";
 import { Shell } from "lucide-react";
 import { useEffect, useState } from "react";
+
+import { useDataStore } from "@/stores/useDataStore";
+import { cn } from "@/utils";
 
 export function NavBar() {
   const url = useLocation().pathname;

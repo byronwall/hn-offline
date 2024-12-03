@@ -33,6 +33,7 @@ module.exports = {
         "plugin:react/jsx-runtime",
         "plugin:react-hooks/recommended",
         "plugin:jsx-a11y/recommended",
+        "plugin:@dword-design/import-alias/recommended",
       ],
       settings: {
         react: {
@@ -50,6 +51,46 @@ module.exports = {
       rules: {
         "jsx-a11y/click-events-have-key-events": "off",
         "jsx-a11y/no-static-element-interactions": "off",
+
+        "import/no-duplicates": "warn",
+
+        "sort-imports": [
+          "warn",
+          { ignoreCase: true, ignoreDeclarationSort: true },
+        ],
+
+        "import/order": [
+          "warn",
+          {
+            "newlines-between": "always",
+
+            groups: [
+              "builtin",
+              "external",
+              "internal",
+              "index",
+              "sibling",
+              "parent",
+              "object",
+              "type",
+            ],
+
+            alphabetize: {
+              order: "asc",
+
+              caseInsensitive: true,
+            },
+          },
+        ],
+        "import/newline-after-import": "warn",
+        "@dword-design/import-alias/prefer-alias": [
+          "warn",
+          {
+            alias: {
+              "~": "./app/",
+            },
+          },
+        ],
       },
     },
 
