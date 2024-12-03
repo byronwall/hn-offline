@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 
 # Install curl
 # apt-get install -y curl
-CMD apk add --no-cache curl
+RUN apk add --no-cache curl
 
 # Install server dependencies
 COPY package*.json .
