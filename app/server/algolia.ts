@@ -1,4 +1,4 @@
-import { _getUnixTimestamp } from "@/utils";
+import { _getUnixTimestamp } from "~/lib/utils";
 
 export const HITS_PER_PAGE = 50;
 

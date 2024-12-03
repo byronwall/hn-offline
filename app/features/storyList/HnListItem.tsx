@@ -2,8 +2,7 @@ import { Link } from "@remix-run/react";
 import { ChevronUp, MessageSquareQuote } from "lucide-react";
 
 import { HnStorySummary, useDataStore } from "@/stores/useDataStore";
-import { cn, getDomain, timeSince } from "@/utils";
-
+import { cn, getDomain, timeSince } from "~/lib/utils";
 
 export interface HnStoryProps {
   data: HnStorySummary;

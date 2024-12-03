@@ -3,12 +3,13 @@ import { ArrowUpRightFromSquare } from "lucide-react";
 import React, { createContext, useEffect, useState } from "react";
 
 import { HnItem, useDataStore } from "@/stores/useDataStore";
-import { cn, getDomain, isNavigator, timeSince } from "@/utils";
-import { HnCommentList } from "~/features/comments/HnCommentList";
 import { useGetContent } from "~/hooks/useGetContent";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
+import { cn, getDomain, isNavigator, timeSince } from "~/lib/utils";
 import { useCommentStore } from "~/stores/useCommentStore";
+
+import { HnCommentList } from "./HnCommentList";
 
 interface HnStoryPageProps {
   id: number | undefined;

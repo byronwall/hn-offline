@@ -27,7 +27,7 @@ module.exports = {
     // React
     {
       files: ["**/*.{js,jsx,ts,tsx}"],
-      plugins: ["react"],
+      plugins: ["react", "boundaries"],
       extends: [
         "plugin:react/recommended",
         "plugin:react/jsx-runtime",
@@ -47,6 +47,40 @@ module.exports = {
         "import/resolver": {
           typescript: {},
         },
+
+        "boundaries/include": ["app/**/*"],
+        "boundaries/elements": [
+          {
+            mode: "full",
+            type: "shared",
+            pattern: [
+              "app/components/**/*",
+              "app/data/**/*",
+              "app/drizzle/**/*",
+              "app/hooks/**/*",
+              "app/lib/**/*",
+              "app/server/**/*",
+              "app/stores/**/*",
+            ],
+          },
+          {
+            mode: "full",
+            type: "feature",
+            capture: ["featureName"],
+            pattern: ["app/features/*/**/*"],
+          },
+          {
+            mode: "full",
+            type: "app",
+            capture: ["_", "fileName"],
+            pattern: ["app/routes/**/*"],
+          },
+          {
+            mode: "full",
+            type: "neverImport",
+            pattern: ["app/*", "app/tasks/**/*"],
+          },
+        ],
       },
       rules: {
         "jsx-a11y/click-events-have-key-events": "off",
@@ -89,6 +123,32 @@ module.exports = {
             alias: {
               "~": "./app/",
             },
+          },
+        ],
+
+        "boundaries/no-unknown": ["error"],
+        "boundaries/no-unknown-files": ["error"],
+        "boundaries/element-types": [
+          "error",
+          {
+            default: "disallow",
+            rules: [
+              {
+                from: ["shared"],
+                allow: ["shared"],
+              },
+              {
+                from: ["feature"],
+                allow: [
+                  "shared",
+                  ["feature", { featureName: "${from.featureName}" }],
+                ],
+              },
+              {
+                from: ["app", "neverImport"],
+                allow: ["shared", "feature", "app"],
+              },
+            ],
           },
         ],
       },

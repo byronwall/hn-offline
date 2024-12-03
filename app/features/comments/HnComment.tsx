@@ -3,13 +3,13 @@ import { ArrowUpRightFromSquare } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import sanitizeHtml from "sanitize-html";
 
-import { cn, isNavigator, timeSince } from "@/utils";
-import { StoryContext } from "~/features/storyPage/HnStoryPage";
 import { isValidComment } from "~/lib/isValidComment";
+import { cn, isNavigator, timeSince } from "~/lib/utils";
 import { useCommentStore } from "~/stores/useCommentStore";
 import { KidsObj3, useDataStore } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
+import { StoryContext } from "./HnStoryPage";
 
 export interface HnCommentProps {
   comment: KidsObj3 | null;
