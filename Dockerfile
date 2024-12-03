@@ -2,10 +2,6 @@
 FROM node:18-alpine AS builder
 WORKDIR /usr/src/app
 
-# Install curl
-# apt-get install -y curl
-RUN apk add --no-cache curl
-
 # Install server dependencies
 COPY package*.json .
 RUN npm ci
@@ -16,6 +12,11 @@ RUN npm run build
 
 # Final Stage
 FROM node:18-alpine
+
+# Install curl
+# apt-get install -y curl
+RUN apk add --no-cache curl
+
 WORKDIR /usr/src/app
 
 # Copy necessary files
