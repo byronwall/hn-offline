@@ -2,12 +2,12 @@ import { useNavigate } from "@remix-run/react";
 import { ArrowUpRightFromSquare } from "lucide-react";
 import React, { createContext, useEffect, useState } from "react";
 
-import { HnItem, useDataStore } from "@/stores/useDataStore";
 import { useGetContent } from "~/hooks/useGetContent";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, isNavigator, timeSince } from "~/lib/utils";
 import { useCommentStore } from "~/stores/useCommentStore";
+import { HnItem, useDataStore } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
 

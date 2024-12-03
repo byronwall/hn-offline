@@ -3,7 +3,7 @@
 import { initializeApp } from "firebase/app";
 import { get, getDatabase, ref } from "firebase/database";
 
-import { Item } from "@/models/interfaces";
+import { Item } from "~/models/interfaces";
 
 const API_URL = "https://hacker-news.firebaseio.com";
 const API_VERSION = "/v0";

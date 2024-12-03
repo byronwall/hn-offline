@@ -1,4 +1,4 @@
-import { KidsObj3 } from "@/stores/useDataStore";
+import { KidsObj3 } from "~/stores/useDataStore";
 
 import { HnComment } from "./HnComment";
 import { InfiniteScrollContainer } from "./InfiniteScrollContainer";

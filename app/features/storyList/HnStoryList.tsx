@@ -1,10 +1,9 @@
 import { useEffect } from "react";
 
-import { HnStorySummary, StoryPage, useDataStore } from "@/stores/useDataStore";
 import { useSortFunction } from "~/hooks/useSortFunction";
+import { HnStorySummary, StoryPage, useDataStore } from "~/stores/useDataStore";
 
 import { HnListItem } from "./HnListItem";
-
 
 interface HnStoryListProps {
   items?: HnStorySummary[];

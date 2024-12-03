@@ -1,4 +1,4 @@
-import { HnStorySummary, useDataStore } from "@/stores/useDataStore";
+import { HnStorySummary, useDataStore } from "~/stores/useDataStore";
 
 export function useSortFunction(
   items: HnStorySummary[] | undefined,

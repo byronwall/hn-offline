@@ -3,7 +3,7 @@ import { create } from "zustand";
 import {
   getInitialCollapsedState,
   openCommentsDatabase,
-} from "~/features/comments/indexedDb";
+} from "~/lib/indexedDb";
 
 let db: IDBDatabase | null = null;
 
