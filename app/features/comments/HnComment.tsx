@@ -170,16 +170,24 @@ export function HnComment({
             {shouldShowBar && isOpen && (
               <div
                 style={{
-                  position: "absolute",
-                  top: 12,
-                  left: leftPos,
-                  width: Math.abs(leftPos + 4),
-                  backgroundColor: borderColor,
-                  height: 7,
-                  borderTop: "2px solid white",
-                  borderBottom: "2px solid white",
+                  position: "sticky",
+                  top: 20 + depth * 8,
+                  height: 26,
                 }}
-              ></div>
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    left: leftPos - 14,
+                    width: Math.abs(leftPos + 4),
+                    backgroundColor: borderColor,
+                    height: 7,
+                    borderTop: "2px solid white",
+                    borderBottom: "2px solid white",
+                  }}
+                ></div>
+              </div>
             )}
             <p
               style={{ fontWeight: isOpen ? 450 : 300 }}
