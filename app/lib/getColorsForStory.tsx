@@ -1,4 +1,5 @@
 import { orderBy, uniq } from "lodash-es";
+import { mhvcToHex } from "munsell";
 
 import { HnItem, KidsObj3 } from "~/stores/useDataStore";
 
@@ -11,24 +12,6 @@ export function getColorsForStory(story: HnItem): Record<string, string> {
   // first color is HN orange
   // assign the first color to the story author
   hueMap[story.by] = 30;
-
-  let initialHue = Math.floor(Math.random() * 360);
-
-  // if color is within 30 of the HN orange, shift it
-  const delta = Math.abs(30 - initialHue);
-  if (delta < 30) {
-    initialHue = (initialHue + 30) % 360;
-  }
-
-  // start processing comments
-  // assign colors to the first 3 top level comment authors
-  // then go into the children and work those
-  const initTopLevelComments = story.kidsObj?.slice(0, 3) || [];
-  initTopLevelComments.filter(Boolean).forEach((comment, index) => {
-    const hue = (initialHue + index * 120) % 360;
-
-    hueMap[comment?.by || ""] = hue;
-  });
 
   // now go into the children
   // keep track of the chain of hues being used
@@ -47,59 +30,75 @@ export function getColorsForStory(story: HnItem): Record<string, string> {
 
   return colorMap;
 }
+
+const recentHues: number[] = [];
+
 function processCommentsForObj(
   comments: (KidsObj3 | undefined | null)[],
   hueMap: Record<string, number>,
   parentHueChain: number[]
 ) {
-  const siblingHues: number[] = [];
-
-  let finalHue: number = 0;
-
+  let trueSiblingsToAvoid: number[] = [];
+  let prevHue = null;
   for (const comment of comments) {
     if (!comment || !comment.by) {
       continue;
     }
 
+    const colorsToAvoid = [
+      ...parentHueChain,
+      ...trueSiblingsToAvoid,
+      ...recentHues,
+    ];
+
+    if (prevHue !== null) {
+      colorsToAvoid.push(prevHue);
+    }
+
     // get hue for this comment
     // either existing author or best color that avoids current ones
     const currentHue =
-      hueMap[comment.by] ??
-      getColorThatAvoidsChain([...parentHueChain, ...siblingHues]);
+      hueMap[comment.by] ?? getColorThatAvoidsChain(colorsToAvoid);
+
+    // keep up to 5 recent hues
+    recentHues.push(currentHue);
+    if (recentHues.length > 4) {
+      recentHues.shift();
+    }
 
     // store the hue
     hueMap[comment.by] = currentHue;
-
-    // keep the last 3 sibling hues
-    siblingHues.push(currentHue);
-    if (siblingHues.length > 4) {
-      siblingHues.shift();
-    }
 
     // process children of this comment - will become recursive
     if (comment.kidsObj) {
       const finalChildHue = processCommentsForObj(comment.kidsObj, hueMap, [
         ...parentHueChain,
-        ...siblingHues,
+        currentHue,
       ]);
 
       // this final child is highly visible when rendered
-      siblingHues.push(finalChildHue);
+      trueSiblingsToAvoid = [currentHue, ...finalChildHue];
+    } else {
+      trueSiblingsToAvoid = [currentHue];
     }
 
-    finalHue = currentHue;
+    prevHue = currentHue;
   }
 
-  return finalHue;
+  return trueSiblingsToAvoid;
 }
-function getRandHslForHue(hue: number): string {
-  // sat between 30 and 70
-  // light between 30 and 70
-  const newSat = Math.random() * 20 + 50;
-  const newLight = Math.random() * 20 + 40;
 
-  return `hsl(${hue}, ${newSat}%, ${newLight}%)`;
+function getRandHslForHue(hue: number): string {
+  // method should convert hue from 0-360 to to 0-100
+  // then pass through munsell mhvcToHex to get the color
+
+  const h = (hue / 360) * 100;
+
+  const hex = mhvcToHex(h, 4, 30);
+
+  return hex;
 }
+
 function getColorThatAvoidsChain(hueChain: number[]): number {
   // find the hues that farthest apart and return the middle
   // this will help avoid collisions
@@ -112,7 +111,7 @@ function getColorThatAvoidsChain(hueChain: number[]): number {
 
   if (copyHueChain.length === 1) {
     // rotate 180 degrees
-    return (copyHueChain[0] + 180) % 360;
+    return (copyHueChain[0] + 180 + Math.random() * 30 - 15) % 360;
   }
 
   // find the largest gap
