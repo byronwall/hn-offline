@@ -2,6 +2,20 @@
 
 This is a simple web app to read Hacker News comments by storing a local copy. App uses service workers and local storage to provide fully offline HN reading. The goal of this app is to read the comments. It does not provide an offline version of any articles or non-HN links.
 
+## Screenshots
+
+### Mobile (iPhone SE)
+
+|                               |                               |
+| ----------------------------- | ----------------------------- |
+| ![alt text](docs/image-3.png) | ![alt text](docs/image-2.png) |
+
+### Desktop
+
+|                             |                               |
+| --------------------------- | ----------------------------- |
+| ![alt text](docs/image.png) | ![alt text](docs/image-1.png) |
+
 ## Features
 
 - Optimized for lurking. No ability to login, comment, or do anything other than read comments and follow links.
@@ -13,39 +27,32 @@ This is a simple web app to read Hacker News comments by storing a local copy. A
 - Any links to other HN articles are automatically loaded in the app.
 - While reading comment threads, a pleasant UX is provided to:
   - Click to collapse a thread and its children. A clickable margin is provided for each parent level on every child.
-  - Click the right margin of the comment to make deeply nested comments wider.
-  - Comment collapse state is stored in the current session.
+  - Comment collapse state is stored in local storage.
     - If you leave a story and come back the comments will return to their previous state.
+- Colors are randomly assigned to each author.
+  - There is logic to minimize collisions within a tree and between nearby comments.
+- There is a "subway style" connector to show when comments are replying to each other.
+- List of already read stories is saved to local storage.
+  - Default view will hide already read stories from lists.
 
 ## How It Works
 
-This is a simple web app. Server is built on Node and Express. There are two APIs which are consumed:
+This is a simple web app. Currently built in Remix. There are two APIs which are consumed:
 
 - Official HN API, via Firebase - used to load front page list, story, and comment details
 - Algolia HN search results - for the top day and week stories
 
 The server has a simple timer which triggers every 10 minutes to check for updates for the front page. The day and week lists update less frequently. There's additional logic to only reload the comments for a story if enough time has elapsed from the previous update.
 
-The client is a SPA built in React. The bulk of the code is data management and controlling the view when comments are collapsed.
+The client is a MPA built in React with Remix. The bulk of the code is data management and controlling the view when comments are collapsed.
 
 Built in Typescript.
 
 ## Self Host
 
-This repo is self contained. The APIs I consume are all publicly accessible. If you want to run this on your own server, simply build the server. This will take care of building the client also and copying the static files to the server. After that, simply `yarn start` from the server directory. There is also a `yarn deploy` script available to copy necessary files to a remote server. You'll need to update the path in `server/package.json`.
+There is a provider Dockerfile to get things running. I run it on Coolify.
 
 ```
-cd server && yarn build && yarn start
+docker build -t hn-offline .
+docker run -p 3000:3000 hn-offline
 ```
-
-## Screenshots
-
-### Mobile
-
-![Mobile screenshot](docs/mobile.png)
-
-### Desktop
-
-![Desktop screenshot](docs/desktop.png)
-
-Change to force commit
