@@ -154,8 +154,8 @@ export function HnComment({
         const isCommentByStoryAuthor = storyData?.by === comment.by;
         const borderColor = colorMap[comment.by] ?? "#000";
 
-        const stickyTop = 16 + depth * 8;
-        const stickyHeight = 16 + depth * 4;
+        const stickyTop = 32 + depthMatchInAuthorChain * 8;
+        const stickyHeight = Math.max(48 - depthMatchInAuthorChain * 8, 16);
 
         return (
           <div
