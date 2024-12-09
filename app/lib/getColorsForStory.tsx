@@ -3,7 +3,11 @@ import { mhvcToHex } from "munsell";
 
 import { HnItem, KidsObj3 } from "~/stores/useDataStore";
 
+const recentHues: number[] = [];
+
 export function getColorsForStory(story: HnItem): Record<string, string> {
+  recentHues.length = 0;
+
   // iterate through the comments and assign unique colors to each user
   // when assigning colors, avoid collisions on nearby comments and parents
   // map of user to color
@@ -31,15 +35,19 @@ export function getColorsForStory(story: HnItem): Record<string, string> {
   return colorMap;
 }
 
-const recentHues: number[] = [];
+// determine color based on
+// previous 3 siblings (same depth as current)
+// full chain of parent colors (all the way up)
+// terminal nodes of previous sibling
 
 function processCommentsForObj(
   comments: (KidsObj3 | undefined | null)[],
   hueMap: Record<string, number>,
   parentHueChain: number[]
 ) {
-  let trueSiblingsToAvoid: number[] = [];
-  let prevHue = null;
+  const siblingHues: number[] = [];
+  const terminalChildNodes: number[] = [];
+
   for (const comment of comments) {
     if (!comment || !comment.by) {
       continue;
@@ -47,22 +55,22 @@ function processCommentsForObj(
 
     const colorsToAvoid = [
       ...parentHueChain,
-      ...trueSiblingsToAvoid,
+      ...siblingHues,
       ...recentHues,
+      ...terminalChildNodes,
     ];
-
-    if (prevHue !== null) {
-      colorsToAvoid.push(prevHue);
-    }
 
     // get hue for this comment
     // either existing author or best color that avoids current ones
     const currentHue =
       hueMap[comment.by] ?? getColorThatAvoidsChain(colorsToAvoid);
 
+    // reset terminal child nodes
+    terminalChildNodes.length = 0;
+
     // keep up to 5 recent hues
     recentHues.push(currentHue);
-    if (recentHues.length > 4) {
+    if (recentHues.length > 2) {
       recentHues.shift();
     }
 
@@ -76,25 +84,36 @@ function processCommentsForObj(
         currentHue,
       ]);
 
-      // this final child is highly visible when rendered
-      trueSiblingsToAvoid = [currentHue, ...finalChildHue];
-    } else {
-      trueSiblingsToAvoid = [currentHue];
+      // store the terminal child hue
+      for (const hue of finalChildHue) {
+        terminalChildNodes.push(hue);
+      }
     }
 
-    prevHue = currentHue;
+    terminalChildNodes.push(currentHue);
+
+    siblingHues.push(currentHue);
+    if (siblingHues.length > 4) {
+      siblingHues.shift();
+    }
   }
 
-  return trueSiblingsToAvoid;
+  return [...terminalChildNodes];
 }
 
 function getRandHslForHue(hue: number): string {
   // method should convert hue from 0-360 to to 0-100
   // then pass through munsell mhvcToHex to get the color
 
-  const h = (hue / 360) * 100;
+  // clipping at 95 to avoid repeating reds
+  const h = (hue * 95) / 360;
 
-  const hex = mhvcToHex(h, 4, 30);
+  // v between 3.5 and 4.5
+  // c between 20 and 30
+  const v = 3.5 + Math.random();
+  const c = 20 + Math.random() * 10;
+
+  const hex = mhvcToHex(h, v, c);
 
   return hex;
 }
@@ -110,8 +129,10 @@ function getColorThatAvoidsChain(hueChain: number[]): number {
   }
 
   if (copyHueChain.length === 1) {
+    const posOrNegative = Math.random() > 0.5 ? 180 : -180;
+
     // rotate 180 degrees
-    return (copyHueChain[0] + 180 + Math.random() * 30 - 15) % 360;
+    return (copyHueChain[0] + posOrNegative + Math.random() * 30 - 15) % 360;
   }
 
   // find the largest gap
