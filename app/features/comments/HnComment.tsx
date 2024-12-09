@@ -116,7 +116,8 @@ export function HnComment({
 
   const shouldShowBar = depthMatchInAuthorChain >= 0;
 
-  const widths = [20, 19, 18, 17, 16, 16, 16, 16, 16, 16, 16, 16, 16];
+  const paddingByDepth = [16, 15, 14, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12];
+  const widths = paddingByDepth.map((val) => val + 4);
 
   let leftPos = 0;
   if (shouldShowBar) {
@@ -153,13 +154,16 @@ export function HnComment({
         const isCommentByStoryAuthor = storyData?.by === comment.by;
         const borderColor = colorMap[comment.by] ?? "#000";
 
+        const stickyTop = 32 + depthMatchInAuthorChain * 8;
+        const stickyHeight = Math.max(48 - depthMatchInAuthorChain * 8, 16);
+
         return (
           <div
             className={cn("bp3-card relative", { collapsed: !isOpen })}
             onClick={handleCardClick}
             style={{
               "--flash-color": borderColor,
-              paddingLeft: 12 + Math.max(4 - depth),
+              paddingLeft: 12 + Math.max(4 - depth, 0),
               marginLeft: 0,
               borderLeftColor: borderColor,
               borderLeftWidth: 4,
@@ -171,15 +175,15 @@ export function HnComment({
               <div
                 style={{
                   position: "sticky",
-                  top: 20 + depth * 8,
-                  height: 26,
+                  top: stickyTop,
+                  height: stickyHeight,
                 }}
               >
                 <div
                   style={{
                     position: "absolute",
-                    top: 12,
-                    left: leftPos - 14,
+                    top: 10,
+                    left: leftPos - paddingByDepth[depth],
                     width: Math.abs(leftPos + 4),
                     backgroundColor: borderColor,
                     height: 7,
@@ -190,7 +194,10 @@ export function HnComment({
               </div>
             )}
             <p
-              style={{ fontWeight: isOpen ? 450 : 300 }}
+              style={{
+                fontWeight: isOpen ? 450 : 300,
+                marginTop: shouldShowBar ? -stickyHeight : 0,
+              }}
               ref={divRef}
               className={cn("font-sans flex items-center gap-1")}
             >
