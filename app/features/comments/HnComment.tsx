@@ -41,11 +41,9 @@ export function HnComment({
   const collapsedIds = useCommentStore((s) => s.collapsedIds);
 
   const colorMap = useDataStore((s) => s.colorMap);
-
-  const _isOpen = comment?.id ? collapsedIds[comment.id] !== true : false;
-
   const storyData = useContext(StoryContext);
 
+  const _isOpen = comment?.id ? collapsedIds[comment.id] !== true : false;
   const [isOpen, setIsOpen] = useState(_isOpen);
 
   useEffect(() => {
