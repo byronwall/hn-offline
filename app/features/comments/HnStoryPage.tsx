@@ -16,8 +16,6 @@ interface HnStoryPageProps {
   storyData?: HnItem;
 }
 
-export const SESSION_COLLAPSED = "SESSION_COLLAPSED";
-
 // context to track the current story data
 export const StoryContext = createContext<HnItem | undefined>(undefined);
 
@@ -88,7 +86,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
 
   const collapsedIds = useCommentStore((s) => s.collapsedIds);
 
-  const _isOpen = collapsedIds[storyData?.id] !== true;
+  const _isOpen = storyData?.id ? collapsedIds[storyData.id] !== true : false;
   const [isTextOpen, setIsTextCollapsed] = useState(_isOpen);
 
   useEffect(() => {
