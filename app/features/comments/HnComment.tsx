@@ -1,6 +1,6 @@
 import { decode } from "html-entities";
 import { ArrowUpRightFromSquare } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import sanitizeHtml from "sanitize-html";
 
 import { isValidComment } from "~/lib/isValidComment";
@@ -42,7 +42,9 @@ export function HnComment({
 
   const colorMap = useDataStore((s) => s.colorMap);
 
-  const _isOpen = collapsedIds[comment?.id] !== true;
+  const _isOpen = comment?.id ? collapsedIds[comment.id] !== true : false;
+
+  const storyData = useContext(StoryContext);
 
   const [isOpen, setIsOpen] = useState(_isOpen);
 
@@ -148,86 +150,82 @@ export function HnComment({
     </>
   );
 
+  const isCommentByStoryAuthor = storyData?.by === comment.by;
+  const borderColor = colorMap[comment.by ?? ""] ?? "#000";
+
+  const stickyTop = 32 + depthMatchInAuthorChain * 8;
+  const stickyHeight = Math.max(48 - depthMatchInAuthorChain * 8, 16);
+
   return (
-    <StoryContext.Consumer>
-      {(storyData) => {
-        const isCommentByStoryAuthor = storyData?.by === comment.by;
-        const borderColor = colorMap[comment.by] ?? "#000";
-
-        const stickyTop = 32 + depthMatchInAuthorChain * 8;
-        const stickyHeight = Math.max(48 - depthMatchInAuthorChain * 8, 16);
-
-        return (
+    <div
+      className={cn("bp3-card relative", { collapsed: !isOpen })}
+      onClick={handleCardClick}
+      style={
+        {
+          "--flash-color": borderColor,
+          paddingLeft: 12 + Math.max(4 - depth, 0),
+          marginLeft: 0,
+          borderLeftColor: borderColor,
+          borderLeftWidth: 4,
+          borderTopLeftRadius: 4,
+          borderBottomLeftRadius: 4,
+        } as React.CSSProperties
+      }
+    >
+      {shouldShowBar && isOpen && (
+        <div
+          style={{
+            position: "sticky",
+            top: stickyTop,
+            height: stickyHeight,
+          }}
+        >
           <div
-            className={cn("bp3-card relative", { collapsed: !isOpen })}
-            onClick={handleCardClick}
             style={{
-              "--flash-color": borderColor,
-              paddingLeft: 12 + Math.max(4 - depth, 0),
-              marginLeft: 0,
-              borderLeftColor: borderColor,
-              borderLeftWidth: 4,
-              borderTopLeftRadius: 4,
-              borderBottomLeftRadius: 4,
+              position: "absolute",
+              top: 10,
+              left: leftPos - paddingByDepth[depth],
+              width: Math.abs(leftPos + 4),
+              backgroundColor: borderColor,
+              height: 7,
+              borderTop: "2px solid white",
+              borderBottom: "2px solid white",
             }}
-          >
-            {shouldShowBar && isOpen && (
-              <div
-                style={{
-                  position: "sticky",
-                  top: stickyTop,
-                  height: stickyHeight,
-                }}
-              >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    left: leftPos - paddingByDepth[depth],
-                    width: Math.abs(leftPos + 4),
-                    backgroundColor: borderColor,
-                    height: 7,
-                    borderTop: "2px solid white",
-                    borderBottom: "2px solid white",
-                  }}
-                ></div>
-              </div>
-            )}
-            <p
-              style={{
-                fontWeight: isOpen ? 450 : 300,
-                marginTop: shouldShowBar && isOpen ? -stickyHeight : 0,
-              }}
-              ref={divRef}
-              className={cn("font-sans flex items-center gap-1")}
+          ></div>
+        </div>
+      )}
+      <p
+        style={{
+          fontWeight: isOpen ? 450 : 300,
+          marginTop: shouldShowBar && isOpen ? -stickyHeight : 0,
+        }}
+        ref={divRef}
+        className={cn("font-sans flex items-center gap-1")}
+      >
+        <span
+          className={cn({
+            "text-orange-700 font-bold": isCommentByStoryAuthor,
+            truncate: true,
+          })}
+        >
+          {comment.by}
+        </span>
+        <span>{"|"}</span>
+        {timeSince(comment.time)}
+        {" ago"}
+        {isNavigator && "share" in navigator && (
+          <>
+            <span>{"|"}</span>
+            <button
+              onClick={handleShareClick}
+              className="hover:text-orange-500 ml-1"
             >
-              <span
-                className={cn({
-                  "text-orange-700 font-bold": isCommentByStoryAuthor,
-                  truncate: true,
-                })}
-              >
-                {comment.by}
-              </span>
-              <span>{"|"}</span>
-              {timeSince(comment.time)}
-              {" ago"}
-              {isNavigator && "share" in navigator && (
-                <>
-                  <span>{"|"}</span>
-                  <button
-                    onClick={handleShareClick}
-                    className="hover:text-orange-500 ml-1"
-                  >
-                    <ArrowUpRightFromSquare size={16} />
-                  </button>
-                </>
-              )}
-            </p>
-            {childrenToShow}
-          </div>
-        );
-      }}
-    </StoryContext.Consumer>
+              <ArrowUpRightFromSquare size={16} />
+            </button>
+          </>
+        )}
+      </p>
+      {childrenToShow}
+    </div>
   );
 }

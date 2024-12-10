@@ -16,8 +16,6 @@ interface HnStoryPageProps {
   storyData?: HnItem;
 }
 
-export const SESSION_COLLAPSED = "SESSION_COLLAPSED";
-
 // context to track the current story data
 export const StoryContext = createContext<HnItem | undefined>(undefined);
 
