@@ -1,6 +1,6 @@
 import { decode } from "html-entities";
 import { ArrowUpRightFromSquare } from "lucide-react";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import sanitizeHtml from "sanitize-html";
 
 import { isValidComment } from "~/lib/isValidComment";
@@ -8,31 +8,14 @@ import { cn, isNavigator, timeSince } from "~/lib/utils";
 import { KidsObj3, useDataStore } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
-import { StoryContext } from "./HnStoryPage";
 
 export interface HnCommentProps {
   comment: KidsObj3 | null;
   depth: number;
-
-  onUpdateOpen(
-    id: number,
-    newIsOpen: boolean,
-    scrollId: number | undefined,
-    comment: KidsObj3 | null,
-    nextChildId: number | undefined
-  ): void;
-
-  nextChildId: number | undefined;
   authorChain: (string | undefined)[];
 }
 
-export function HnComment({
-  comment,
-  depth,
-  onUpdateOpen,
-  nextChildId,
-  authorChain,
-}: HnCommentProps) {
+export function HnComment({ comment, depth, authorChain }: HnCommentProps) {
   const divRef: React.RefObject<HTMLDivElement> = useRef(null);
 
   const clearScrollToId = useDataStore((s) => s.clearScrollToId);
@@ -40,10 +23,12 @@ export function HnComment({
   const collapsedIds = useDataStore((s) => s.collapsedIds);
 
   const colorMap = useDataStore((s) => s.colorMap);
-  const storyData = useContext(StoryContext);
+  const storyData = useDataStore((s) => s.activeStoryData);
 
   const _isOpen = comment?.id ? collapsedIds[comment.id] !== true : false;
   const [isOpen, setIsOpen] = useState(_isOpen);
+
+  const onUpdateOpen = useDataStore((s) => s.handleCollapseEvent);
 
   useEffect(() => {
     // update when IndexedDB changes
@@ -51,7 +36,9 @@ export function HnComment({
   }, [_isOpen]);
 
   useEffect(() => {
-    if (scrollToId !== comment?.id) return;
+    if (scrollToId !== comment?.id) {
+      return;
+    }
 
     const dims = divRef.current?.getBoundingClientRect().top;
 
@@ -72,7 +59,9 @@ export function HnComment({
 
   const handleShareClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (comment === null) return;
+    if (comment === null) {
+      return;
+    }
 
     let cleanText = sanitizeHtml(comment.text || "");
     cleanText = cleanText.replace(/<a href="([^"]+)">([^<]+)<\/a>/g, "$1");
@@ -85,7 +74,9 @@ export function HnComment({
 
     console.log("share text", shareText);
 
-    if (!isNavigator) return;
+    if (!isNavigator) {
+      return;
+    }
 
     navigator.share?.({
       title: `HN Comment by ${comment.by}`,
@@ -101,13 +92,17 @@ export function HnComment({
     }
 
     const newIsOpen = !isOpen;
-    if (comment === null) return;
-    onUpdateOpen(comment.id, newIsOpen, undefined, comment, nextChildId);
+    if (comment === null) {
+      return;
+    }
 
+    onUpdateOpen(comment.id, newIsOpen);
     setIsOpen(newIsOpen);
   }
 
-  if (comment === null) return null;
+  if (comment === null) {
+    return null;
+  }
 
   const depthMatchInAuthorChain = authorChain.lastIndexOf(
     comment.by || undefined
@@ -128,7 +123,9 @@ export function HnComment({
   const childComments = (comment.kidsObj || []).filter(isValidComment);
   const commentText = comment.text || "";
 
-  if (!isValidComment(comment)) return null;
+  if (!isValidComment(comment)) {
+    return null;
+  }
 
   const childrenToShow = !isOpen ? null : (
     <>
@@ -140,7 +137,6 @@ export function HnComment({
         <HnCommentList
           childComments={childComments}
           depth={depth + 1}
-          onUpdateOpen={onUpdateOpen}
           authorChain={[...authorChain, comment.by]}
         />
       )}

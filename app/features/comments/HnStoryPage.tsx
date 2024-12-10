@@ -1,6 +1,6 @@
 import { useNavigate } from "@remix-run/react";
 import { ArrowUpRightFromSquare } from "lucide-react";
-import React, { createContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { useGetContent } from "~/hooks/useGetContent";
 import { isValidComment } from "~/lib/isValidComment";
@@ -14,9 +14,6 @@ interface HnStoryPageProps {
   id: number | undefined;
   storyData?: HnItem;
 }
-
-// context to track the current story data
-export const StoryContext = createContext<HnItem | undefined>(undefined);
 
 export const HnStoryPage: React.FC<HnStoryPageProps> = ({
   id,
@@ -37,18 +34,6 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
   };
 
   const navigate = useNavigate();
-
-  const handleCollapseEvent = (
-    id: number,
-    newOpen: boolean,
-    scrollId: number | undefined
-  ) => {
-    updateCollapsedState(id, !newOpen);
-
-    if (scrollId !== undefined) {
-      setIdToScrollTo(scrollId);
-    }
-  };
 
   useEffect(() => {
     const anchorClickHandler = (e: any) => {
@@ -180,14 +165,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
       </div>
 
       <div className="user-text">
-        <StoryContext.Provider value={storyData}>
-          <HnCommentList
-            childComments={comments}
-            depth={0}
-            onUpdateOpen={handleCollapseEvent}
-            authorChain={[]}
-          />
-        </StoryContext.Provider>
+        <HnCommentList childComments={comments} depth={0} authorChain={[]} />
       </div>
     </div>
   );

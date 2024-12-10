@@ -90,6 +90,8 @@ type DataStore = {
   scrollToId: number | undefined;
 
   colorMap: Record<CommentAuthor, CommentColor>;
+
+  activeStoryData: HnItem | undefined;
 };
 
 type DataStoreActions = {
@@ -127,6 +129,10 @@ type DataStoreActions = {
   setScrollToId: (id: number) => void;
 
   setColorMap: (map: Record<CommentAuthor, CommentColor>) => void;
+
+  handleCollapseEvent: (id: number, newOpen: boolean) => void;
+
+  setActiveStoryData: (data: HnItem) => void;
 };
 
 if (typeof window !== "undefined") {
@@ -153,6 +159,11 @@ export const useDataStore = create<DataStore & DataStoreActions & CommentStore>(
     storyListSaveCount: 0,
 
     shouldHideReadItems: false,
+
+    activeStoryData: undefined,
+    setActiveStoryData: (data) => {
+      set({ activeStoryData: data });
+    },
 
     colorMap: {},
     setColorMap: (map) => {
@@ -688,6 +699,90 @@ export const useDataStore = create<DataStore & DataStoreActions & CommentStore>(
       request.onerror = function () {
         console.error("Error cleaning up old entries: ", request.error);
       };
+    },
+
+    handleCollapseEvent(id: number, newOpen: boolean) {
+      const {
+        updateCollapsedState,
+        setScrollToId,
+        activeStoryData,
+        collapsedIds,
+      } = get();
+
+      // desired logic is thus;
+      // if opening the comment, scroll to it -- use the comment id
+      // if closing the comment, scroll to the next sibling
+      // if no sibling, scroll to the parent
+
+      updateCollapsedState(id, !newOpen);
+
+      if (newOpen) {
+        setScrollToId(id);
+        return;
+      }
+
+      if (!activeStoryData) {
+        return;
+      }
+
+      // find the next sibling or scroll to parent if final (or only) node
+      // need to traverse the kidsObj to find the next sibling
+      const testComments = activeStoryData.kidsObj || [];
+
+      function findNextSibling(
+        comments: (KidsObj3 | null)[],
+        searchId: number,
+        parentId?: number
+      ): number | undefined {
+        let found = false;
+
+        for (const comment of comments) {
+          if (comment === null) {
+            continue;
+          }
+
+          if (found && !collapsedIds[comment.id]) {
+            // only scroll to open comments
+            return comment.id;
+          }
+
+          if (comment.id === searchId) {
+            found = true;
+          }
+        }
+
+        if (found) {
+          // no next sibling, return parent
+          return parentId;
+        }
+
+        for (const comment of comments) {
+          if (comment === null) {
+            continue;
+          }
+
+          // recurse into kidsObj - still need to find the comment
+          const nextSiblingId = findNextSibling(
+            comment.kidsObj || [],
+            searchId,
+            comment.id
+          );
+
+          if (nextSiblingId) {
+            return nextSiblingId;
+          }
+        }
+
+        return undefined;
+      }
+
+      const nextSiblingId = findNextSibling(testComments, id, undefined);
+
+      if (nextSiblingId === undefined) {
+        return;
+      }
+
+      setScrollToId(nextSiblingId);
     },
   })
 );
