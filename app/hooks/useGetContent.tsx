@@ -12,6 +12,7 @@ export function useGetContent(id: number, initialSsrData: HnItem | undefined) {
   const getContent = useDataStore((s) => s.getContent);
   const dataNonce = useDataStore((s) => s.dataNonce);
   const setColorMap = useDataStore((s) => s.setColorMap);
+  const setActiveStoryData = useDataStore((s) => s.setActiveStoryData);
 
   useEffect(() => {
     async function fetchData() {
@@ -24,6 +25,7 @@ export function useGetContent(id: number, initialSsrData: HnItem | undefined) {
       const data = await getContent(id, true);
       if (data) {
         setStoryData(data);
+        setActiveStoryData(data);
 
         const colors = getColorsForStory(data);
         setColorMap(colors);

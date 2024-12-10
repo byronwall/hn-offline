@@ -10,7 +10,6 @@ import {
 import { useEffect } from "react";
 
 import { NavBar } from "./components/NavBar";
-import { useCommentStore } from "./stores/useCommentStore";
 import { useDataStore } from "./stores/useDataStore";
 import styles from "./tailwind.css";
 
@@ -29,7 +28,7 @@ export const meta = () => [
 export default function App() {
   const initLocalForage = useDataStore((s) => s.initializeFromLocalForage);
 
-  const fetchInitialCollapsedState = useCommentStore(
+  const fetchInitialCollapsedState = useDataStore(
     (s) => s.fetchInitialCollapsedState
   );
 
