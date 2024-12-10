@@ -196,7 +196,7 @@ export function HnComment({
             <p
               style={{
                 fontWeight: isOpen ? 450 : 300,
-                marginTop: shouldShowBar ? -stickyHeight : 0,
+                marginTop: shouldShowBar && isOpen ? -stickyHeight : 0,
               }}
               ref={divRef}
               className={cn("font-sans flex items-center gap-1")}
