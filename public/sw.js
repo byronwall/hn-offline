@@ -1,8 +1,8 @@
 // Names of the two caches used in this version of the service worker.
 // Change to v2, etc. when you update any of the local resources, which will
 // in turn trigger the install event again.
-const PRECACHE = "precache-v28";
-const RUNTIME = "runtime-v28";
+const PRECACHE = "precache-v29";
+const RUNTIME = "runtime-v29";
 
 // A list of local resources we always want to be cached.
 // need these available so the site can work offline on all major pages
@@ -52,10 +52,14 @@ self.addEventListener("activate", (event) => {
 // from the network before returning it to the page.
 self.addEventListener("fetch", (event) => {
   // Skip cross-origin requests, like those for Google Analytics.
-  if (!event.request.url.startsWith(self.location.origin)) return;
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
 
   // kickout for local resources
-  if (event.request.url.includes("localhost")) return;
+  if (event.request.url.includes("localhost")) {
+    return;
+  }
 
   // Skip caching if the URL starts with "api"
   if (event.request.url.startsWith(self.location.origin + "/api")) {
