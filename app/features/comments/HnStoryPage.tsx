@@ -86,7 +86,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
 
   const collapsedIds = useCommentStore((s) => s.collapsedIds);
 
-  const _isOpen = collapsedIds[storyData?.id] !== true;
+  const _isOpen = storyData?.id ? collapsedIds[storyData.id] !== true : false;
   const [isTextOpen, setIsTextCollapsed] = useState(_isOpen);
 
   useEffect(() => {
