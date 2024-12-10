@@ -5,7 +5,6 @@ import sanitizeHtml from "sanitize-html";
 
 import { isValidComment } from "~/lib/isValidComment";
 import { cn, isNavigator, timeSince } from "~/lib/utils";
-import { useCommentStore } from "~/stores/useCommentStore";
 import { KidsObj3, useDataStore } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
@@ -38,7 +37,7 @@ export function HnComment({
 
   const clearScrollToId = useDataStore((s) => s.clearScrollToId);
   const scrollToId = useDataStore((s) => s.scrollToId);
-  const collapsedIds = useCommentStore((s) => s.collapsedIds);
+  const collapsedIds = useDataStore((s) => s.collapsedIds);
 
   const colorMap = useDataStore((s) => s.colorMap);
   const storyData = useContext(StoryContext);

@@ -1,4 +1,4 @@
-import { Comment } from "~/stores/useCommentStore";
+import { Comment } from "~/stores/useDataStore";
 
 // Function to get the initial collapsed state, returning a Promise of string[]
 export function getInitialCollapsedState(db: IDBDatabase): Promise<number[]> {

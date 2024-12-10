@@ -6,7 +6,6 @@ import { useGetContent } from "~/hooks/useGetContent";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, isNavigator, timeSince } from "~/lib/utils";
-import { useCommentStore } from "~/stores/useCommentStore";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
@@ -23,7 +22,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
   id,
   storyData: _storyData,
 }) => {
-  const updateCollapsedState = useCommentStore((s) => s.updateCollapsedState);
+  const updateCollapsedState = useDataStore((s) => s.updateCollapsedState);
 
   const setIdToScrollTo = useDataStore((s) => s.setScrollToId);
 
@@ -84,7 +83,7 @@ export const HnStoryPage: React.FC<HnStoryPageProps> = ({
     };
   }, []);
 
-  const collapsedIds = useCommentStore((s) => s.collapsedIds);
+  const collapsedIds = useDataStore((s) => s.collapsedIds);
 
   const _isOpen = storyData?.id ? collapsedIds[storyData.id] !== true : false;
   const [isTextOpen, setIsTextCollapsed] = useState(_isOpen);
