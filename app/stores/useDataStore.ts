@@ -712,7 +712,8 @@ export const useDataStore = create<DataStore & DataStoreActions & CommentStore>(
       // desired logic is thus;
       // if opening the comment, scroll to it -- use the comment id
       // if closing the comment, scroll to the next sibling
-      // if no sibling, scroll to the parent
+      // if no sibling, scroll to the next parent
+      // when choosing scroll target, skip comments that are collapsed
 
       updateCollapsedState(id, !newOpen);
 
@@ -732,7 +733,7 @@ export const useDataStore = create<DataStore & DataStoreActions & CommentStore>(
       function findNextSibling(
         comments: (KidsObj3 | null)[],
         searchId: number,
-        parentId?: number
+        nextParentId?: number
       ): number | undefined {
         let found = false;
 
@@ -753,27 +754,46 @@ export const useDataStore = create<DataStore & DataStoreActions & CommentStore>(
 
         if (found) {
           // no next sibling, return parent
-          return parentId;
+          return nextParentId;
         }
 
-        for (const comment of comments) {
+        let nextSiblingId: number | undefined = 0;
+
+        for (let idx = 0; idx < comments.length; idx++) {
+          const comment = comments[idx];
           if (comment === null) {
             continue;
           }
 
-          // recurse into kidsObj - still need to find the comment
-          const nextSiblingId = findNextSibling(
-            comment.kidsObj || [],
-            searchId,
-            comment.id
-          );
+          if (nextSiblingId === -2) {
+            if (!collapsedIds[comment.id]) {
+              console.log("next parent", nextParentId, comment.id);
+              return comment.id;
+            }
+            continue;
+          }
 
-          if (nextSiblingId) {
+          // recurse into kidsObj - still need to find the comment
+          // default is the next comment's id
+          nextSiblingId = findNextSibling(comment.kidsObj || [], searchId, -2);
+
+          // check if -1 came out, if so, return
+          const nextId = comments[idx + 1]?.id;
+
+          if (nextSiblingId === -2 && nextId && !collapsedIds[nextId]) {
+            return nextId;
+          }
+
+          if (
+            nextSiblingId &&
+            nextSiblingId > 0 &&
+            !collapsedIds[nextSiblingId]
+          ) {
             return nextSiblingId;
           }
         }
 
-        return undefined;
+        return nextSiblingId;
       }
 
       const nextSiblingId = findNextSibling(testComments, id, undefined);
