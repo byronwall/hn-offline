@@ -3,6 +3,8 @@
 ## Conversion to SolidJS
 
 - [ ] Implement the local storage stuff
+- [ ] Get the comment count working on story list
+- [ ] Get the navbar working again
 - [x] Implement the comment colors
 - [x] Implement comment collapse
 - [ ] Sort out service worker and better integrate into vite

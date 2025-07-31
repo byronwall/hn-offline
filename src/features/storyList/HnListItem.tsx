@@ -31,17 +31,13 @@ export function HnListItem(props: HnStoryProps) {
         <ChevronUp class="stroke-gray-500" />
         {props.data.score}
       </span>
-      {(props.data.commentCount ??
-        ((props.data as any).kids ?? []).length ??
-        "") !== "" && (
+      {props.data.descendants !== undefined && (
         <A
           href={"/story/" + props.data.id}
           class="flex gap-1 text-gray-700 hover:underline"
         >
           <MessageSquareQuote class="stroke-gray-500" />
-          {props.data.commentCount ??
-            ((props.data as any).kids ?? []).length ??
-            ""}
+          {props.data.descendants}
         </A>
       )}
       <span class="text-gray-600 text-right mr-2">
