@@ -1,7 +1,8 @@
 import { createResource } from "solid-js";
 
+import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
 import { TopStoriesType } from "~/models/interfaces";
-import { HnStorySummary, StoryPage } from "~/stores/useDataStore";
+import { HnItem, StoryPage } from "~/stores/useDataStore";
 
 import { HnStoryList } from "./HnStoryList";
 
@@ -12,12 +13,14 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
     const response = await fetch(
       `http://localhost:3000/api/topstories/${props.page}`
     );
-    return (await response.json()) as HnStorySummary[];
+    return (await response.json()) as HnItem[];
   });
+
+  const summaries = () => mapStoriesToSummaries(data());
 
   return (
     <HnStoryList
-      items={data()}
+      items={summaries()}
       page={props.page as StoryPage}
       sortType={props.page === "topstories" ? undefined : "score"}
     />

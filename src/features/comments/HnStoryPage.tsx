@@ -31,6 +31,16 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
   const navigate = useNavigate();
 
+  const initializeLocalStorage = useDataStore(
+    (s) => s.initializeFromLocalForage
+  );
+
+  onMount(() => {
+    console.log("HnStoryPage mounted", props.storyData);
+    // initialize local storage
+    initializeLocalStorage();
+  });
+
   onMount(() => {
     const anchorClickHandler = (e: any) => {
       if (e.target.tagName !== "A") {

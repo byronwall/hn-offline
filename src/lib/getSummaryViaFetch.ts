@@ -23,7 +23,9 @@ export async function getSummaryViaFetch(url: string) {
   }
 }
 
-export function mapStoriesToSummaries(data: HnItem[] | undefined) {
+export function mapStoriesToSummaries(
+  data: HnItem[] | HnStorySummary[] | undefined
+) {
   if (!data || !Array.isArray(data)) {
     return undefined;
   }
@@ -33,7 +35,7 @@ export function mapStoriesToSummaries(data: HnItem[] | undefined) {
     score: c.score,
     title: c.title,
     url: c.url,
-    commentCount: c.descendants,
+    descendants: c.descendants,
     time: c.time,
   }));
 }

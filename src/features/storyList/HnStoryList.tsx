@@ -1,4 +1,4 @@
-import { createEffect, For, Show } from "solid-js";
+import { createEffect, For, onMount, Show } from "solid-js";
 
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { HnStorySummary, StoryPage, useDataStore } from "~/stores/useDataStore";
@@ -19,6 +19,26 @@ export function HnStoryList(props: HnStoryListProps) {
 
   createEffect(() => {
     setActiveStoryList(props.page);
+  });
+
+  const initializeLocalStorage = useDataStore(
+    (s) => s.initializeFromLocalForage
+  );
+
+  const saveStoryList = useDataStore((s) => s.saveStoryList);
+
+  onMount(async () => {
+    // client only
+    if (typeof window === "undefined") {
+      console.log("HnStoryList mounted, but not on client");
+      return;
+    }
+
+    console.log("HnStoryList mounted on client");
+    await initializeLocalStorage();
+    if (props.page) {
+      await saveStoryList(props.page, props.items ?? []);
+    }
   });
 
   return (

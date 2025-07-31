@@ -61,9 +61,10 @@ export interface HnStorySummary {
   score: number;
   id: number;
   url: string | undefined;
-  commentCount: number | undefined;
+  descendants: number | undefined;
   time: number;
 }
+
 export type TimestampHash = Record<number, number>;
 
 export type StoryPage = "front" | "day" | "week";
@@ -107,7 +108,10 @@ type DataStoreActions = {
 
   initializeFromLocalForage: () => Promise<void>;
 
-  saveStoryList: (page: StoryPage, data: HnItem[]) => Promise<void>;
+  saveStoryList: (
+    page: StoryPage,
+    data: HnItem[] | HnStorySummary[]
+  ) => Promise<void>;
   saveContent: (id: StoryId, content: HnItem) => Promise<void>;
 
   refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
@@ -385,7 +389,7 @@ export const useDataStore = createWithSignal<
     });
   },
 
-  saveStoryList: async (page: StoryPage, data: HnItem[]) => {
+  saveStoryList: async (page: StoryPage, data: HnItem[] | HnStorySummary[]) => {
     const { dataNonce } = get();
 
     const storySummaries = mapStoriesToSummaries(data);
@@ -500,7 +504,7 @@ export const useDataStore = createWithSignal<
       (await localforage.getItem<StoryPage | undefined>(ACTIVE_STORY_LIST)) ??
       "day";
 
-    console.log("initializeFromLocalForage done", {
+    console.log("**** initializeFromLocalForage done", {
       readItems,
       shouldHideReadItems,
       activeStoryList,
