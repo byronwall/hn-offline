@@ -27,13 +27,11 @@ module.exports = {
     // React
     {
       files: ["**/*.{js,jsx,ts,tsx}"],
-      plugins: ["react", "boundaries"],
+      plugins: ["boundaries", "solid"],
       extends: [
-        "plugin:react/recommended",
-        "plugin:react/jsx-runtime",
-        "plugin:react-hooks/recommended",
-        "plugin:jsx-a11y/recommended",
+        // "plugin:jsx-a11y/recommended",
         "plugin:@dword-design/import-alias/recommended",
+        "plugin:solid/recommended",
       ],
       settings: {
         react: {
@@ -84,8 +82,8 @@ module.exports = {
       },
       rules: {
         curly: "warn",
-        "jsx-a11y/click-events-have-key-events": "off",
-        "jsx-a11y/no-static-element-interactions": "off",
+        // "jsx-a11y/click-events-have-key-events": "off",
+        // "jsx-a11y/no-static-element-interactions": "off",
 
         "import/no-duplicates": "warn",
 
@@ -122,7 +120,7 @@ module.exports = {
           "warn",
           {
             alias: {
-              "~": "./app/",
+              "~": "./src/",
             },
           },
         ],
