@@ -21,10 +21,6 @@ export function HnStoryList(props: HnStoryListProps) {
     setActiveStoryList(props.page);
   });
 
-  createEffect(() => {
-    console.log("itemsToRender", itemsToRender());
-  });
-
   return (
     <Show when={itemsToRender()} fallback={<div>Loading...</div>}>
       <Show

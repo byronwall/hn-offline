@@ -1,6 +1,6 @@
 import { decode } from "html-entities";
 import sanitizeHtml from "sanitize-html";
-import { createEffect, createSignal } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { isValidComment } from "~/lib/isValidComment";
@@ -25,16 +25,16 @@ export function HnComment(props: HnCommentProps) {
   const colorMap = useDataStore((s) => s.colorMap);
   const storyData = useDataStore((s) => s.activeStoryData);
 
-  const _isOpen = props.comment?.id
-    ? collapsedIds[props.comment.id] !== true
-    : false;
-  const [isOpen, setIsOpen] = createSignal(_isOpen);
+  const _isOpen = () =>
+    props.comment?.id ? collapsedIds()[props.comment.id] !== true : false;
+  const [isOpen, setIsOpen] = createSignal(_isOpen());
 
   const onUpdateOpen = useDataStore((s) => s.handleCollapseEvent);
 
   createEffect(() => {
     // update when IndexedDB changes
-    setIsOpen(_isOpen);
+    // TODO: this should all go away once it's reactive
+    setIsOpen(_isOpen());
   });
 
   // TODO: review this one
@@ -94,12 +94,13 @@ export function HnComment(props: HnCommentProps) {
       return;
     }
 
-    const newIsOpen = !isOpen;
+    const newIsOpen = !isOpen();
     if (props.comment === null) {
       return;
     }
 
     onUpdateOpen(props.comment.id, newIsOpen);
+    console.log("newIsOpen", newIsOpen);
     setIsOpen(newIsOpen);
   }
 
@@ -126,92 +127,86 @@ export function HnComment(props: HnCommentProps) {
   const childComments = (props.comment.kidsObj || []).filter(isValidComment);
   const commentText = props.comment.text || "";
 
-  if (!isValidComment(props.comment)) {
-    return null;
-  }
-
-  const childrenToShow = !isOpen ? null : (
-    <>
-      {/* eslint-disable-next-line solid/no-innerhtml */}
-      <p class="comment" innerHTML={commentText} />
-      {childComments.length > 0 && (
-        <HnCommentList
-          childComments={childComments}
-          depth={props.depth + 1}
-          authorChain={[...props.authorChain, props.comment.by]}
-        />
-      )}
-    </>
-  );
-
   const isCommentByStoryAuthor = storyData?.by === props.comment.by;
-  const borderColor = colorMap[props.comment.by ?? ""] ?? "#000";
+  const borderColor = () => colorMap()[props.comment?.by ?? ""] ?? "#000";
 
   const stickyTop = 32 + depthMatchInAuthorChain * 8;
   const stickyHeight = Math.max(48 - depthMatchInAuthorChain * 8, 16);
 
   return (
-    <div
-      class={cn("bp3-card relative", { collapsed: !isOpen })}
-      onClick={handleCardClick}
-      style={{
-        "--flash-color": borderColor,
-        "padding-left": `${12 + Math.max(4 - props.depth, 0)}px`,
-        "margin-left": 0,
-        "border-left-color": borderColor,
-        "border-left-width": "4px",
-        "border-top-left-radius": "4px",
-        "border-bottom-left-radius": "4px",
-      }}
-    >
-      {shouldShowBar && isOpen() && (
-        <div
-          style={{
-            position: "sticky",
-            top: `${stickyTop}px`,
-            height: `${stickyHeight}px`,
-          }}
-        >
+    <Show when={isValidComment(props.comment)} fallback={null}>
+      <div
+        class={cn("bp3-card relative", { collapsed: !isOpen() })}
+        onClick={handleCardClick}
+        style={{
+          "--flash-color": borderColor(),
+          "padding-left": `${12 + Math.max(4 - props.depth, 0)}px`,
+          "margin-left": 0,
+          "border-left-color": borderColor(),
+          "border-left-width": "4px",
+          "border-top-left-radius": "4px",
+          "border-bottom-left-radius": "4px",
+        }}
+      >
+        {shouldShowBar && isOpen() && (
           <div
             style={{
-              position: "absolute",
-              top: "10px",
-              left: `${leftPos - paddingByDepth[props.depth]}px`,
-              width: `${Math.abs(leftPos + 4)}px`,
-              "background-color": borderColor,
-              height: "7px",
-              "border-top": "2px solid white",
-              "border-bottom": "2px solid white",
+              position: "sticky",
+              top: `${stickyTop}px`,
+              height: `${stickyHeight}px`,
             }}
-          />
-        </div>
-      )}
-      <p
-        style={{
-          "font-weight": isOpen() ? 450 : 300,
-          "margin-top": `${shouldShowBar && isOpen() ? -stickyHeight : 0}px`,
-        }}
-        ref={setDivRef}
-        class={cn("font-sans flex items-center gap-1")}
-      >
-        <span
-          class={cn({
-            "text-orange-700 font-bold": isCommentByStoryAuthor,
-            truncate: true,
-          })}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "10px",
+                left: `${leftPos - paddingByDepth[props.depth]}px`,
+                width: `${Math.abs(leftPos + 4)}px`,
+                "background-color": borderColor(),
+                height: "7px",
+                "border-top": "2px solid white",
+                "border-bottom": "2px solid white",
+              }}
+            />
+          </div>
+        )}
+        <p
+          style={{
+            "font-weight": isOpen() ? 450 : 300,
+            "margin-top": `${shouldShowBar && isOpen() ? -stickyHeight : 0}px`,
+          }}
+          ref={setDivRef}
+          class={cn("font-sans flex items-center gap-1")}
         >
-          {props.comment.by}
-        </span>
-        <span>{"|"}</span>
-        {timeSince(props.comment.time)}
-        {" ago"}
+          <span
+            class={cn({
+              "text-orange-700 font-bold": isCommentByStoryAuthor,
+              truncate: true,
+            })}
+          >
+            {props.comment.by}
+          </span>
+          <span>{"|"}</span>
+          {timeSince(props.comment.time)}
+          {" ago"}
 
-        <span>{"|"}</span>
-        <button onClick={handleShareClick} class="hover:text-orange-500 ml-1">
-          <ArrowUpRightFromSquare size={16} />
-        </button>
-      </p>
-      {childrenToShow}
-    </div>
+          <span>{"|"}</span>
+          <button onClick={handleShareClick} class="hover:text-orange-500 ml-1">
+            <ArrowUpRightFromSquare size={16} />
+          </button>
+        </p>
+        <Show when={isOpen()}>
+          {/* eslint-disable-next-line solid/no-innerhtml */}
+          <p class="comment" innerHTML={commentText} />
+          {childComments.length > 0 && (
+            <HnCommentList
+              childComments={childComments}
+              depth={props.depth + 1}
+              authorChain={[...props.authorChain, props.comment.by]}
+            />
+          )}
+        </Show>
+      </div>
+    </Show>
   );
 }

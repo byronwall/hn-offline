@@ -11,21 +11,20 @@ interface HnCommentListProps {
 }
 
 export function HnCommentList(props: HnCommentListProps) {
-  const validChildren = props.childComments.filter((comm) => comm !== null);
+  const validChildren = () =>
+    props.childComments.filter((comm) => comm !== null);
 
   // do not use infinite scroll for child comments - just render them all
   return (
-    <>
-      <For each={validChildren}>
-        {(childComm) => (
-          <HnComment
-            comment={childComm}
-            depth={props.depth}
-            authorChain={props.authorChain}
-          />
-        )}
-      </For>
-    </>
+    <For each={validChildren()}>
+      {(childComm) => (
+        <HnComment
+          comment={childComm}
+          depth={props.depth}
+          authorChain={props.authorChain}
+        />
+      )}
+    </For>
   );
 
   // return (

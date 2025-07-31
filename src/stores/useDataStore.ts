@@ -168,6 +168,7 @@ export const useDataStore = createWithSignal<
 
   colorMap: {},
   setColorMap: (map) => {
+    console.log("setColorMap", map);
     set({ colorMap: map });
   },
 

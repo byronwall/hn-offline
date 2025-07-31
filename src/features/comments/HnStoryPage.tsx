@@ -1,7 +1,8 @@
 import { useNavigate } from "@solidjs/router";
-import { createEffect, createSignal, onMount } from "solid-js";
+import { createEffect, createSignal, onMount, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
+import { getColorsForStory } from "~/lib/getColorsForStory";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, timeSince } from "~/lib/utils";
@@ -15,13 +16,12 @@ interface HnStoryPageProps {
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
-  const updateCollapsedState = console.log; //useDataStore((s) => s.updateCollapsedState);
+  const updateCollapsedState = useDataStore((s) => s.updateCollapsedState);
 
-  const setIdToScrollTo = console.log; // useDataStore((s) => s.setScrollToId);
+  const setIdToScrollTo = useDataStore((s) => s.setScrollToId);
 
-  const storyData = props.storyData;
-
-  const textToRender = processHtmlAndTruncateAnchorText(storyData?.text || "");
+  const textToRender = () =>
+    processHtmlAndTruncateAnchorText(props.storyData?.text || "");
 
   const onVisitMarker = useDataStore((s) => s.saveIdToReadList);
 
@@ -66,33 +66,41 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
   const collapsedIds = useDataStore((s) => s.collapsedIds);
 
-  const _isOpen = storyData?.id ? collapsedIds[storyData.id] !== true : false;
-  const [isTextOpen, setIsTextCollapsed] = createSignal(_isOpen);
+  const _isOpen = () =>
+    props.storyData?.id ? collapsedIds()[props.storyData.id] !== true : false;
+  const [isTextOpen, setIsTextCollapsed] = createSignal(_isOpen());
 
   createEffect(() => {
-    setIsTextCollapsed(_isOpen);
+    setIsTextCollapsed(_isOpen());
   });
 
-  const isTextCollapsed = isTextOpen() === false;
+  // TODO: probably a better home for this?
+  const setColorMap = useDataStore((s) => s.setColorMap);
+  createEffect(() => {
+    const colors = getColorsForStory(props.storyData);
+    setColorMap(colors);
+  });
+
+  const isTextCollapsed = () => isTextOpen() === false;
 
   const storyLinkEl =
-    storyData.url === undefined ? (
-      <span>{storyData.title}</span>
+    props.storyData.url === undefined ? (
+      <span>{props.storyData.title}</span>
     ) : (
-      <a href={storyData.url}>{storyData.title}</a>
+      <a href={props.storyData.url}>{props.storyData.title}</a>
     );
 
-  const comments = (storyData.kidsObj || []).filter(isValidComment);
+  const comments = (props.storyData.kidsObj || []).filter(isValidComment);
 
   function handleStoryTextClick() {
-    if (!storyData?.text) {
+    if (!props.storyData?.text) {
       return;
     }
 
-    const newIsCollapsed = !isTextCollapsed;
+    const newIsCollapsed = !isTextCollapsed();
 
     setIsTextCollapsed(newIsCollapsed);
-    updateCollapsedState(storyData.id, newIsCollapsed);
+    updateCollapsedState(props.storyData.id, newIsCollapsed);
 
     // scroll to first comment if it exists
     // schedule out 200ms to allow the collapse animation to finish
@@ -116,25 +124,25 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
         class={cn(
           {
             "border-l-4 border-orange-500 px-2 rounded-tl rounded-bl":
-              storyData.text,
+              props.storyData.text,
           },
           {
-            collapsed: isTextCollapsed,
+            collapsed: isTextCollapsed(),
           }
         )}
         onClick={handleStoryTextClick}
       >
         <h4 class="mb-2">
-          <span>{storyData.by}</span>
+          <span>{props.storyData.by}</span>
           <span>{" | "}</span>
           <span>
-            {storyData.score}
+            {props.storyData.score}
             {" points"}
           </span>
           <span>{" | "}</span>
-          <span>{timeSince(storyData.time)} ago</span>
+          <span>{timeSince(props.storyData.time)} ago</span>
           <span>{" | "}</span>
-          <span>{getDomain(storyData.url)}</span>
+          <span>{getDomain(props.storyData.url)}</span>
 
           <span>{" | "}</span>
           <button onClick={handleShareClick} class="hover:text-orange-500">
@@ -142,10 +150,11 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
           </button>
         </h4>
 
-        {storyData.text !== undefined && !isTextCollapsed && (
-          // eslint-disable-next-line solid/no-innerhtml
-          <p class="user-text break-words " innerHTML={textToRender} />
-        )}
+        <Show when={props.storyData.text !== undefined && !isTextCollapsed()}>
+          {/* TODO: this is not working... */}
+          {/*  eslint-disable-next-line solid/no-innerhtml */}
+          <p class="user-text break-words " innerHTML={textToRender()} />
+        </Show>
       </div>
 
       <div class="user-text">
