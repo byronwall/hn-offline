@@ -1,19 +1,19 @@
-import { HnStorySummary, TimestampHash } from "~/stores/useDataStore";
+import { HnStorySummary, useDataStore } from "~/stores/useDataStore";
 
 export function useSortFunction(
   items: HnStorySummary[] | undefined,
   sortType: string | undefined
 ) {
-  const shouldHideReadItems = true; //useDataStore((s) => s.shouldHideReadItems);
+  const shouldHideReadItems = useDataStore((s) => s.shouldHideReadItems);
 
-  const readItems: TimestampHash = {}; //useDataStore((s) => s.readItems);
+  const readItems = useDataStore((s) => s.readItems);
 
   if (!items) {
     return items;
   }
 
-  const itemsToRender = shouldHideReadItems
-    ? items.filter((item) => readItems[item.id] === undefined)
+  const itemsToRender = shouldHideReadItems()
+    ? items.filter((item) => readItems()[item.id] === undefined)
     : items;
 
   if (!sortType) {
@@ -26,12 +26,12 @@ export function useSortFunction(
 
   if (sortType === "read-then-points") {
     return toSortedShim(itemsToRender, (a, b) => {
-      const aIsRead = readItems[a.id] !== undefined;
-      const bIsRead = readItems[b.id] !== undefined;
+      const aIsRead = readItems()[a.id] !== undefined;
+      const bIsRead = readItems()[b.id] !== undefined;
 
       if (aIsRead && bIsRead) {
-        const aTimestamp = readItems[a.id];
-        const bTimestamp = readItems[b.id];
+        const aTimestamp = readItems()[a.id];
+        const bTimestamp = readItems()[b.id];
         return bTimestamp - aTimestamp;
       }
 
