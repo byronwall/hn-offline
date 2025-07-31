@@ -44,7 +44,7 @@ export function NavBar() {
     return () => clearTimeout(timer);
   });
 
-  const listUrls = ["/", "/local", "/day", "/week"];
+  const listUrls = ["/", "/day", "/week"];
 
   const isListUrl = () => listUrls.includes(url());
 
@@ -58,7 +58,7 @@ export function NavBar() {
             class={cn(
               "w-8 h-8",
               { "animate-spin": isLoadingData() },
-              { "animate-bounce": didCountChange },
+              { "animate-bounce": didCountChange() },
               { "opacity-20": !isInit() },
               { "opacity-100": isInit() }
             )}
@@ -83,9 +83,6 @@ export function NavBar() {
       </Show>
 
       <div class="flex items-center gap-2 text-xl">
-        <A href="/local" class="hover:underline">
-          local
-        </A>
         <A href="/day" class="hover:underline">
           day
         </A>
