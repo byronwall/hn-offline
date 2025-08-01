@@ -8,4 +8,5 @@
 - [ ] Get the Docker builds working again
 - [ ] Deploy to server and verify all is working
 - [ ] Resolve errors with Show HN and collapsing the title comment
+- [ ] Comment collapse state is not persistent
 - [ ] Comment scrolling is busted

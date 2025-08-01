@@ -1,3 +1,5 @@
+"use server";
+
 import * as fs from "fs";
 
 import _ from "lodash";
@@ -124,7 +126,7 @@ async function addChildrenToItem(item: Item | null): Promise<Item[]> {
   return [];
 }
 
-function addItemToDb(item: Item) {
+export function addItemToDb(item: Item) {
   const itemExt: ItemExt = { ...item, lastUpdated: _getUnixTimestamp() };
 
   db[item.id] = itemExt;
@@ -135,11 +137,10 @@ function addItemToDb(item: Item) {
 async function _getTopStories(type: TopStoriesType): Promise<number[]> {
   switch (type) {
     case "topstories":
-      const topStories = (
-        await HackerNewsApi.get().fetchItemIds("topstories")
-      ).slice(0, HITS_PER_PAGE);
-
-      return topStories;
+      return (await HackerNewsApi.get().fetchItemIds("topstories")).slice(
+        0,
+        HITS_PER_PAGE
+      );
     case "day":
       return await AlgoliaApi.getDay();
     case "month":
@@ -163,29 +164,7 @@ export function getItemFromDb(itemId: number): ItemExt | null {
   return doc;
 }
 
-export async function _getFullDataForIds(itemIDs: number[]) {
-  const itemObjects = await Promise.all(itemIDs.map(getItemFromDb));
-
-  for (let i = 0; i < itemObjects.length; i++) {
-    const obj = itemObjects[i];
-
-    /// TODO: add a check to the data updated
-    if (obj === null) {
-      const item = await HackerNewsApi.get().fetchItem(itemIDs[i]);
-      if (item === null) {
-        continue;
-      }
-      await addChildrenToItemRecurse(item);
-      await addItemToDb(item);
-
-      itemObjects[i] = { ...item, lastUpdated: _getUnixTimestamp() };
-    }
-  }
-
-  return itemObjects;
-}
-
-async function addChildrenToItemRecurse(item: Item) {
+export async function addChildrenToItemRecurse(item: Item) {
   let newItems: Item[] = [];
 
   // this now needs to go grab comments if they are desired

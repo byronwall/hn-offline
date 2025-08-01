@@ -1,12 +1,12 @@
 import { ItemExt, TopStoriesType } from "~/models/interfaces";
 
 import {
-  _getFullDataForIds,
   db_clearOldStories,
   db_getTopStoryIds,
   reloadDatabase,
   saveDatabase,
 } from "./database";
+import { getFullDataForIds } from "./getFullDataForIds";
 
 const log = console.log;
 
@@ -61,7 +61,7 @@ async function loadFreshDataForStoryType(storyType: TopStoriesType) {
   } else {
     // get the data
     const results = await db_getTopStoryIds(storyType).then((ids) => {
-      return _getFullDataForIds(ids);
+      return getFullDataForIds(ids);
     });
 
     // save result to local cache... will be served

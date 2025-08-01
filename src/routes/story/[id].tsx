@@ -4,7 +4,7 @@ import { Show } from "solid-js";
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { validateHnItemWithComments } from "~/lib/validation";
-import { _getFullDataForIds } from "~/server/database";
+import { getFullDataForIds } from "~/server/getFullDataForIds";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
 
 export default function Story() {
@@ -14,7 +14,7 @@ export default function Story() {
   const [data] = createUniversalResource<HnItem & { kids?: number[] }>(
     () => useDataStore.getState().getContent(id),
     async () => {
-      const storyData = await _getFullDataForIds([id]);
+      const storyData = await getFullDataForIds([id]);
       if (storyData.length > 0 && storyData[0]) {
         return storyData[0] as HnItem & { kids?: number[] };
       }

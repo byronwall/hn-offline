@@ -1,4 +1,4 @@
-import { _getFullDataForIds } from "~/server/database";
+import { getFullDataForIds } from "~/server/getFullDataForIds";
 
 import type { APIEvent } from "@solidjs/start/server";
 
@@ -9,7 +9,7 @@ export async function GET({ params }: APIEvent) {
     return { error: "Invalid story id" };
   }
 
-  const storyData = await _getFullDataForIds([+storyId]);
+  const storyData = await getFullDataForIds([+storyId]);
 
   // load the single story and then return
   if (storyData.length > 0) {
