@@ -32,7 +32,6 @@ export default function Story() {
       <Show when={data()} fallback={<div>Loading...</div>}>
         {(data) => <HnStoryPage id={id} storyData={data()} />}
       </Show>
-      <pre>{JSON.stringify(data(), null, 2)}</pre>
     </div>
   );
 }

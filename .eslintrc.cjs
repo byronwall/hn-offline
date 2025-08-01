@@ -24,7 +24,6 @@ module.exports = {
   extends: ["eslint:recommended"],
 
   overrides: [
-    // React
     {
       files: ["**/*.{js,jsx,ts,tsx}"],
       plugins: ["boundaries", "solid"],
@@ -34,9 +33,6 @@ module.exports = {
         "plugin:solid/recommended",
       ],
       settings: {
-        react: {
-          version: "detect",
-        },
         formComponents: ["Form"],
         linkComponents: [
           { name: "Link", linkAttribute: "to" },

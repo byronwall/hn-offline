@@ -28,11 +28,11 @@ export function HnComment(props: HnCommentProps) {
   const _isOpen = () => collapsedIds()[props.comment.id] !== true;
   const [isOpen, setIsOpen] = createSignal(_isOpen());
 
-  createEffect(() => {
-    console.log("collapsedIds", collapsedIds());
-  });
-
   const onUpdateOpen = useDataStore((s) => s.handleCollapseEvent);
+
+  createEffect(() => {
+    console.log("comment", props.comment);
+  });
 
   createEffect(() => {
     // update when IndexedDB changes

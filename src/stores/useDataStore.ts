@@ -384,7 +384,11 @@ export const useDataStore = createWithSignal<
 
   initializeFromLocalForage: async () => {
     // load the read items
-    const { purgeLocalForage, isLocalForageInitialized } = get();
+    const {
+      purgeLocalForage,
+      isLocalForageInitialized,
+      fetchInitialCollapsedState,
+    } = get();
 
     if (isLocalForageInitialized) {
       console.log("already initialized");
@@ -425,6 +429,8 @@ export const useDataStore = createWithSignal<
       shouldHideReadItems,
       activeStoryList,
     });
+
+    fetchInitialCollapsedState();
 
     // do a purge in the future, 1 seconds
     setTimeout(purgeLocalForage, 1000);
