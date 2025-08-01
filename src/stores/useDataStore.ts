@@ -87,7 +87,6 @@ type DataStore = {
   shouldHideReadItems: boolean;
 
   storyListSaveCount: number;
-  activeStoryList: StoryPage | undefined;
 
   scrollToId: number | undefined;
 
@@ -120,8 +119,6 @@ type DataStoreActions = {
 
   setShouldHideReadItems: (shouldHide: boolean) => Promise<void>;
 
-  setActiveStoryList: (list: StoryPage | undefined) => Promise<void>;
-
   // TODO: should not be in here - not related to local storage
   clearScrollToId: () => void;
   setScrollToId: (id: number) => void;
@@ -147,7 +144,6 @@ if (typeof window !== "undefined") {
 
 const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
 const SHOULD_HIDE_READ_ITEMS = "SHOULD_HIDE_READ_ITEMS";
-const ACTIVE_STORY_LIST = "ACTIVE_STORY_LIST";
 
 export const useDataStore = createWithSignal<
   DataStore & DataStoreActions & CommentStore
@@ -177,14 +173,6 @@ export const useDataStore = createWithSignal<
   },
   clearScrollToId: () => {
     set({ scrollToId: undefined });
-  },
-
-  activeStoryList: undefined,
-  setActiveStoryList: async (list) => {
-    set({ activeStoryList: list });
-
-    // save via localforage
-    await localforage.setItem(ACTIVE_STORY_LIST, list);
   },
 
   setShouldHideReadItems: async (shouldHide = false) => {
@@ -411,15 +399,9 @@ export const useDataStore = createWithSignal<
     const shouldHideReadItems =
       (await localforage.getItem<boolean>(SHOULD_HIDE_READ_ITEMS)) || false;
 
-    // get the active story list
-    const activeStoryList =
-      (await localforage.getItem<StoryPage | undefined>(ACTIVE_STORY_LIST)) ??
-      "day";
-
     console.log("**** initializeFromLocalForage done", {
       readItems,
       shouldHideReadItems,
-      activeStoryList,
     });
 
     set({
@@ -427,7 +409,6 @@ export const useDataStore = createWithSignal<
       readItems,
       pendingReadItems: [],
       shouldHideReadItems,
-      activeStoryList,
     });
 
     fetchInitialCollapsedState();

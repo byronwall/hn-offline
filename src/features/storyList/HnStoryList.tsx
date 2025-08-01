@@ -1,4 +1,4 @@
-import { createEffect, For, onMount, Show } from "solid-js";
+import { For, onMount, Show } from "solid-js";
 
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { HnStorySummary, StoryPage, useDataStore } from "~/stores/useDataStore";
@@ -14,12 +14,6 @@ interface HnStoryListProps {
 export function HnStoryList(props: HnStoryListProps) {
   const itemsToRender = () =>
     useSortFunction(props.items, props.sortType) ?? [];
-
-  const setActiveStoryList = useDataStore((s) => s.setActiveStoryList);
-
-  createEffect(() => {
-    setActiveStoryList(props.page);
-  });
 
   const initializeLocalStorage = useDataStore(
     (s) => s.initializeFromLocalForage
