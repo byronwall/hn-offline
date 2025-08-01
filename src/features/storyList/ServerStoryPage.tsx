@@ -1,21 +1,18 @@
 import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
-import { validateHnItemArrayAsTypeGuard } from "~/lib/typeGuards";
-import {
-  createClientCallback,
-  createUniversalResource,
-} from "~/lib/universalDataFetcher";
+import { createUniversalResource } from "~/lib/universalDataFetcher";
+import { validateHnStorySummaryArray } from "~/lib/validation";
 import { TopStoriesType } from "~/models/interfaces";
 import { getTopStories } from "~/server/getTopStories";
-import { HnItem, StoryPage } from "~/stores/useDataStore";
+import { HnStorySummary, StoryPage, useDataStore } from "~/stores/useDataStore";
 
 import { HnStoryList } from "./HnStoryList";
 
 export function ServerStoryPage(props: { page: TopStoriesType }) {
-  const [data] = createUniversalResource<HnItem[]>(
-    createClientCallback(`/api/topstories/${props.page}`),
-    () => getTopStories(props.page) as Promise<HnItem[]>,
+  const [data] = createUniversalResource<HnStorySummary[]>(
+    () => useDataStore.getState().getContentForPage(props.page),
+    () => getTopStories(props.page),
     {
-      validateResponse: validateHnItemArrayAsTypeGuard,
+      validateResponse: validateHnStorySummaryArray,
       onError: (error) =>
         console.error("Failed to fetch stories:", error.message),
     }

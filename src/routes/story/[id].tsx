@@ -2,20 +2,17 @@ import { useParams } from "@solidjs/router";
 import { Show } from "solid-js";
 
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
-import { validateHnItemWithCommentsAsTypeGuard } from "~/lib/typeGuards";
-import {
-  createClientCallback,
-  createUniversalResource,
-} from "~/lib/universalDataFetcher";
+import { createUniversalResource } from "~/lib/universalDataFetcher";
+import { validateHnItemWithComments } from "~/lib/validation";
 import { _getFullDataForIds } from "~/server/database";
-import { HnItem } from "~/stores/useDataStore";
+import { HnItem, useDataStore } from "~/stores/useDataStore";
 
 export default function Story() {
   const params = useParams();
   const id = +params.id;
 
   const [data] = createUniversalResource<HnItem & { kids?: number[] }>(
-    createClientCallback(`/api/story/${id}`),
+    () => useDataStore.getState().getContent(id),
     async () => {
       const storyData = await _getFullDataForIds([id]);
       if (storyData.length > 0 && storyData[0]) {
@@ -24,7 +21,7 @@ export default function Story() {
       throw new Error("Story not found");
     },
     {
-      validateResponse: validateHnItemWithCommentsAsTypeGuard,
+      validateResponse: validateHnItemWithComments,
       onError: (error) =>
         console.error("Failed to fetch story:", error.message),
     }

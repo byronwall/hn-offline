@@ -10,3 +10,4 @@
 - [ ] Deploy to server and verify all is working
 - [ ] Resolve errors with Show HN and collapsing the title comment
 - [ ] Add logic so client will read from local storage instead of fetching from server
+- [ ] Comment scrolling is busted

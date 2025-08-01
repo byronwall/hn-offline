@@ -11,6 +11,7 @@ import {
   getInitialCollapsedState,
   openCommentsDatabase,
 } from "~/lib/indexedDb";
+import { HasAuthorAndTime } from "~/models/interfaces";
 
 let db: IDBDatabase | null = null;
 
@@ -30,18 +31,19 @@ interface CommentStore {
   cleanUpOldEntries: () => void;
 }
 
-export interface HnItem {
-  by: string;
+// TODO: these types are all a mess.  Use Pick and Omit and get it right later.
+
+export interface HnItem extends HasAuthorAndTime {
   descendants?: number;
   id: number;
   score: number;
-  time: number;
   title: string;
   type: string;
   url?: string; // optional for Ask HN and internal items
   kidsObj?: Array<KidsObj3 | null>;
-  lastUpdated: number;
   text?: string; // this is for Ask HN and others that are internal
+  by: string; // override to make required
+  time: number; // override to make required
 }
 
 export interface KidsObj3 {
@@ -56,13 +58,12 @@ export interface KidsObj3 {
   dead?: boolean;
 }
 
-export interface HnStorySummary {
-  title: string;
-  score: number;
+export interface HnStorySummary extends HasAuthorAndTime {
+  title?: string;
+  score?: number;
   id: number;
-  url: string | undefined;
-  descendants: number | undefined;
-  time: number;
+  url?: string;
+  descendants?: number;
 }
 
 export type TimestampHash = Record<number, number>;
@@ -96,15 +97,12 @@ type DataStore = {
 };
 
 type DataStoreActions = {
-  getContent: (
-    id: StoryId,
-    fromLocalStorageOnly?: boolean
-  ) => Promise<HnItem | undefined>;
+  getContent: (id: StoryId, fromLocalStorageOnly?: boolean) => Promise<HnItem>;
 
   getContentForPage: (
     page: string,
     fromLocalStorageOnly?: boolean
-  ) => Promise<HnStorySummary[] | undefined>;
+  ) => Promise<HnStorySummary[]>;
 
   initializeFromLocalForage: () => Promise<void>;
 
@@ -402,7 +400,7 @@ export const useDataStore = createWithSignal<
 
     // get max from data
     const dataTimestamp = data.reduce((acc, item) => {
-      return Math.max(acc, item.time);
+      return Math.max(acc, item.time ?? 0);
     }, 0);
 
     console.log("currentTimestamp", currentTimestamp, dataTimestamp);
@@ -539,12 +537,16 @@ export const useDataStore = createWithSignal<
 
     if (fromLocalStorageOnly) {
       console.log("fromLocalStorageOnly");
-      return undefined;
+      throw new Error("fromLocalStorageOnly");
     }
 
     const data = await getContentViaFetch(url);
     if (data) {
       await saveContent(id, data);
+    }
+
+    if (!data) {
+      throw new Error("data is undefined");
     }
 
     return data;
@@ -564,8 +566,7 @@ export const useDataStore = createWithSignal<
     const urlSlug = "/api/topstories/" + page;
 
     if (urlSlug === undefined) {
-      console.error("error missing type");
-      return undefined;
+      throw new Error("urlSlug is undefined");
     }
 
     const url = urlSlug;
@@ -579,11 +580,15 @@ export const useDataStore = createWithSignal<
     }
 
     if (fromLocalStorageOnly) {
-      console.log("fromLocalStorageOnly");
-      return undefined;
+      console.log("fromLocalStorageOnly, and none found");
+      throw new Error("fromLocalStorageOnly, and none found");
     }
 
     const { data, storySummaries } = await getSummaryViaFetch(url);
+
+    if (!storySummaries) {
+      throw new Error("storySummaries is undefined");
+    }
 
     await saveStoryList(page as StoryPage, data);
 

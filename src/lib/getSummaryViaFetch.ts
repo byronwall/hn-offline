@@ -36,6 +36,8 @@ export function mapStoriesToSummaries(
     title: c.title,
     url: c.url,
     descendants: c.descendants,
+    by: c.by,
     time: c.time,
+    lastUpdated: c.lastUpdated,
   }));
 }

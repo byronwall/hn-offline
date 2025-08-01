@@ -4,7 +4,10 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-export function timeSince(date: number) {
+export function timeSince(date: number | undefined) {
+  if (date === undefined) {
+    return "";
+  }
   const seconds = Math.floor(new Date().getTime() / 1000 - date);
   let interval = Math.floor(seconds / 31536000);
   if (interval > 1) {

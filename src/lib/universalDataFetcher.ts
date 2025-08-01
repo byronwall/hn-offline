@@ -1,12 +1,14 @@
 import { createResource } from "solid-js";
 
+import { ValidationResponse } from "./validation";
+
 /**
  * Configuration options for the universal data fetcher
  */
 export interface UniversalFetcherOptions<T> {
   initialValue?: T;
   name?: string;
-  validateResponse?: (data: any) => data is T;
+  validateResponse?: (data: any) => ValidationResponse<T>;
   onError?: (error: Error) => void;
   fetchOptions?: RequestInit;
 }
@@ -62,8 +64,13 @@ export function createUniversalResource<T>(
         const result = await clientCallback();
 
         // Validate response if validator is provided
-        if (options?.validateResponse && !options.validateResponse(result)) {
-          throw new Error("Invalid response format from client");
+
+        const validationResult = options?.validateResponse?.(result);
+
+        if (validationResult && validationResult.success === false) {
+          console.error(validationResult.error);
+          console.error(result);
+          throw new Error(validationResult.error);
         }
 
         return result;

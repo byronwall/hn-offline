@@ -39,7 +39,7 @@ export function HnComment(props: HnCommentProps) {
 
   // TODO: review this one
   createEffect(() => {
-    if (scrollToId !== props.comment?.id) {
+    if (scrollToId() !== props.comment?.id) {
       return;
     }
 
@@ -127,7 +127,7 @@ export function HnComment(props: HnCommentProps) {
   const childComments = (props.comment.kidsObj || []).filter(isValidComment);
   const commentText = props.comment.text || "";
 
-  const isCommentByStoryAuthor = storyData?.by === props.comment.by;
+  const isCommentByStoryAuthor = storyData()?.by === props.comment.by;
   const borderColor = () => colorMap()[props.comment?.by ?? ""] ?? "#000";
 
   const stickyTop = 32 + depthMatchInAuthorChain * 8;

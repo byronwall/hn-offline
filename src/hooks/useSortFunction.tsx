@@ -21,7 +21,10 @@ export function useSortFunction(
   }
 
   if (sortType === "score") {
-    return toSortedShim(itemsToRender, (a, b) => b.score - a.score);
+    return toSortedShim(
+      itemsToRender,
+      (a, b) => (b.score ?? 0) - (a.score ?? 0)
+    );
   }
 
   if (sortType === "read-then-points") {
@@ -43,7 +46,7 @@ export function useSortFunction(
         return 1;
       }
 
-      return b.score - a.score;
+      return (b.score ?? 0) - (a.score ?? 0);
     });
   }
 

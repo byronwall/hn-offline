@@ -2,6 +2,12 @@ export interface HasTime {
   lastUpdated: number; // UNIX timestamp in seconds
 }
 
+export interface HasAuthorAndTime {
+  by?: string;
+  time?: number;
+  lastUpdated: number;
+}
+
 export interface TopStories extends HasTime {
   items: number[];
   id: TopStoriesType;

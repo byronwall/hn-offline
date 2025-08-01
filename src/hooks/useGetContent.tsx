@@ -16,12 +16,12 @@ export function useGetContent(id: number, initialSsrData: HnItem | undefined) {
 
   useEffect(() => {
     async function fetchData() {
-      if (initialSsrData !== undefined && dataNonce === 0) {
-        console.log("saving ssr content", id, dataNonce);
+      if (initialSsrData !== undefined && dataNonce() === 0) {
+        console.log("saving ssr content", id, dataNonce());
         await saveContent(id, initialSsrData);
       }
 
-      console.log("useGetContent", id, dataNonce);
+      console.log("useGetContent", id, dataNonce());
       const data = await getContent(id, true);
       if (data) {
         setStoryData(data);
