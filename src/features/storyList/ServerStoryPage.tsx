@@ -1,6 +1,6 @@
-import { createResource } from "solid-js";
-
 import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
+import { validateHnItemArrayAsTypeGuard } from "~/lib/typeGuards";
+import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { TopStoriesType } from "~/models/interfaces";
 import { getTopStories } from "~/server/getTopStories";
 import { HnItem, StoryPage } from "~/stores/useDataStore";
@@ -8,22 +8,15 @@ import { HnItem, StoryPage } from "~/stores/useDataStore";
 import { HnStoryList } from "./HnStoryList";
 
 export function ServerStoryPage(props: { page: TopStoriesType }) {
-  const [data] = createResource(async () => {
-    // TODO: need to get the full URL proper
-    // TODO: when using client, this should defer to local storage (no fetch)
-
-    if (typeof window === "undefined") {
-      // on server, hit directly
-      console.log("ServerStoryPage on server, hitting directly");
-
-      // TODO: review this type
-      return getTopStories(props.page) as unknown as HnItem[];
+  const [data] = createUniversalResource<HnItem[]>(
+    `/api/topstories/${props.page}`,
+    () => getTopStories(props.page) as Promise<HnItem[]>,
+    {
+      validateResponse: validateHnItemArrayAsTypeGuard,
+      onError: (error) =>
+        console.error("Failed to fetch stories:", error.message),
     }
-
-    console.log("ServerStoryPage on client, hitting server");
-    const response = await fetch(`/api/topstories/${props.page}`);
-    return (await response.json()) as HnItem[];
-  });
+  );
 
   const summaries = () => mapStoriesToSummaries(data());
 

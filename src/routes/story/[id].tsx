@@ -1,23 +1,31 @@
 import { useParams } from "@solidjs/router";
-import { createResource, Show } from "solid-js";
+import { Show } from "solid-js";
 
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
+import { validateHnItemWithCommentsAsTypeGuard } from "~/lib/typeGuards";
+import { createUniversalResource } from "~/lib/universalDataFetcher";
+import { _getFullDataForIds } from "~/server/database";
 import { HnItem } from "~/stores/useDataStore";
 
 export default function Story() {
   const params = useParams();
   const id = +params.id;
 
-  const [data] = createResource(async () => {
-    // TODO: for the client - need to check local storage for the data
-    console.log("is server?", typeof window === "undefined");
-    console.log("import.meta.env", import.meta.env);
-
-    const response = await fetch(`http://localhost:3000/api/story/${id}`);
-    return response.json() as Promise<HnItem>;
-  });
-
-  console.log("id", id, data());
+  const [data] = createUniversalResource<HnItem & { kids?: number[] }>(
+    `/api/story/${id}`,
+    async () => {
+      const storyData = await _getFullDataForIds([id]);
+      if (storyData.length > 0 && storyData[0]) {
+        return storyData[0] as HnItem & { kids?: number[] };
+      }
+      throw new Error("Story not found");
+    },
+    {
+      validateResponse: validateHnItemWithCommentsAsTypeGuard,
+      onError: (error) =>
+        console.error("Failed to fetch story:", error.message),
+    }
+  );
 
   return (
     <div>
