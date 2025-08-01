@@ -116,20 +116,17 @@ type DataStoreActions = {
 
   saveIdToReadList: (id: number) => Promise<void>;
 
-  getAllLocalContent: () => Promise<HnStorySummary[] | undefined>;
-
   purgeLocalForage: () => Promise<void>;
 
   setShouldHideReadItems: (shouldHide: boolean) => Promise<void>;
 
   setActiveStoryList: (list: StoryPage | undefined) => Promise<void>;
 
-  getNextStoryId: (id: number) => Promise<number | undefined>;
-  getPreviousStoryId: (id: number) => Promise<number | undefined>;
-
+  // TODO: should not be in here - not related to local storage
   clearScrollToId: () => void;
   setScrollToId: (id: number) => void;
 
+  // TODO: should not be in here - not related to local storage
   setColorMap: (map: Record<CommentAuthor, CommentColor>) => void;
 
   handleCollapseEvent: (id: number, newOpen: boolean) => void;
@@ -188,72 +185,6 @@ export const useDataStore = createWithSignal<
 
     // save via localforage
     await localforage.setItem(ACTIVE_STORY_LIST, list);
-  },
-
-  getNextStoryId: async (activeStoryId: number) => {
-    const { activeStoryList } = get();
-
-    if (activeStoryList === undefined || activeStoryId === undefined) {
-      return undefined;
-    }
-
-    const { readItems, getContentForPage } = get();
-
-    const storyList = await getContentForPage(activeStoryList);
-
-    if (!storyList) {
-      return undefined;
-    }
-
-    const storyIndex = storyList.findIndex(
-      (story) => story.id === activeStoryId
-    );
-
-    if (storyIndex === -1) {
-      return undefined;
-    }
-
-    // find the next story that is not read
-    for (let i = storyIndex + 1; i < storyList.length; i++) {
-      if (!readItems[storyList[i].id]) {
-        return storyList[i].id;
-      }
-    }
-
-    return undefined;
-  },
-
-  getPreviousStoryId: async (activeStoryId: number) => {
-    const { activeStoryList } = get();
-
-    if (activeStoryList === undefined || activeStoryId === undefined) {
-      return undefined;
-    }
-
-    const { readItems, getContentForPage } = get();
-
-    const storyList = await getContentForPage(activeStoryList);
-
-    if (!storyList) {
-      return undefined;
-    }
-
-    const storyIndex = storyList.findIndex(
-      (story) => story.id === activeStoryId
-    );
-
-    if (storyIndex === -1) {
-      return undefined;
-    }
-
-    // find the next story that is not read
-    for (let i = storyIndex - 1; i >= 0; i--) {
-      if (!readItems[storyList[i].id]) {
-        return storyList[i].id;
-      }
-    }
-
-    return undefined;
   },
 
   setShouldHideReadItems: async (shouldHide = false) => {
@@ -327,27 +258,6 @@ export const useDataStore = createWithSignal<
         await localforage.removeItem(key);
       }
     }
-  },
-
-  getAllLocalContent: async () => {
-    // get all keys starting with RAW_
-    const keys = await localforage.keys();
-    const rawKeys = keys.filter((key) => key.startsWith("raw_"));
-
-    const data: HnItem[] = [];
-
-    for (const key of rawKeys) {
-      const item = await localforage.getItem<HnItem>(key);
-
-      if (item) {
-        data.push(item);
-      }
-    }
-
-    // get summaries and return
-    const summaries = mapStoriesToSummaries(data);
-
-    return summaries;
   },
 
   saveIdToReadList: async (id: number) => {
@@ -600,7 +510,7 @@ export const useDataStore = createWithSignal<
   collapsedIds: {},
 
   fetchInitialCollapsedState: async () => {
-    console.log("fetchInitialCollapsedState");
+    console.log("*** fetchInitialCollapsedState");
     try {
       // Open the indexedDB database if it hasn't been opened yet
       if (!db) {

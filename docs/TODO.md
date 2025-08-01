@@ -10,3 +10,4 @@
 - [ ] Resolve errors with Show HN and collapsing the title comment
 - [ ] Comment collapse state is not persistent
 - [ ] Comment scrolling is busted
+- [ ] Consider deferring client rendering until all local state stuff is processed

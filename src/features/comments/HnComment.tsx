@@ -10,7 +10,7 @@ import { KidsObj3, useDataStore } from "~/stores/useDataStore";
 import { HnCommentList } from "./HnCommentList";
 
 export interface HnCommentProps {
-  comment: KidsObj3 | null;
+  comment: KidsObj3;
   depth: number;
   authorChain: (string | undefined)[];
 }
@@ -25,9 +25,12 @@ export function HnComment(props: HnCommentProps) {
   const colorMap = useDataStore((s) => s.colorMap);
   const storyData = useDataStore((s) => s.activeStoryData);
 
-  const _isOpen = () =>
-    props.comment?.id ? collapsedIds()[props.comment.id] !== true : false;
+  const _isOpen = () => collapsedIds()[props.comment.id] !== true;
   const [isOpen, setIsOpen] = createSignal(_isOpen());
+
+  createEffect(() => {
+    console.log("collapsedIds", collapsedIds());
+  });
 
   const onUpdateOpen = useDataStore((s) => s.handleCollapseEvent);
 
@@ -104,10 +107,6 @@ export function HnComment(props: HnCommentProps) {
     setIsOpen(newIsOpen);
   }
 
-  if (props.comment === null) {
-    return null;
-  }
-
   const depthMatchInAuthorChain = props.authorChain.lastIndexOf(
     props.comment.by || undefined
   );
@@ -124,7 +123,8 @@ export function HnComment(props: HnCommentProps) {
       .reduce((acc, val) => acc - val, 0);
   }
 
-  const childComments = (props.comment.kidsObj || []).filter(isValidComment);
+  const childComments = () =>
+    (props.comment.kidsObj || []).filter(isValidComment);
   const commentText = props.comment.text || "";
 
   const isCommentByStoryAuthor = storyData()?.by === props.comment.by;
@@ -198,9 +198,9 @@ export function HnComment(props: HnCommentProps) {
         <Show when={isOpen()}>
           {/* eslint-disable-next-line solid/no-innerhtml */}
           <p class="comment" innerHTML={commentText} />
-          {childComments.length > 0 && (
+          {childComments().length > 0 && (
             <HnCommentList
-              childComments={childComments}
+              childComments={childComments()}
               depth={props.depth + 1}
               authorChain={[...props.authorChain, props.comment.by]}
             />
