@@ -53,6 +53,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       const matches = link.href.match(regex);
 
       if (matches === null) {
+        // TODO: this is definitely breaking links when navigating around - find a better way
         link.target = "_blank";
         return;
       }
