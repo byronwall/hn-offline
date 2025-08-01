@@ -3,7 +3,10 @@ import { Show } from "solid-js";
 
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { validateHnItemWithCommentsAsTypeGuard } from "~/lib/typeGuards";
-import { createUniversalResource } from "~/lib/universalDataFetcher";
+import {
+  createClientCallback,
+  createUniversalResource,
+} from "~/lib/universalDataFetcher";
 import { _getFullDataForIds } from "~/server/database";
 import { HnItem } from "~/stores/useDataStore";
 
@@ -12,7 +15,7 @@ export default function Story() {
   const id = +params.id;
 
   const [data] = createUniversalResource<HnItem & { kids?: number[] }>(
-    `/api/story/${id}`,
+    createClientCallback(`/api/story/${id}`),
     async () => {
       const storyData = await _getFullDataForIds([id]);
       if (storyData.length > 0 && storyData[0]) {

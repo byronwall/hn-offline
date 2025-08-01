@@ -14,43 +14,56 @@ The `createUniversalResource` function provides a unified way to fetch data that
 ## Basic Usage
 
 ```typescript
-import { createUniversalResource } from "~/lib/universalDataFetcher";
+import {
+  createUniversalResource,
+  createClientCallback,
+} from "~/lib/universalDataFetcher";
 
-const [data] = createUniversalResource<MyDataType>("/api/my-endpoint", () =>
-  myServerFunction()
+const [data] = createUniversalResource<MyDataType>(
+  createClientCallback("/api/my-endpoint"),
+  () => myServerFunction()
 );
 ```
 
 ## Advanced Usage with Validation
 
 ```typescript
-import { createUniversalResource } from "~/lib/universalDataFetcher";
+import {
+  createUniversalResource,
+  createClientCallback,
+} from "~/lib/universalDataFetcher";
 import { isMyDataType } from "~/lib/typeGuards";
 
 const [data] = createUniversalResource<MyDataType>(
-  "/api/my-endpoint",
+  createClientCallback("/api/my-endpoint"),
   () => myServerFunction(),
   {
     validateResponse: isMyDataType,
     onError: (error) => console.error("Fetch failed:", error.message),
-    fetchOptions: {
-      headers: { Authorization: "Bearer token" },
-    },
   }
 );
 ```
 
 ## API Reference
 
-### `createUniversalResource<T>(url, serverCallback, options?)`
+### `createUniversalResource<T>(clientCallback, serverCallback, options?)`
 
 **Parameters:**
 
-- `url: string` - The API endpoint URL for client-side fetching
+- `clientCallback: () => Promise<T>` - The client-side function to call for fetching data
 - `serverCallback: () => Promise<T>` - The server-side function to call directly
 - `options?: UniversalFetcherOptions<T>` - Optional configuration
 
 **Returns:** A SolidJS resource with the fetched data
+
+### `createClientCallback<T>(url, fetchOptions?)`
+
+**Parameters:**
+
+- `url: string` - The API endpoint URL
+- `fetchOptions?: RequestInit` - Optional fetch options
+
+**Returns:** A client callback function that fetches from the specified URL
 
 ### `UniversalFetcherOptions<T>`
 
@@ -86,14 +99,14 @@ if (!validationResult.success) {
 
 // For type guard compatibility (returns boolean)
 const [stories] = createUniversalResource<HnItem[]>(
-  "/api/stories",
+  createClientCallback("/api/stories"),
   () => getStories(),
   { validateResponse: validateHnItemArrayAsTypeGuard }
 );
 
 // For single HnItem with comments
 const [story] = createUniversalResource<HnItem & { kids?: number[] }>(
-  "/api/story/123",
+  createClientCallback("/api/story/123"),
   () => getStory(123),
   { validateResponse: validateHnItemWithCommentsAsTypeGuard }
 );
@@ -141,7 +154,8 @@ const [data] = createResource(async () => {
 **After:**
 
 ```typescript
-const [data] = createUniversalResource<DataType>("/api/endpoint", () =>
-  serverFunction()
+const [data] = createUniversalResource<DataType>(
+  createClientCallback("/api/endpoint"),
+  () => serverFunction()
 );
 ```

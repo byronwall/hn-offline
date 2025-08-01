@@ -54,7 +54,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
       if (matches === null) {
         // TODO: this is definitely breaking links when navigating around - find a better way
-        link.target = "_blank";
+        // link.target = "_blank";
         return;
       }
 
