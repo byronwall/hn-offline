@@ -81,7 +81,6 @@ type DataStore = {
 
   isLocalForageInitialized: boolean;
 
-  dataNonce: number;
   isLoadingData: boolean;
 
   shouldHideReadItems: boolean;
@@ -148,7 +147,6 @@ const SHOULD_HIDE_READ_ITEMS = "SHOULD_HIDE_READ_ITEMS";
 export const useDataStore = createWithSignal<
   DataStore & DataStoreActions & CommentStore
 >((set, get) => ({
-  dataNonce: 0,
   isLoadingData: false,
   isLocalForageInitialized: false,
 
@@ -274,20 +272,12 @@ export const useDataStore = createWithSignal<
   },
 
   saveContent: async (id: StoryId, content: HnItem) => {
-    const { dataNonce } = get();
-
     await localforage.setItem("raw_" + id, content);
 
     console.log("saved to localforage", "raw_" + id, content);
-
-    set({
-      dataNonce: dataNonce + 1,
-    });
   },
 
   saveStoryList: async (page: StoryPage, data: HnItem[] | HnStorySummary[]) => {
-    const { dataNonce } = get();
-
     const storySummaries = mapStoriesToSummaries(data);
 
     // check if the timestamp is more recent than current
@@ -322,7 +312,6 @@ export const useDataStore = createWithSignal<
     console.log("saved to localforage", "STORIES_" + page, storySummaries);
 
     set({
-      dataNonce: dataNonce + 1,
       storyListSaveCount: get().storyListSaveCount + 1,
     });
   },
