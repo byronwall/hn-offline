@@ -36,7 +36,7 @@ export function reloadDatabase() {
 
   const dataStr = fs.readFileSync(dbPath).toString();
 
-  db = JSON.parse(dataStr) as ItemExt[];
+  db = JSON.parse(dataStr) as ItemHash;
 }
 
 export async function db_clearOldStories(idsToKeep: number[]) {
@@ -158,6 +158,16 @@ export function getItemFromDb(itemId: number): ItemExt | null {
 
   if (doc === undefined || _isTimePastThreshold(doc)) {
     // this is caught later and used to refresh the story
+    return null;
+  }
+
+  return doc;
+}
+
+export function getTopStoriesFromDb(type: TopStoriesType): TopStories | null {
+  const doc = db[type] as TopStories;
+
+  if (doc === undefined) {
     return null;
   }
 

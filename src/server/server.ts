@@ -3,6 +3,7 @@ import { ItemExt, TopStoriesType } from "~/models/interfaces";
 import {
   db_clearOldStories,
   db_getTopStoryIds,
+  getTopStoriesFromDb,
   reloadDatabase,
   saveDatabase,
 } from "./database";
@@ -12,7 +13,23 @@ const log = console.log;
 
 export const cachedData: { [key: string]: ItemExt[] | null } = {};
 
+async function populateCacheFromDatabase() {
+  const storyTypes: TopStoriesType[] = ["topstories", "day", "week", "month"];
+
+  for (const type of storyTypes) {
+    const topStories = getTopStoriesFromDb(type);
+    if (topStories && topStories.items && topStories.items.length > 0) {
+      // Load the actual story data from the database
+      const storyData = await getFullDataForIds(topStories.items);
+      cachedData[type] = storyData as ItemExt[];
+    }
+  }
+}
+
 reloadDatabase();
+populateCacheFromDatabase().then(() => {
+  console.log("Cache populated from database");
+});
 
 setInterval(updateData, 10 * 60 * 1000);
 updateData();
