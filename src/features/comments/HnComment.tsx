@@ -31,10 +31,6 @@ export function HnComment(props: HnCommentProps) {
   const onUpdateOpen = useDataStore((s) => s.handleCollapseEvent);
 
   createEffect(() => {
-    console.log("comment", props.comment);
-  });
-
-  createEffect(() => {
     // update when IndexedDB changes
     // TODO: this should all go away once it's reactive
     setIsOpen(_isOpen());
