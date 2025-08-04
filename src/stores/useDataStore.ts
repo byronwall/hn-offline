@@ -272,12 +272,14 @@ export const useDataStore = createWithSignal<
   },
 
   saveContent: async (id: StoryId, content: HnItem) => {
+    // TODO: move this is out of the store
     await localforage.setItem("raw_" + id, content);
 
     console.log("saved to localforage", "raw_" + id, content);
   },
 
   saveStoryList: async (page: StoryPage, data: HnItem[] | HnStorySummary[]) => {
+    // TODO: move this is out of the store
     const storySummaries = mapStoriesToSummaries(data);
 
     // check if the timestamp is more recent than current

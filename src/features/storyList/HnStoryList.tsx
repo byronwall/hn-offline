@@ -22,6 +22,7 @@ export function HnStoryList(props: HnStoryListProps) {
   const saveStoryList = useDataStore((s) => s.saveStoryList);
 
   onMount(async () => {
+    // TODO: move this init code into a single function helper
     // client only
     if (typeof window === "undefined") {
       console.log("HnStoryList mounted, but not on client");
@@ -46,12 +47,10 @@ export function HnStoryList(props: HnStoryListProps) {
           </div>
         }
       >
-        <div>
-          <div class="grid grid-cols-[1fr_1fr_1fr_3fr]">
-            <For each={itemsToRender()}>
-              {(item) => <HnListItem data={item} />}
-            </For>
-          </div>
+        <div class="grid grid-cols-[1fr_1fr_1fr_3fr]">
+          <For each={itemsToRender()}>
+            {(item) => <HnListItem data={item} />}
+          </For>
         </div>
       </Show>
     </Show>
