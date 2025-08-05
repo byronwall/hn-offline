@@ -115,9 +115,7 @@ export const errorResponseSchema = z.object({
 });
 
 // Schema for array of HnItems
-export const hnItemArraySchema = z
-  .array(hnItemSchema)
-  .min(1, "At least one item is required");
+export const hnItemArraySchema = z.array(hnItemSchema);
 
 // Schema for HnStorySummary (story summary schema)
 export const hnStorySummarySchema = z.object({
@@ -163,9 +161,7 @@ export const hnStorySummarySchema = z.object({
 });
 
 // Schema for array of HnStorySummaries
-export const hnStorySummaryArraySchema = z
-  .array(hnStorySummarySchema)
-  .min(1, "At least one item is required");
+export const hnStorySummaryArraySchema = z.array(hnStorySummarySchema);
 
 // Type exports for use in other files
 export type ValidatedHnItem = z.infer<typeof hnItemSchema>;
