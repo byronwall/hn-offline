@@ -1,5 +1,12 @@
 import { useNavigate } from "@solidjs/router";
-import { createEffect, createSignal, onMount, Show } from "solid-js";
+import {
+  createEffect,
+  createSignal,
+  Match,
+  onMount,
+  Show,
+  Switch,
+} from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { getColorsForStory } from "~/lib/getColorsForStory";
@@ -49,8 +56,8 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   });
 
   onMount(() => {
-    const anchorClickHandler = (e: any) => {
-      if (e.target.tagName !== "A") {
+    const anchorClickHandler = (e: MouseEvent) => {
+      if (e.target instanceof HTMLElement && e.target.tagName !== "A") {
         return;
       }
 
@@ -101,14 +108,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
   const isTextCollapsed = () => isTextOpen() === false;
 
-  const storyLinkEl =
-    props.storyData.url === undefined ? (
-      <span>{props.storyData.title}</span>
-    ) : (
-      <a href={props.storyData.url}>{props.storyData.title}</a>
-    );
-
-  const comments = (props.storyData.kidsObj || []).filter(isValidComment);
+  const comments = () => (props.storyData.kidsObj || []).filter(isValidComment);
 
   function handleStoryTextClick() {
     if (!props.storyData?.text) {
@@ -123,8 +123,9 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     // scroll to first comment if it exists
     // schedule out 200ms to allow the collapse animation to finish
     setTimeout(() => {
-      if (newIsCollapsed && comments.length > 0 && comments[0]?.id) {
-        setIdToScrollTo(comments[0]?.id);
+      const firstCommentId = comments()[0]?.id;
+      if (newIsCollapsed && firstCommentId) {
+        setIdToScrollTo(firstCommentId);
       }
     }, 100);
   }
@@ -135,7 +136,14 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
         class="text-2xl font-bold hover:underline mb-2"
         style={{ "overflow-wrap": "break-word" }}
       >
-        {storyLinkEl}
+        <Switch>
+          <Match when={props.storyData.url === undefined}>
+            <span>{props.storyData.title}</span>
+          </Match>
+          <Match when={props.storyData.url !== undefined}>
+            <a href={props.storyData.url}>{props.storyData.title}</a>
+          </Match>
+        </Switch>
       </h2>
 
       <div
@@ -176,7 +184,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       </div>
 
       <div class="user-text">
-        <HnCommentList childComments={comments} depth={0} authorChain={[]} />
+        <HnCommentList childComments={comments()} depth={0} authorChain={[]} />
       </div>
     </div>
   );
