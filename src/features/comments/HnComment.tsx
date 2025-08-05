@@ -42,21 +42,24 @@ export function HnComment(props: HnCommentProps) {
       return;
     }
 
-    const dims = divRef()?.getBoundingClientRect().top;
+    requestAnimationFrame(() => {
+      const dims = divRef()?.getBoundingClientRect().top;
 
-    if (dims === undefined) {
-      return;
-    }
+      if (dims === undefined) {
+        return;
+      }
 
-    // add scrollY to get the absolute position
-    // subtract 80 to give a pleasant offset
-    const newTop = window.scrollY + dims - 88;
+      // add scrollY to get the absolute position
+      // subtract 80 to give a pleasant offset
+      const newTop = window.scrollY + dims - 88;
 
-    window.scrollTo({
-      top: newTop,
-      behavior: "smooth",
+      window.scrollTo({
+        top: newTop,
+        behavior: "smooth",
+      });
+
+      clearScrollToId();
     });
-    clearScrollToId();
   });
 
   const handleShareClick = (e: MouseEvent) => {

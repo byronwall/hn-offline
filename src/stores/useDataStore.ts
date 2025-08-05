@@ -606,6 +606,8 @@ export const useDataStore = createWithSignal<
       collapsedIds,
     } = get();
 
+    console.log("handleCollapseEvent", id, newOpen);
+
     // desired logic is thus;
     // if opening the comment, scroll to it -- use the comment id
     // if closing the comment, scroll to the next sibling
@@ -615,10 +617,12 @@ export const useDataStore = createWithSignal<
     updateCollapsedState(id, !newOpen);
 
     if (newOpen) {
+      // For opening, we can scroll immediately
       setScrollToId(id);
       return;
     }
 
+    console.log("activeStoryData", activeStoryData);
     if (!activeStoryData) {
       return;
     }
@@ -699,6 +703,14 @@ export const useDataStore = createWithSignal<
       return;
     }
 
-    setScrollToId(nextSiblingId);
+    console.log("nextSiblingId", nextSiblingId);
+
+    // For closing, wait for DOM updates to complete before setting scroll target
+    requestAnimationFrame(() => {
+      // Wait for one more frame to ensure collapse animation has started
+      requestAnimationFrame(() => {
+        setScrollToId(nextSiblingId);
+      });
+    });
   },
 }));

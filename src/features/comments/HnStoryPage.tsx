@@ -20,6 +20,8 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
   const setIdToScrollTo = useDataStore((s) => s.setScrollToId);
 
+  const setActiveStoryData = useDataStore((s) => s.setActiveStoryData);
+
   const textToRender = () =>
     processHtmlAndTruncateAnchorText(props.storyData?.text || "");
 
@@ -39,6 +41,11 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     console.log("HnStoryPage mounted", props.storyData);
     // initialize local storage
     initializeLocalStorage();
+  });
+
+  createEffect(() => {
+    // update the global story data when it changes
+    setActiveStoryData(props.storyData);
   });
 
   onMount(() => {
