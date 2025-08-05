@@ -1,6 +1,6 @@
 import { decode } from "html-entities";
 import sanitizeHtml from "sanitize-html";
-import { createEffect, createSignal, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { isValidComment } from "~/lib/isValidComment";
@@ -106,31 +106,38 @@ export function HnComment(props: HnCommentProps) {
     setIsOpen(newIsOpen);
   }
 
-  const depthMatchInAuthorChain = props.authorChain.lastIndexOf(
-    props.comment.by || undefined
-  );
-
-  const shouldShowBar = depthMatchInAuthorChain >= 0;
-
   const paddingByDepth = [16, 15, 14, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12];
-  const widths = paddingByDepth.map((val) => val + 4);
 
-  let leftPos = 0;
-  if (shouldShowBar) {
-    leftPos = widths
-      .slice(depthMatchInAuthorChain, props.depth)
-      .reduce((acc, val) => acc - val, 0);
-  }
+  const stickyInfo = createMemo(() => {
+    const depthMatchInAuthorChain = props.authorChain.lastIndexOf(
+      props.comment.by || undefined
+    );
 
+    const shouldShowBar = depthMatchInAuthorChain >= 0;
+
+    const widths = paddingByDepth.map((val) => val + 4);
+
+    let leftPos = 0;
+    if (shouldShowBar) {
+      leftPos = widths
+        .slice(depthMatchInAuthorChain, props.depth)
+        .reduce((acc, val) => acc - val, 0);
+    }
+
+    const stickyTop = 32 + depthMatchInAuthorChain * 8;
+    const stickyHeight = Math.max(48 - depthMatchInAuthorChain * 8, 16);
+
+    return {
+      shouldShowBar,
+      stickyTop,
+      stickyHeight,
+      leftPos,
+    };
+  });
+
+  const borderColor = () => colorMap()[props.comment?.by ?? ""] ?? "#000";
   const childComments = () =>
     (props.comment.kidsObj || []).filter(isValidComment);
-  const commentText = props.comment.text || "";
-
-  const isCommentByStoryAuthor = storyData()?.by === props.comment.by;
-  const borderColor = () => colorMap()[props.comment?.by ?? ""] ?? "#000";
-
-  const stickyTop = 32 + depthMatchInAuthorChain * 8;
-  const stickyHeight = Math.max(48 - depthMatchInAuthorChain * 8, 16);
 
   return (
     <Show when={isValidComment(props.comment)} fallback={null}>
@@ -147,20 +154,20 @@ export function HnComment(props: HnCommentProps) {
           "border-bottom-left-radius": "4px",
         }}
       >
-        {shouldShowBar && isOpen() && (
+        {stickyInfo().shouldShowBar && isOpen() && (
           <div
             style={{
               position: "sticky",
-              top: `${stickyTop}px`,
-              height: `${stickyHeight}px`,
+              top: `${stickyInfo().stickyTop}px`,
+              height: `${stickyInfo().stickyHeight}px`,
             }}
           >
             <div
               style={{
                 position: "absolute",
                 top: "10px",
-                left: `${leftPos - paddingByDepth[props.depth]}px`,
-                width: `${Math.abs(leftPos + 4)}px`,
+                left: `${stickyInfo().leftPos - paddingByDepth[props.depth]}px`,
+                width: `${Math.abs(stickyInfo().leftPos + 4)}px`,
                 "background-color": borderColor(),
                 height: "7px",
                 "border-top": "2px solid white",
@@ -172,14 +179,18 @@ export function HnComment(props: HnCommentProps) {
         <p
           style={{
             "font-weight": isOpen() ? 450 : 300,
-            "margin-top": `${shouldShowBar && isOpen() ? -stickyHeight : 0}px`,
+            "margin-top": `${
+              stickyInfo().shouldShowBar && isOpen()
+                ? -stickyInfo().stickyHeight
+                : 0
+            }px`,
           }}
           ref={setDivRef}
           class={cn("font-sans flex items-center gap-1")}
         >
           <span
             class={cn({
-              "text-orange-700 font-bold": isCommentByStoryAuthor,
+              "text-orange-700 font-bold": storyData()?.by === props.comment.by,
               truncate: true,
             })}
           >
@@ -196,7 +207,7 @@ export function HnComment(props: HnCommentProps) {
         </p>
         <Show when={isOpen()}>
           {/* eslint-disable-next-line solid/no-innerhtml */}
-          <p class="comment" innerHTML={commentText} />
+          <p class="comment" innerHTML={props.comment.text || ""} />
           {childComments().length > 0 && (
             <HnCommentList
               childComments={childComments()}
