@@ -9,7 +9,6 @@ import {
 } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
-import { getColorsForStory } from "~/lib/getColorsForStory";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, timeSince } from "~/lib/utils";
@@ -97,13 +96,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
   createEffect(() => {
     setIsTextCollapsed(_isOpen());
-  });
-
-  // TODO: probably a better home for this?
-  const setColorMap = useDataStore((s) => s.setColorMap);
-  createEffect(() => {
-    const colors = getColorsForStory(props.storyData);
-    setColorMap(colors);
   });
 
   const isTextCollapsed = () => isTextOpen() === false;

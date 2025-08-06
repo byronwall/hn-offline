@@ -74,9 +74,6 @@ export type StoryPage = "front" | "day" | "week";
 
 type StoryId = number;
 
-type CommentAuthor = string;
-type CommentColor = string;
-
 type DataStore = {
   readItems: TimestampHash;
   pendingReadItems: number[];
@@ -90,8 +87,6 @@ type DataStore = {
   storyListSaveCount: number;
 
   scrollToId: number | undefined;
-
-  colorMap: Record<CommentAuthor, CommentColor>;
 
   activeStoryData: HnItem | undefined;
 };
@@ -123,9 +118,6 @@ type DataStoreActions = {
   // TODO: should not be in here - not related to local storage
   clearScrollToId: () => void;
   setScrollToId: (id: number) => void;
-
-  // TODO: should not be in here - not related to local storage
-  setColorMap: (map: Record<CommentAuthor, CommentColor>) => void;
 
   handleCollapseEvent: (id: number, newOpen: boolean) => void;
 
@@ -159,12 +151,6 @@ export const useDataStore = createWithSignal<
   activeStoryData: undefined,
   setActiveStoryData: (data) => {
     set({ activeStoryData: data });
-  },
-
-  colorMap: {},
-  setColorMap: (map) => {
-    console.log("setColorMap", map);
-    set({ colorMap: map });
   },
 
   scrollToId: undefined,

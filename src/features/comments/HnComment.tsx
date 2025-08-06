@@ -5,6 +5,7 @@ import { createEffect, createMemo, createSignal, Show } from "solid-js";
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { isValidComment } from "~/lib/isValidComment";
 import { cn, isNavigator, timeSince } from "~/lib/utils";
+import { colorMap } from "~/stores/colorMap";
 import { KidsObj3, useDataStore } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
@@ -22,7 +23,6 @@ export function HnComment(props: HnCommentProps) {
   const scrollToId = useDataStore((s) => s.scrollToId);
   const collapsedIds = useDataStore((s) => s.collapsedIds);
 
-  const colorMap = useDataStore((s) => s.colorMap);
   const storyData = useDataStore((s) => s.activeStoryData);
 
   const _isOpen = () => collapsedIds()[props.comment.id] !== true;

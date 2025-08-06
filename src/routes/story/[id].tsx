@@ -1,10 +1,12 @@
 import { useParams } from "@solidjs/router";
-import { Show } from "solid-js";
+import { createEffect, Show } from "solid-js";
 
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
+import { getColorsForStory } from "~/lib/getColorsForStory";
 import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { validateHnItemWithComments } from "~/lib/validation";
 import { getFullDataForIds } from "~/server/getFullDataForIds";
+import { setColorMap } from "~/stores/colorMap";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
 
 export default function Story() {
@@ -26,6 +28,12 @@ export default function Story() {
         console.error("Failed to fetch story:", error.message),
     }
   );
+
+  createEffect(() => {
+    const storyData = data() as HnItem;
+    const colors = getColorsForStory(storyData);
+    setColorMap(colors);
+  });
 
   return (
     <div>
