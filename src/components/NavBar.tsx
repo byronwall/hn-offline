@@ -1,5 +1,5 @@
 import { A, useLocation } from "@solidjs/router";
-import { createEffect, createSignal, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, Show } from "solid-js";
 
 import { cn } from "~/lib/utils";
 import { useDataStore } from "~/stores/useDataStore";
@@ -12,7 +12,7 @@ import {
 import { Shell } from "./Icon";
 
 export function NavBar() {
-  const refreshCurrent = (url: string) => console.log("REFRESH", url); // useDataStore((s) => s.refreshCurrent);
+  const refreshCurrent = useDataStore((s) => s.refreshCurrent);
   const isLoadingData = useDataStore((s) => s.isLoadingData);
   const storyListSaveCount = useDataStore((s) => s.storyListSaveCount);
 
@@ -20,7 +20,7 @@ export function NavBar() {
     setShouldHideReadItems(!shouldHideReadItems());
   };
 
-  const url = () => useLocation().pathname;
+  const url = createMemo(() => useLocation().pathname);
 
   const handleRefresh = () => {
     if (!url()) {
@@ -67,7 +67,6 @@ export function NavBar() {
           <h1 class="text-2xl font-bold">Offline</h1>
         </A>
       </div>
-
       <Show when={isListUrl()}>
         <div class="flex items-center gap-2">
           <label class="inline-flex items-center cursor-pointer">
@@ -82,7 +81,6 @@ export function NavBar() {
           </label>
         </div>
       </Show>
-
       <div class="flex items-center gap-2 text-xl">
         <A href="/day" class="hover:underline">
           day
@@ -91,15 +89,16 @@ export function NavBar() {
           week
         </A>
 
-        <Shell
-          size="32"
-          color="black"
-          class={cn(
-            "hover:cursor-pointer hover:stroke-blue-500 transition-colors duration-300 ease-in-out",
-            { "animate-spin stroke-orange-500": isLoadingData() }
-          )}
-          onClick={handleRefresh}
-        />
+        <div onClick={handleRefresh}>
+          <Shell
+            size="32"
+            color="black"
+            class={cn(
+              "hover:cursor-pointer hover:stroke-blue-500 transition-colors duration-300 ease-in-out",
+              { "animate-spin stroke-orange-500": isLoadingData() }
+            )}
+          />
+        </div>
       </div>
     </nav>
   );
