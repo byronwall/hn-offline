@@ -7,6 +7,7 @@ import {
 
 import { activeStoryData } from "./activeStorySignal";
 import { findNextSibling } from "./findNextSibling";
+import { setScrollToId } from "./scrollSignal";
 
 let db: IDBDatabase | null = null;
 
@@ -27,11 +28,7 @@ type CommentStoreActions = {
     collapsed: boolean
   ) => void;
   cleanUpOldEntries: () => void;
-  handleCollapseEvent: (
-    id: number,
-    newOpen: boolean,
-    setScrollToId?: (id: number) => void
-  ) => void;
+  handleCollapseEvent: (id: number, newOpen: boolean) => void;
 };
 
 export const useCommentStore = createWithSignal<
@@ -150,11 +147,7 @@ export const useCommentStore = createWithSignal<
     };
   },
 
-  handleCollapseEvent(
-    id: number,
-    newOpen: boolean,
-    setScrollToId?: (id: number) => void
-  ) {
+  handleCollapseEvent(id: number, newOpen: boolean) {
     const { updateCollapsedState, collapsedIds } = get();
 
     const currentActiveStoryData = activeStoryData();
@@ -169,9 +162,7 @@ export const useCommentStore = createWithSignal<
 
     if (newOpen) {
       // For opening, we can scroll immediately
-      if (setScrollToId) {
-        setScrollToId(id);
-      }
+      setScrollToId(id);
       return;
     }
 
@@ -200,9 +191,7 @@ export const useCommentStore = createWithSignal<
     requestAnimationFrame(() => {
       // Wait for one more frame to ensure collapse animation has started
       requestAnimationFrame(() => {
-        if (setScrollToId) {
-          setScrollToId(nextSiblingId);
-        }
+        setScrollToId(nextSiblingId);
       });
     });
   },

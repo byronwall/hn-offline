@@ -7,8 +7,9 @@ import { isValidComment } from "~/lib/isValidComment";
 import { cn, isNavigator, timeSince } from "~/lib/utils";
 import { activeStoryData } from "~/stores/activeStorySignal";
 import { colorMap } from "~/stores/colorMap";
+import { clearScrollToId, scrollToIdSignal } from "~/stores/scrollSignal";
 import { useCommentStore } from "~/stores/useCommentStore";
-import { KidsObj3, useDataStore } from "~/stores/useDataStore";
+import { KidsObj3 } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
 
@@ -21,9 +22,7 @@ export interface HnCommentProps {
 export function HnComment(props: HnCommentProps) {
   const [divRef, setDivRef] = createSignal<HTMLDivElement | null>(null);
 
-  const clearScrollToId = useDataStore((s) => s.clearScrollToId);
-  const scrollToId = useDataStore((s) => s.scrollToId);
-  const setScrollToId = useDataStore((s) => s.setScrollToId);
+  const scrollToId = scrollToIdSignal;
   const collapsedIds = useCommentStore((s) => s.collapsedIds);
 
   const _isOpen = () => collapsedIds()[props.comment.id] !== true;
@@ -102,7 +101,7 @@ export function HnComment(props: HnCommentProps) {
       return;
     }
 
-    handleCollapseEvent(props.comment.id, newIsOpen, setScrollToId);
+    handleCollapseEvent(props.comment.id, newIsOpen);
     console.log("newIsOpen", newIsOpen);
     setIsOpen(newIsOpen);
   }

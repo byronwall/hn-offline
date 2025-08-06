@@ -61,8 +61,6 @@ type DataStore = {
   shouldHideReadItems: boolean;
 
   storyListSaveCount: number;
-
-  scrollToId: number | undefined;
 };
 
 type DataStoreActions = {
@@ -88,10 +86,6 @@ type DataStoreActions = {
   purgeLocalForage: () => Promise<void>;
 
   setShouldHideReadItems: (shouldHide: boolean) => Promise<void>;
-
-  // TODO: should not be in here - not related to local storage
-  clearScrollToId: () => void;
-  setScrollToId: (id: number) => void;
 };
 
 if (typeof window !== "undefined") {
@@ -116,14 +110,6 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
     storyListSaveCount: 0,
 
     shouldHideReadItems: false,
-
-    scrollToId: undefined,
-    setScrollToId: (id) => {
-      set({ scrollToId: id });
-    },
-    clearScrollToId: () => {
-      set({ scrollToId: undefined });
-    },
 
     setShouldHideReadItems: async (shouldHide = false) => {
       console.log("setShouldHideReadItems", shouldHide);

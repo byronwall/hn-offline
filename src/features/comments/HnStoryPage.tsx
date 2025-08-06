@@ -13,6 +13,7 @@ import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, timeSince } from "~/lib/utils";
 import { setActiveStoryData } from "~/stores/activeStorySignal";
+import { setScrollToId } from "~/stores/scrollSignal";
 import { useCommentStore } from "~/stores/useCommentStore";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
 
@@ -25,8 +26,6 @@ interface HnStoryPageProps {
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
   const updateCollapsedState = useCommentStore((s) => s.updateCollapsedState);
-
-  const setIdToScrollTo = useDataStore((s) => s.setScrollToId);
 
   const textToRender = () =>
     processHtmlAndTruncateAnchorText(props.storyData?.text || "");
@@ -122,7 +121,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     setTimeout(() => {
       const firstCommentId = comments()[0]?.id;
       if (newIsCollapsed && firstCommentId) {
-        setIdToScrollTo(firstCommentId);
+        setScrollToId(firstCommentId);
       }
     }, 100);
   }
