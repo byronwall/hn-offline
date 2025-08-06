@@ -3,17 +3,18 @@ import { createEffect, createSignal, Show } from "solid-js";
 
 import { cn } from "~/lib/utils";
 import { useDataStore } from "~/stores/useDataStore";
+import {
+  isLocalForageInitialized,
+  setShouldHideReadItems,
+  shouldHideReadItems,
+} from "~/stores/useReadItemsStore";
 
 import { Shell } from "./Icon";
 
 export function NavBar() {
   const refreshCurrent = (url: string) => console.log("REFRESH", url); // useDataStore((s) => s.refreshCurrent);
   const isLoadingData = useDataStore((s) => s.isLoadingData);
-  const isInit = useDataStore((s) => s.isLocalForageInitialized);
   const storyListSaveCount = useDataStore((s) => s.storyListSaveCount);
-
-  const shouldHideReadItems = useDataStore((s) => s.shouldHideReadItems);
-  const setShouldHideReadItems = useDataStore((s) => s.setShouldHideReadItems);
 
   const toggleHideReadItems = () => {
     setShouldHideReadItems(!shouldHideReadItems());
@@ -59,8 +60,8 @@ export function NavBar() {
               "w-8 h-8",
               { "animate-spin": isLoadingData() },
               { "animate-bounce": didCountChange() },
-              { "opacity-20": !isInit() },
-              { "opacity-100": isInit() }
+              { "opacity-20": !isLocalForageInitialized() },
+              { "opacity-100": isLocalForageInitialized() }
             )}
           />
           <h1 class="text-2xl font-bold">Offline</h1>

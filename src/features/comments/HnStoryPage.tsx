@@ -16,6 +16,7 @@ import { setActiveStoryData } from "~/stores/activeStorySignal";
 import { setScrollToId } from "~/stores/scrollSignal";
 import { useCommentStore } from "~/stores/useCommentStore";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
+import { saveIdToReadList } from "~/stores/useReadItemsStore";
 
 import { HnCommentList } from "./HnCommentList";
 
@@ -29,8 +30,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
   const textToRender = () =>
     processHtmlAndTruncateAnchorText(props.storyData?.text || "");
-
-  const onVisitMarker = useDataStore((s) => s.saveIdToReadList);
 
   const handleShareClick = () => {
     navigator.share?.({ url: window.location.href });
@@ -84,7 +83,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     document.body.addEventListener("click", anchorClickHandler);
 
     if (props.id !== undefined) {
-      onVisitMarker(props.id);
+      saveIdToReadList(props.id);
     }
 
     return () => {

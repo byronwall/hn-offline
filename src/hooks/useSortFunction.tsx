@@ -1,13 +1,10 @@
-import { HnStorySummary, useDataStore } from "~/stores/useDataStore";
+import { HnStorySummary } from "~/stores/useDataStore";
+import { readItems, shouldHideReadItems } from "~/stores/useReadItemsStore";
 
 export function useSortFunction(
   items: HnStorySummary[] | undefined,
   sortType: string | undefined
 ) {
-  const shouldHideReadItems = useDataStore((s) => s.shouldHideReadItems);
-
-  const readItems = useDataStore((s) => s.readItems);
-
   if (!items) {
     return items;
   }

@@ -9,6 +9,11 @@ import {
 } from "~/lib/getSummaryViaFetch";
 import { HasAuthorAndTime } from "~/models/interfaces";
 
+import {
+  initializeReadItemsFromLocalForage,
+  purgeOldReadItems,
+} from "./useReadItemsStore";
+
 // TODO: these types are all a mess.  Use Pick and Omit and get it right later.
 
 export interface HnItem extends HasAuthorAndTime {
@@ -44,22 +49,12 @@ export interface HnStorySummary extends HasAuthorAndTime {
   descendants?: number;
 }
 
-export type TimestampHash = Record<number, number>;
-
 export type StoryPage = "front" | "day" | "week";
 
 type StoryId = number;
 
 type DataStore = {
-  readItems: TimestampHash;
-  pendingReadItems: number[];
-
-  isLocalForageInitialized: boolean;
-
   isLoadingData: boolean;
-
-  shouldHideReadItems: boolean;
-
   storyListSaveCount: number;
 };
 
@@ -81,11 +76,7 @@ type DataStoreActions = {
 
   refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
 
-  saveIdToReadList: (id: number) => Promise<void>;
-
   purgeLocalForage: () => Promise<void>;
-
-  setShouldHideReadItems: (shouldHide: boolean) => Promise<void>;
 };
 
 if (typeof window !== "undefined") {
@@ -99,35 +90,15 @@ if (typeof window !== "undefined") {
   });
 }
 
-const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
-const SHOULD_HIDE_READ_ITEMS = "SHOULD_HIDE_READ_ITEMS";
-
 export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
   (set, get) => ({
     isLoadingData: false,
-    isLocalForageInitialized: false,
-
     storyListSaveCount: 0,
-
-    shouldHideReadItems: false,
-
-    setShouldHideReadItems: async (shouldHide = false) => {
-      console.log("setShouldHideReadItems", shouldHide);
-      set({ shouldHideReadItems: shouldHide });
-
-      // save via localforage
-      await localforage.setItem(SHOULD_HIDE_READ_ITEMS, shouldHide);
-    },
-
-    readItems: {},
-    pendingReadItems: [],
 
     purgeLocalForage: async () => {
       // goal is to remove stories that are not current or recently read
 
       console.log("purging localforage");
-
-      const { readItems } = get();
 
       const idsToKeep = new Set<number>();
 
@@ -156,17 +127,10 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
         }
       }
 
-      // get the 50 most recent read items
-      const readItemsArray = Object.entries(readItems).sort(
-        (a, b) => b[1] - a[1]
-      );
-
-      console.log("readItemsArray", readItemsArray);
-
-      const maxToKeep = Math.min(50, readItemsArray.length);
-
-      for (let i = 0; i < maxToKeep; i++) {
-        idsToKeep.add(Number(readItemsArray[i][0]));
+      // get the recent read items to keep
+      const readItemsToKeep = await purgeOldReadItems();
+      for (const id of readItemsToKeep) {
+        idsToKeep.add(id);
       }
 
       // get all keys starting with RAW_
@@ -182,31 +146,6 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
           await localforage.removeItem(key);
         }
       }
-    },
-
-    saveIdToReadList: async (id: number) => {
-      const { readItems, isLocalForageInitialized, pendingReadItems } = get();
-
-      if (!isLocalForageInitialized) {
-        // don't save data before list is loaded --- will clear it
-        console.log("localforage not initialized for saveIdToReadList");
-        set({ pendingReadItems: [...pendingReadItems, id] });
-        return;
-      }
-
-      console.log("new read list", readItems);
-
-      // skip out if already there
-      if (readItems[id]) {
-        return;
-      }
-
-      const newReadList = { ...readItems };
-      newReadList[id] = Date.now();
-
-      await localforage.setItem(LOCAL_READ_ITEMS, newReadList);
-
-      set({ readItems: newReadList });
     },
 
     saveContent: async (id: StoryId, content: HnItem) => {
@@ -301,41 +240,12 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
     },
 
     initializeFromLocalForage: async () => {
-      // load the read items
-      const { purgeLocalForage, isLocalForageInitialized } = get();
-
-      if (isLocalForageInitialized) {
-        console.log("already initialized");
-        return;
-      }
+      const { purgeLocalForage } = get();
 
       console.log("initializeFromLocalForage");
 
-      const readItems =
-        (await localforage.getItem<TimestampHash>(LOCAL_READ_ITEMS)) ?? {};
-
-      const { pendingReadItems } = get();
-
-      // add any pending items
-      for (const id of pendingReadItems) {
-        readItems[id] = Date.now();
-      }
-
-      // get the shouldHideReadItems
-      const shouldHideReadItems =
-        (await localforage.getItem<boolean>(SHOULD_HIDE_READ_ITEMS)) || false;
-
-      console.log("**** initializeFromLocalForage done", {
-        readItems,
-        shouldHideReadItems,
-      });
-
-      set({
-        isLocalForageInitialized: true,
-        readItems,
-        pendingReadItems: [],
-        shouldHideReadItems,
-      });
+      // Initialize read items store
+      await initializeReadItemsFromLocalForage();
 
       // do a purge in the future, 1 seconds
       setTimeout(purgeLocalForage, 1000);
