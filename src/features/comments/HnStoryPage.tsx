@@ -12,6 +12,7 @@ import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, timeSince } from "~/lib/utils";
+import { setActiveStoryData } from "~/stores/activeStorySignal";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
@@ -25,8 +26,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const updateCollapsedState = useDataStore((s) => s.updateCollapsedState);
 
   const setIdToScrollTo = useDataStore((s) => s.setScrollToId);
-
-  const setActiveStoryData = useDataStore((s) => s.setActiveStoryData);
 
   const textToRender = () =>
     processHtmlAndTruncateAnchorText(props.storyData?.text || "");

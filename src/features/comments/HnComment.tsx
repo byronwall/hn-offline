@@ -5,6 +5,7 @@ import { createEffect, createMemo, createSignal, Show } from "solid-js";
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { isValidComment } from "~/lib/isValidComment";
 import { cn, isNavigator, timeSince } from "~/lib/utils";
+import { activeStoryData } from "~/stores/activeStorySignal";
 import { colorMap } from "~/stores/colorMap";
 import { KidsObj3, useDataStore } from "~/stores/useDataStore";
 
@@ -22,8 +23,6 @@ export function HnComment(props: HnCommentProps) {
   const clearScrollToId = useDataStore((s) => s.clearScrollToId);
   const scrollToId = useDataStore((s) => s.scrollToId);
   const collapsedIds = useDataStore((s) => s.collapsedIds);
-
-  const storyData = useDataStore((s) => s.activeStoryData);
 
   const _isOpen = () => collapsedIds()[props.comment.id] !== true;
   const [isOpen, setIsOpen] = createSignal(_isOpen());
@@ -190,7 +189,8 @@ export function HnComment(props: HnCommentProps) {
         >
           <span
             class={cn({
-              "text-orange-700 font-bold": storyData()?.by === props.comment.by,
+              "text-orange-700 font-bold":
+                activeStoryData()?.by === props.comment.by,
               truncate: true,
             })}
           >

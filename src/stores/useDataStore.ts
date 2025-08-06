@@ -13,6 +13,7 @@ import {
 } from "~/lib/indexedDb";
 import { HasAuthorAndTime } from "~/models/interfaces";
 
+import { activeStoryData } from "./activeStorySignal";
 import { findNextSibling } from "./findNextSibling";
 
 let db: IDBDatabase | null = null;
@@ -87,8 +88,6 @@ type DataStore = {
   storyListSaveCount: number;
 
   scrollToId: number | undefined;
-
-  activeStoryData: HnItem | undefined;
 };
 
 type DataStoreActions = {
@@ -120,8 +119,6 @@ type DataStoreActions = {
   setScrollToId: (id: number) => void;
 
   handleCollapseEvent: (id: number, newOpen: boolean) => void;
-
-  setActiveStoryData: (data: HnItem) => void;
 };
 
 if (typeof window !== "undefined") {
@@ -147,11 +144,6 @@ export const useDataStore = createWithSignal<
   storyListSaveCount: 0,
 
   shouldHideReadItems: false,
-
-  activeStoryData: undefined,
-  setActiveStoryData: (data) => {
-    set({ activeStoryData: data });
-  },
 
   scrollToId: undefined,
   setScrollToId: (id) => {
@@ -587,12 +579,9 @@ export const useDataStore = createWithSignal<
   },
 
   handleCollapseEvent(id: number, newOpen: boolean) {
-    const {
-      updateCollapsedState,
-      setScrollToId,
-      activeStoryData,
-      collapsedIds,
-    } = get();
+    const { updateCollapsedState, setScrollToId, collapsedIds } = get();
+
+    const currentActiveStoryData = activeStoryData();
 
     // desired logic is thus;
     // if opening the comment, scroll to it -- use the comment id
@@ -608,13 +597,13 @@ export const useDataStore = createWithSignal<
       return;
     }
 
-    if (!activeStoryData) {
+    if (!currentActiveStoryData) {
       return;
     }
 
     // find the next sibling or scroll to parent if final (or only) node
     // need to traverse the kidsObj to find the next sibling
-    const testComments = activeStoryData.kidsObj || [];
+    const testComments = currentActiveStoryData.kidsObj || [];
 
     const nextSiblingId = findNextSibling(
       testComments,
