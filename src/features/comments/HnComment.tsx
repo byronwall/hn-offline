@@ -22,7 +22,6 @@ export interface HnCommentProps {
 export function HnComment(props: HnCommentProps) {
   const [divRef, setDivRef] = createSignal<HTMLDivElement | null>(null);
 
-  const scrollToId = scrollToIdSignal;
   const collapsedIds = useCommentStore((s) => s.collapsedIds);
 
   const _isOpen = () => collapsedIds()[props.comment.id] !== true;
@@ -38,7 +37,7 @@ export function HnComment(props: HnCommentProps) {
 
   // TODO: review this one
   createEffect(() => {
-    if (scrollToId() !== props.comment?.id) {
+    if (scrollToIdSignal() !== props.comment?.id) {
       return;
     }
 
