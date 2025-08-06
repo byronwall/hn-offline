@@ -13,6 +13,7 @@ import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, timeSince } from "~/lib/utils";
 import { setActiveStoryData } from "~/stores/activeStorySignal";
+import { useCommentStore } from "~/stores/useCommentStore";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
@@ -23,7 +24,7 @@ interface HnStoryPageProps {
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
-  const updateCollapsedState = useDataStore((s) => s.updateCollapsedState);
+  const updateCollapsedState = useCommentStore((s) => s.updateCollapsedState);
 
   const setIdToScrollTo = useDataStore((s) => s.setScrollToId);
 
@@ -41,11 +42,16 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const initializeLocalStorage = useDataStore(
     (s) => s.initializeFromLocalForage
   );
+  const fetchInitialCollapsedState = useCommentStore(
+    (s) => s.fetchInitialCollapsedState
+  );
 
   onMount(() => {
     console.log("HnStoryPage mounted", props.storyData);
     // initialize local storage
     initializeLocalStorage();
+    // initialize comment store
+    fetchInitialCollapsedState();
   });
 
   createEffect(() => {
@@ -87,7 +93,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     };
   });
 
-  const collapsedIds = useDataStore((s) => s.collapsedIds);
+  const collapsedIds = useCommentStore((s) => s.collapsedIds);
 
   const _isOpen = () =>
     props.storyData?.id ? collapsedIds()[props.storyData.id] !== true : false;

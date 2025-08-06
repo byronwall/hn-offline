@@ -7,6 +7,7 @@ import { isValidComment } from "~/lib/isValidComment";
 import { cn, isNavigator, timeSince } from "~/lib/utils";
 import { activeStoryData } from "~/stores/activeStorySignal";
 import { colorMap } from "~/stores/colorMap";
+import { useCommentStore } from "~/stores/useCommentStore";
 import { KidsObj3, useDataStore } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
@@ -22,12 +23,13 @@ export function HnComment(props: HnCommentProps) {
 
   const clearScrollToId = useDataStore((s) => s.clearScrollToId);
   const scrollToId = useDataStore((s) => s.scrollToId);
-  const collapsedIds = useDataStore((s) => s.collapsedIds);
+  const setScrollToId = useDataStore((s) => s.setScrollToId);
+  const collapsedIds = useCommentStore((s) => s.collapsedIds);
 
   const _isOpen = () => collapsedIds()[props.comment.id] !== true;
   const [isOpen, setIsOpen] = createSignal(_isOpen());
 
-  const onUpdateOpen = useDataStore((s) => s.handleCollapseEvent);
+  const handleCollapseEvent = useCommentStore((s) => s.handleCollapseEvent);
 
   createEffect(() => {
     // update when IndexedDB changes
@@ -100,7 +102,7 @@ export function HnComment(props: HnCommentProps) {
       return;
     }
 
-    onUpdateOpen(props.comment.id, newIsOpen);
+    handleCollapseEvent(props.comment.id, newIsOpen, setScrollToId);
     console.log("newIsOpen", newIsOpen);
     setIsOpen(newIsOpen);
   }
