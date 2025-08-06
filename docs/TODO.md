@@ -2,7 +2,6 @@
 
 ## Conversion to SolidJS
 
-- [ ] Resolve all lingering reactivity issues
 - [ ] Split the `useDataStore` into dedicated stores for each part of the app
 - [ ] Sort out service worker and better integrate into vite
 - [ ] Reimplement the virtual rendering for comments
