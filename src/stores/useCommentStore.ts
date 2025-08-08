@@ -1,20 +1,20 @@
+import localforage from "localforage";
 import { createWithSignal } from "solid-zustand";
-
-import {
-  getInitialCollapsedState,
-  openCommentsDatabase,
-} from "~/lib/indexedDb";
 
 import { activeStoryData } from "./activeStorySignal";
 import { findNextSibling } from "./findNextSibling";
 import { setScrollToId } from "./scrollSignal";
 
-let db: IDBDatabase | null = null;
+const LOCAL_COLLAPSED_COMMENTS = "COLLAPSED_COMMENTS";
 
-export interface Comment {
-  id: number;
-  collapsed: boolean;
-  timestamp: number;
+// Ensure localforage uses IndexedDB driver (still IndexedDB under the hood)
+if (typeof window !== "undefined") {
+  localforage.config({
+    driver: localforage.INDEXEDDB,
+    name: "hn_next",
+    version: 1.0,
+    storeName: "keyvaluepairs",
+  });
 }
 
 type CommentStore = {
@@ -39,17 +39,21 @@ export const useCommentStore = createWithSignal<
   fetchInitialCollapsedState: async () => {
     console.log("*** fetchInitialCollapsedState");
     try {
-      // Open the indexedDB database if it hasn't been opened yet
-      if (!db) {
-        db = await openCommentsDatabase();
-      }
+      // Load collapsed state from localforage
+      const savedCollapsedMap =
+        (await localforage.getItem<Record<number, number>>(
+          LOCAL_COLLAPSED_COMMENTS
+        )) ?? {};
 
-      const collapsedIdsArr = await getInitialCollapsedState(db);
-      const collapsedIds: Record<number, true> = {};
-
-      collapsedIdsArr.forEach((id) => {
-        collapsedIds[id] = true;
-      });
+      const collapsedIds: Record<number, true> = Object.keys(
+        savedCollapsedMap
+      ).reduce((acc, idStr) => {
+        const id = Number(idStr);
+        if (!Number.isNaN(id)) {
+          acc[id] = true;
+        }
+        return acc;
+      }, {} as Record<number, true>);
 
       console.log("Initial collapsed state fetched: ", collapsedIds);
       set({ collapsedIds });
@@ -71,80 +75,52 @@ export const useCommentStore = createWithSignal<
       return;
     }
 
-    if (!db) {
-      db = await openCommentsDatabase();
-    }
-
-    const transaction = db.transaction(["comments"], "readwrite");
-    const store = transaction.objectStore("comments");
+    // Read-modify-write the collapsed map stored in localforage
+    const savedCollapsedMap =
+      (await localforage.getItem<Record<number, number>>(
+        LOCAL_COLLAPSED_COMMENTS
+      )) ?? {};
 
     if (collapsed) {
-      const request = store.put({
-        id: commentId,
-        collapsed,
-        timestamp: Date.now(),
-      } as Comment);
-
-      request.onsuccess = function () {
-        console.log("Collapse state updated.");
-        set((state) => ({
-          collapsedIds: { ...state.collapsedIds, [commentId]: true },
-        }));
-      };
-
-      request.onerror = function () {
-        console.error("Error updating collapse state: ", request.error);
-      };
+      savedCollapsedMap[commentId] = Date.now();
+      await localforage.setItem(LOCAL_COLLAPSED_COMMENTS, savedCollapsedMap);
+      console.log("Collapse state updated.");
+      set((state) => ({
+        collapsedIds: { ...state.collapsedIds, [commentId]: true },
+      }));
     } else {
-      const request = store.delete(commentId);
-
-      request.onsuccess = function () {
-        console.log("Collapse state removed.");
-        set((state) => {
-          const newCollapsedIds = { ...state.collapsedIds };
-          delete newCollapsedIds[commentId];
-
-          return {
-            collapsedIds: newCollapsedIds,
-          };
-        });
-      };
-
-      request.onerror = function () {
-        console.error("Error removing collapse state: ", request.error);
-      };
+      if (commentId in savedCollapsedMap) {
+        delete savedCollapsedMap[commentId];
+        await localforage.setItem(LOCAL_COLLAPSED_COMMENTS, savedCollapsedMap);
+      }
+      console.log("Collapse state removed.");
+      set((state) => {
+        const newCollapsedIds = { ...state.collapsedIds };
+        delete newCollapsedIds[commentId];
+        return { collapsedIds: newCollapsedIds };
+      });
     }
   },
 
   cleanUpOldEntries: async () => {
-    if (!db) {
-      db = await openCommentsDatabase();
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const savedCollapsedMap =
+      (await localforage.getItem<Record<number, number>>(
+        LOCAL_COLLAPSED_COMMENTS
+      )) ?? {};
+
+    let changed = false;
+    for (const [idStr, ts] of Object.entries(savedCollapsedMap)) {
+      if (typeof ts === "number" && ts <= oneWeekAgo) {
+        console.log("Cleaning up old entry: ", { id: idStr, timestamp: ts });
+        delete savedCollapsedMap[Number(idStr)];
+        changed = true;
+      }
     }
 
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const transaction = db.transaction(["comments"], "readwrite");
-    const store = transaction.objectStore("comments");
-    const index = store.index("timestamp");
-
-    const request = index.openCursor(IDBKeyRange.upperBound(oneWeekAgo));
-
-    request.onsuccess = function (event: Event) {
-      const cursor = (event.target as IDBRequest).result;
-
-      // log how items are being deleted
-      if (cursor) {
-        console.log("Cleaning up old entry: ", cursor.value);
-      }
-
-      if (cursor) {
-        store.delete(cursor.primaryKey);
-        cursor.continue();
-      }
-    };
-
-    request.onerror = function () {
-      console.error("Error cleaning up old entries: ", request.error);
-    };
+    if (changed) {
+      await localforage.setItem(LOCAL_COLLAPSED_COMMENTS, savedCollapsedMap);
+    }
   },
 
   handleCollapseEvent(id: number, newOpen: boolean) {
