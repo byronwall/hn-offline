@@ -1,7 +1,7 @@
 import { useNavigate } from "@solidjs/router";
 import {
   createEffect,
-  createSignal,
+  createMemo,
   Match,
   onMount,
   Show,
@@ -14,7 +14,12 @@ import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAn
 import { cn, getDomain, timeSince } from "~/lib/utils";
 import { setActiveStoryData } from "~/stores/activeStorySignal";
 import { setScrollToId } from "~/stores/scrollSignal";
-import { useCommentStore } from "~/stores/useCommentStore";
+import {
+  collapsedIds,
+  fetchInitialCollapsedState,
+  isCollapsedStateReady,
+  updateCollapsedState,
+} from "~/stores/useCommentStore";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
 import { saveIdToReadList } from "~/stores/useReadItemsStore";
 
@@ -26,7 +31,7 @@ interface HnStoryPageProps {
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
-  const updateCollapsedState = useCommentStore((s) => s.updateCollapsedState);
+  // using persisted comment store utilities
 
   const textToRender = () =>
     processHtmlAndTruncateAnchorText(props.storyData?.text || "");
@@ -40,12 +45,9 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const initializeLocalStorage = useDataStore(
     (s) => s.initializeFromLocalForage
   );
-  const fetchInitialCollapsedState = useCommentStore(
-    (s) => s.fetchInitialCollapsedState
-  );
+  // initialize comment store from persisted storage on mount
 
   onMount(() => {
-    console.log("HnStoryPage mounted", props.storyData);
     // initialize local storage
     initializeLocalStorage();
     // initialize comment store
@@ -91,15 +93,15 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     };
   });
 
-  const collapsedIds = useCommentStore((s) => s.collapsedIds);
+  const getCollapsedIds = collapsedIds;
 
   const _isOpen = () =>
-    props.storyData?.id ? collapsedIds()[props.storyData.id] !== true : false;
-  const [isTextOpen, setIsTextCollapsed] = createSignal(_isOpen());
+    props.storyData?.id
+      ? getCollapsedIds()[props.storyData.id] !== true
+      : false;
+  const isTextOpen = createMemo(_isOpen);
 
-  createEffect(() => {
-    setIsTextCollapsed(_isOpen());
-  });
+  // reactive derivation only
 
   const isTextCollapsed = () => isTextOpen() === false;
 
@@ -110,9 +112,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       return;
     }
 
-    const newIsCollapsed = !isTextCollapsed();
-
-    setIsTextCollapsed(newIsCollapsed);
+    const newIsCollapsed = !!isTextOpen();
     updateCollapsedState(props.storyData.id, newIsCollapsed);
 
     // scroll to first comment if it exists
@@ -148,7 +148,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
               props.storyData.text,
           },
           {
-            collapsed: isTextCollapsed(),
+            collapsed: isCollapsedStateReady() && isTextCollapsed(),
           }
         )}
         onClick={handleStoryTextClick}
@@ -171,7 +171,13 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
           </button>
         </h4>
 
-        <Show when={props.storyData.text !== undefined && !isTextCollapsed()}>
+        <Show
+          when={
+            props.storyData.text !== undefined &&
+            isCollapsedStateReady() &&
+            !isTextCollapsed()
+          }
+        >
           {/* TODO: this is not working... */}
           {/*  eslint-disable-next-line solid/no-innerhtml */}
           <p class="user-text break-words " innerHTML={textToRender()} />

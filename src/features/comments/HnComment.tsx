@@ -8,7 +8,11 @@ import { cn, isNavigator, timeSince } from "~/lib/utils";
 import { activeStoryData } from "~/stores/activeStorySignal";
 import { colorMap } from "~/stores/colorMap";
 import { clearScrollToId, scrollToIdSignal } from "~/stores/scrollSignal";
-import { useCommentStore } from "~/stores/useCommentStore";
+import {
+  collapsedIds,
+  handleCollapseEvent,
+  isCollapsedStateReady,
+} from "~/stores/useCommentStore";
 import { KidsObj3 } from "~/stores/useDataStore";
 
 import { HnCommentList } from "./HnCommentList";
@@ -22,18 +26,14 @@ export interface HnCommentProps {
 export function HnComment(props: HnCommentProps) {
   const [divRef, setDivRef] = createSignal<HTMLDivElement | null>(null);
 
-  const collapsedIds = useCommentStore((s) => s.collapsedIds);
+  const getCollapsedIds = collapsedIds;
 
-  const _isOpen = () => collapsedIds()[props.comment.id] !== true;
-  const [isOpen, setIsOpen] = createSignal(_isOpen());
+  const _isOpen = () => getCollapsedIds()[props.comment.id] !== true;
+  const isOpen = createMemo(_isOpen);
 
-  const handleCollapseEvent = useCommentStore((s) => s.handleCollapseEvent);
+  const onCollapse = handleCollapseEvent;
 
-  createEffect(() => {
-    // update when IndexedDB changes
-    // TODO: this should all go away once it's reactive
-    setIsOpen(_isOpen());
-  });
+  // derive from store; no extra effects needed
 
   // TODO: review this one
   createEffect(() => {
@@ -100,9 +100,8 @@ export function HnComment(props: HnCommentProps) {
       return;
     }
 
-    handleCollapseEvent(props.comment.id, newIsOpen);
-    console.log("newIsOpen", newIsOpen);
-    setIsOpen(newIsOpen);
+    onCollapse(props.comment.id, newIsOpen);
+    // no-op log cleanup
   }
 
   const paddingByDepth = [16, 15, 14, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12];
@@ -205,7 +204,7 @@ export function HnComment(props: HnCommentProps) {
             <ArrowUpRightFromSquare size={16} />
           </button>
         </p>
-        <Show when={isOpen()}>
+        <Show when={isCollapsedStateReady() && isOpen()}>
           {/* eslint-disable-next-line solid/no-innerhtml */}
           <p class="comment" innerHTML={props.comment.text || ""} />
           {childComments().length > 0 && (

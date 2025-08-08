@@ -1,5 +1,7 @@
+import { makePersisted } from "@solid-primitives/storage";
 import localforage from "localforage";
-import { createWithSignal } from "solid-zustand";
+import { createSignal } from "solid-js";
+import { isServer } from "solid-js/web";
 
 import { activeStoryData } from "./activeStorySignal";
 import { findNextSibling } from "./findNextSibling";
@@ -7,7 +9,7 @@ import { setScrollToId } from "./scrollSignal";
 
 const LOCAL_COLLAPSED_COMMENTS = "COLLAPSED_COMMENTS";
 
-// Ensure localforage uses IndexedDB driver (still IndexedDB under the hood)
+// Configure localforage on the client
 if (typeof window !== "undefined") {
   localforage.config({
     driver: localforage.INDEXEDDB,
@@ -17,158 +19,123 @@ if (typeof window !== "undefined") {
   });
 }
 
-type CommentStore = {
-  collapsedIds: Record<number, true>;
+// We keep timestamps in storage for cleanup, but expose a boolean map to consumers.
+type CollapsedTimestampMap = Record<number, number>;
+
+const [collapsedTimestamps, setCollapsedTimestamps, initPersist] =
+  makePersisted(createSignal<CollapsedTimestampMap>({}), {
+    name: LOCAL_COLLAPSED_COMMENTS,
+    storage: !isServer ? localforage : undefined,
+    // Store objects directly in localforage instead of JSON strings
+    // so DevTools shows normal objects and other parts of the app
+    // (that also use localforage) remain consistent.
+    // makePersisted allows disabling serialization by using identity fns.
+    serialize: (value) => value as unknown as string,
+    deserialize: (value) => value as unknown as CollapsedTimestampMap,
+  });
+
+// Signal indicating when async persisted state has been loaded
+export const [isCollapsedStateReady, setIsCollapsedStateReady] =
+  createSignal(false);
+
+// Accessor returning a boolean map of collapsed IDs
+export const collapsedIds = () => {
+  const result: Record<number, true> = {};
+  const map = collapsedTimestamps();
+  for (const idStr of Object.keys(map)) {
+    const id = Number(idStr);
+    if (!Number.isNaN(id)) {
+      result[id] = true;
+    }
+  }
+  return result;
 };
 
-type CommentStoreActions = {
-  fetchInitialCollapsedState: () => void;
-  updateCollapsedState: (
-    commentId: number | undefined,
-    collapsed: boolean
-  ) => void;
-  cleanUpOldEntries: () => void;
-  handleCollapseEvent: (id: number, newOpen: boolean) => void;
-};
-
-export const useCommentStore = createWithSignal<
-  CommentStore & CommentStoreActions
->((set, get) => ({
-  collapsedIds: {},
-
-  fetchInitialCollapsedState: async () => {
-    console.log("*** fetchInitialCollapsedState");
-    try {
-      // Load collapsed state from localforage
-      const savedCollapsedMap =
-        (await localforage.getItem<Record<number, number>>(
-          LOCAL_COLLAPSED_COMMENTS
-        )) ?? {};
-
-      const collapsedIds: Record<number, true> = Object.keys(
-        savedCollapsedMap
-      ).reduce((acc, idStr) => {
-        const id = Number(idStr);
-        if (!Number.isNaN(id)) {
-          acc[id] = true;
-        }
-        return acc;
-      }, {} as Record<number, true>);
-
-      console.log("Initial collapsed state fetched: ", collapsedIds);
-      set({ collapsedIds });
-
-      // Clean up old entries in 1 second
-      setTimeout(() => {
-        set((state) => {
-          state.cleanUpOldEntries();
-          return state;
-        });
-      }, 1000);
-    } catch (error) {
-      console.error("Error fetching initial collapsed states: ", error);
+export async function fetchInitialCollapsedState(): Promise<void> {
+  // Initialize from async storage if available
+  const initFn = initPersist as unknown as (() => Promise<void>) | undefined;
+  try {
+    if (typeof initFn === "function") {
+      await initFn();
+    } else if (
+      initFn &&
+      typeof (initFn as Promise<unknown>).then === "function"
+    ) {
+      await (initFn as Promise<unknown>);
     }
-  },
+  } catch (e) {
+    console.error("Failed to initialize collapsed comment state", e);
+  } finally {
+    setIsCollapsedStateReady(true);
+  }
+  // Clean up old entries shortly after initialization
+  setTimeout(() => void cleanUpOldEntries(), 1000);
+}
 
-  updateCollapsedState: async (commentId, collapsed) => {
-    if (!commentId) {
-      return;
-    }
+export function updateCollapsedState(
+  commentId: number | undefined,
+  collapsed: boolean
+): void {
+  if (!commentId) {
+    return;
+  }
 
-    // Read-modify-write the collapsed map stored in localforage
-    const savedCollapsedMap =
-      (await localforage.getItem<Record<number, number>>(
-        LOCAL_COLLAPSED_COMMENTS
-      )) ?? {};
-
+  setCollapsedTimestamps((prev) => {
+    const next: CollapsedTimestampMap = { ...prev };
     if (collapsed) {
-      savedCollapsedMap[commentId] = Date.now();
-      await localforage.setItem(LOCAL_COLLAPSED_COMMENTS, savedCollapsedMap);
-      console.log("Collapse state updated.");
-      set((state) => ({
-        collapsedIds: { ...state.collapsedIds, [commentId]: true },
-      }));
+      next[commentId] = Date.now();
     } else {
-      if (commentId in savedCollapsedMap) {
-        delete savedCollapsedMap[commentId];
-        await localforage.setItem(LOCAL_COLLAPSED_COMMENTS, savedCollapsedMap);
-      }
-      console.log("Collapse state removed.");
-      set((state) => {
-        const newCollapsedIds = { ...state.collapsedIds };
-        delete newCollapsedIds[commentId];
-        return { collapsedIds: newCollapsedIds };
-      });
+      delete next[commentId];
     }
-  },
 
-  cleanUpOldEntries: async () => {
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const savedCollapsedMap =
-      (await localforage.getItem<Record<number, number>>(
-        LOCAL_COLLAPSED_COMMENTS
-      )) ?? {};
+    return next;
+  });
+}
 
+export function cleanUpOldEntries(): void {
+  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  setCollapsedTimestamps((prev) => {
     let changed = false;
-    for (const [idStr, ts] of Object.entries(savedCollapsedMap)) {
+    const next: CollapsedTimestampMap = { ...prev };
+    for (const [idStr, ts] of Object.entries(prev)) {
       if (typeof ts === "number" && ts <= oneWeekAgo) {
-        console.log("Cleaning up old entry: ", { id: idStr, timestamp: ts });
-        delete savedCollapsedMap[Number(idStr)];
+        delete next[Number(idStr)];
         changed = true;
       }
     }
+    return changed ? next : prev;
+  });
+}
 
-    if (changed) {
-      await localforage.setItem(LOCAL_COLLAPSED_COMMENTS, savedCollapsedMap);
-    }
-  },
+export function handleCollapseEvent(id: number, newOpen: boolean): void {
+  updateCollapsedState(id, !newOpen);
 
-  handleCollapseEvent(id: number, newOpen: boolean) {
-    const { updateCollapsedState, collapsedIds } = get();
+  if (newOpen) {
+    setScrollToId(id);
+    return;
+  }
 
-    const currentActiveStoryData = activeStoryData();
+  const currentActiveStoryData = activeStoryData();
+  if (!currentActiveStoryData) {
+    return;
+  }
 
-    // desired logic is thus;
-    // if opening the comment, scroll to it -- use the comment id
-    // if closing the comment, scroll to the next sibling
-    // if no sibling, scroll to the next parent
-    // when choosing scroll target, skip comments that are collapsed
+  const testComments = currentActiveStoryData.kidsObj || [];
+  const nextSiblingId = findNextSibling(
+    testComments,
+    id,
+    undefined,
+    collapsedIds()
+  );
 
-    updateCollapsedState(id, !newOpen);
+  if (nextSiblingId === undefined) {
+    return;
+  }
 
-    if (newOpen) {
-      // For opening, we can scroll immediately
-      setScrollToId(id);
-      return;
-    }
-
-    if (!currentActiveStoryData) {
-      return;
-    }
-
-    // find the next sibling or scroll to parent if final (or only) node
-    // need to traverse the kidsObj to find the next sibling
-    const testComments = currentActiveStoryData.kidsObj || [];
-
-    const nextSiblingId = findNextSibling(
-      testComments,
-      id,
-      undefined,
-      collapsedIds
-    );
-
-    if (nextSiblingId === undefined) {
-      return;
-    }
-
-    console.log("nextSiblingId", nextSiblingId);
-
-    // For closing, wait for DOM updates to complete before setting scroll target
+  // For closing, wait for DOM updates to complete before setting scroll target
+  requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      // Wait for one more frame to ensure collapse animation has started
-      requestAnimationFrame(() => {
-        setScrollToId(nextSiblingId);
-      });
+      setScrollToId(nextSiblingId);
     });
-  },
-}));
+  });
+}
