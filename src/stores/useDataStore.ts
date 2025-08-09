@@ -1,5 +1,4 @@
 import { makePersisted } from "@solid-primitives/storage";
-import localforage from "localforage";
 import { createSignal } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
@@ -13,24 +12,11 @@ import {
 import { validateHnItemWithComments } from "~/lib/validation";
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 
+import { LOCAL_FORAGE_TO_USE } from "./localforage";
+
 export type StoryPage = "front" | "day" | "week";
 
 type StoryId = number;
-
-if (!isServer) {
-  localforage.config({
-    driver: localforage.INDEXEDDB, // Force WebSQL; same as using setDriver()
-    name: "hn_next",
-    version: 1.0,
-    size: 4980736, // Size of database, in bytes. WebSQL-only for now.
-    storeName: "keyvaluepairs", // Should be alphanumeric, with underscores.
-    description: "some description",
-  });
-}
-
-// this is meant to be the primary reference to localforage
-// goal is to ensure it's only configured in 1 file
-export const LOCAL_FORAGE_TO_USE = localforage;
 
 type PersistedStoryList = {
   timestamp: number;
@@ -92,7 +78,7 @@ export async function saveStoryListViaReactive(
       console.error("invalid item", isValid.error, item);
       continue;
     }
-    await localforage.setItem("raw_" + item.id, item);
+    await LOCAL_FORAGE_TO_USE.setItem("raw_" + item.id, item);
   }
 }
 
@@ -107,19 +93,19 @@ const purgeLocalForage = async () => {
   // get the three main story lists - front, day, week
   // add those ids to the keep list
 
-  const keys = await localforage.keys();
+  const keys = await LOCAL_FORAGE_TO_USE.keys();
 
   // bad ones have a / in them - remove them
   const badStoryLists = keys.filter((key) => key.includes("/"));
   for (const key of badStoryLists) {
     console.log("removing bad key", key);
-    await localforage.removeItem(key);
+    await LOCAL_FORAGE_TO_USE.removeItem(key);
   }
 
   const storyIds = keys.filter((key) => key.startsWith("STORIES_"));
 
   for (const key of storyIds) {
-    const list = await localforage.getItem<HnStorySummary[]>(key);
+    const list = await LOCAL_FORAGE_TO_USE.getItem<HnStorySummary[]>(key);
 
     if (list) {
       console.log("list to keep", list.length, key);
@@ -139,13 +125,13 @@ const purgeLocalForage = async () => {
 
     if (!idsToKeep.has(id)) {
       console.log("deleting", id);
-      await localforage.removeItem(key);
+      await LOCAL_FORAGE_TO_USE.removeItem(key);
     }
   }
 };
 
 const saveContent = async (id: StoryId, content: HnItem) => {
-  await localforage.setItem("raw_" + id, content);
+  await LOCAL_FORAGE_TO_USE.setItem("raw_" + id, content);
 
   console.log("saved to localforage", "raw_" + id, content);
 };
@@ -157,7 +143,7 @@ export async function getContent(id: StoryId, fromLocalStorageOnly = false) {
   const url = "/api/story/" + id;
 
   // load the item from localforage
-  const item = await localforage.getItem<HnItem>("raw_" + id);
+  const item = await LOCAL_FORAGE_TO_USE.getItem<HnItem>("raw_" + id);
 
   if (item) {
     console.log("found item in localforage", item);

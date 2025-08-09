@@ -3,7 +3,7 @@ import { createMemo, createReaction, createSignal } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
-import { LOCAL_FORAGE_TO_USE } from "./useDataStore";
+import { LOCAL_FORAGE_TO_USE } from "./localforage";
 
 export type TimestampHash = Record<number, number>;
 
