@@ -1,8 +1,10 @@
+import { makePersisted } from "@solid-primitives/storage";
 import localforage from "localforage";
+import { createStore, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
 import { createWithSignal } from "solid-zustand";
 
-import { getCleanPathName } from "~/lib/getCleanPathName";
+import { convertPathToStoryPage } from "~/lib/convertPathToStoryPage";
 import { getContentViaFetch } from "~/lib/getContentViaFetch";
 import {
   getSummaryViaFetch,
@@ -17,23 +19,16 @@ type StoryId = number;
 
 type DataStore = {
   isLoadingData: boolean;
-  storyListSaveCount: number;
 };
 
 type DataStoreActions = {
   getContent: (id: StoryId, fromLocalStorageOnly?: boolean) => Promise<HnItem>;
 
-  getContentForPage: (
-    page: string,
-    fromLocalStorageOnly?: boolean
-  ) => Promise<HnStorySummary[]>;
+  getContentForPage: (page: string) => Promise<HnStorySummary[]>;
 
   initializeFromLocalForage: () => Promise<void>;
 
-  saveStoryList: (
-    page: StoryPage,
-    data: HnItem[] | HnStorySummary[]
-  ) => Promise<void>;
+  saveStoryList: (page: StoryPage, data: HnItem[]) => Promise<void>;
   saveContent: (id: StoryId, content: HnItem) => Promise<void>;
 
   refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
@@ -55,6 +50,49 @@ if (!isServer) {
 // this is meant to be the primary reference to localforage
 // goal is to ensure it's only configured in 1 file
 export const LOCAL_FORAGE_TO_USE = localforage;
+
+type PersistedStoryList = {
+  timestamp: number;
+  page: StoryPage;
+  data: HnStorySummary[];
+};
+
+type StoryListStore = Record<StoryPage, PersistedStoryList>;
+
+export const [storyListStore, setStoryListStore] = makePersisted(
+  createStore<StoryListStore>({} as StoryListStore),
+  {
+    name: "STORY_LIST_STORE",
+    storage: isServer ? undefined : LOCAL_FORAGE_TO_USE,
+    serialize: (value) => unwrap(value) as unknown as string,
+    deserialize: (value) => value as unknown as StoryListStore,
+  }
+);
+
+function saveStoryListViaReactive(page: StoryPage, data: HnStorySummary[]) {
+  const current = storyListStore[page];
+
+  if (current) {
+    const maxTimestampOfData = Math.max(
+      ...data.map((item) => item.time ?? 0),
+      0
+    );
+    const isSavedNewerOrSame = current.timestamp >= maxTimestampOfData;
+
+    if (isSavedNewerOrSame) {
+      console.log("*** no need to save, current is newer or same");
+      return;
+    }
+  }
+
+  setStoryListStore(page, {
+    timestamp: Date.now(),
+    page,
+    data,
+  });
+
+  console.log("*** saved to localforage via new store", page, data);
+}
 
 export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
   (set, get) => ({
@@ -115,51 +153,30 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
       console.log("saved to localforage", "raw_" + id, content);
     },
 
-    saveStoryList: async (
-      page: StoryPage,
-      data: HnItem[] | HnStorySummary[]
-    ) => {
+    saveStoryList: async (page: StoryPage, data: HnItem[]) => {
       // TODO: move this is out of the store
       const storySummaries = mapStoriesToSummaries(data);
 
-      // check if the timestamp is more recent than current
-      // current saved at TIMESTAMP_{page}
-      const currentTimestamp = await localforage.getItem<number>(
-        "TIMESTAMP_" + page
-      );
-
-      // get max from data
-      const dataTimestamp = Math.max(...data.map((item) => item.time ?? 0), 0);
-
-      console.log("currentTimestamp", currentTimestamp, dataTimestamp);
-
-      if (currentTimestamp && currentTimestamp >= dataTimestamp) {
-        console.log("no need to save, current is newer or same");
-        return;
+      if (!storySummaries) {
+        // this really shouldn't happen -- figure out source
+        throw new Error("storySummaries is undefined");
       }
 
-      // also save the new list to localforage
-      console.log("saving to localforage", "STORIES_" + page, storySummaries);
-      await localforage.setItem("STORIES_" + page, storySummaries);
+      saveStoryListViaReactive(page, storySummaries);
 
-      // save the timestamp
-      await localforage.setItem("TIMESTAMP_" + page, dataTimestamp);
+      // TODO: this needs to convert to reactive store next
 
       for (const item of data) {
         // tracking down when bad items are saved
+        // this guards against a summary being stored as the raw item
+        // TODO: figure out that code path - no good - saving client data - should be OK now
         const isValid = validateHnItemWithComments(item);
         if (!isValid.success) {
-          console.error("invalid item", isValid.error);
-          throw new Error("invalid item");
+          console.error("invalid item", isValid.error, item);
+          continue;
         }
         await localforage.setItem("raw_" + item.id, item);
       }
-
-      console.log("saved to localforage", "STORIES_" + page, storySummaries);
-
-      set({
-        storyListSaveCount: get().storyListSaveCount + 1,
-      });
     },
 
     refreshCurrent: async (url: string) => {
@@ -246,41 +263,30 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
       return data;
     },
 
-    async getContentForPage(page: string, fromLocalStorageOnly = false) {
+    async getContentForPage(rawPage: string) {
+      console.log("*** getContentForPage", rawPage);
       // attempt to load from local info
       const { saveStoryList } = get();
 
-      // remove leading slash
-      page = getCleanPathName(page);
+      const page = convertPathToStoryPage(rawPage);
 
-      if (page == "") {
-        page = "topstories";
-      }
-
+      // TODO: URL slug should move into the fetch call
       const urlSlug = "/api/topstories/" + page;
 
       if (urlSlug === undefined) {
         throw new Error("urlSlug is undefined");
       }
 
-      const url = urlSlug;
-
       // load the list from localforage
-      const list = await localforage.getItem<HnStorySummary[]>(
-        "STORIES_" + page
-      );
+      const list = storyListStore[page as StoryPage];
 
       if (list) {
-        console.log("loaded from localforage", list, page);
-        return list;
+        console.log("*** loaded from localforage", unwrap(list), page);
+        return list.data;
       }
 
-      if (fromLocalStorageOnly) {
-        console.log("fromLocalStorageOnly, and none found");
-        throw new Error("fromLocalStorageOnly, and none found");
-      }
-
-      const { data, storySummaries } = await getSummaryViaFetch(url);
+      console.log("*** no list found, fetching from api", page);
+      const { data, storySummaries } = await getSummaryViaFetch(urlSlug);
 
       if (!storySummaries) {
         throw new Error("storySummaries is undefined");

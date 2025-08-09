@@ -1,4 +1,5 @@
-import { createResource } from "solid-js";
+import { createResource, ResourceReturn } from "solid-js";
+import { isServer } from "solid-js/web";
 
 import { ValidationResponse } from "./validation";
 
@@ -6,31 +7,12 @@ import { ValidationResponse } from "./validation";
  * Configuration options for the universal data fetcher
  */
 export interface UniversalFetcherOptions<T> {
-  initialValue?: T;
-  name?: string;
   validateResponse?: (data: any) => ValidationResponse<T>;
   onError?: (error: Error) => void;
   fetchOptions?: RequestInit;
 }
 
-/**
- * Helper function to create a client callback that fetches from a URL
- * @param url - The API endpoint URL
- * @param fetchOptions - Optional fetch options
- * @returns A client callback function
- */
-export function createClientCallback<T>(
-  url: string,
-  fetchOptions?: RequestInit
-): () => Promise<T> {
-  return async () => {
-    const response = await fetch(url, fetchOptions);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json() as Promise<T>;
-  };
-}
+type ResourceSource = "client" | "server";
 
 /**
  * A general purpose helper for fetching data that works on both server and client
@@ -43,12 +25,12 @@ export function createUniversalResource<T>(
   clientCallback: () => Promise<T>,
   serverCallback: () => Promise<T>,
   options?: UniversalFetcherOptions<T>
-) {
+): ResourceReturn<{ source: ResourceSource; data: Awaited<T> }, unknown> {
   return createResource(
     // eslint-disable-next-line solid/reactivity
     async () => {
       try {
-        if (typeof window === "undefined") {
+        if (isServer) {
           // On server, call the server function directly
           const result = await serverCallback();
 
@@ -57,7 +39,7 @@ export function createUniversalResource<T>(
             throw new Error("Invalid response format from server");
           }
 
-          return result;
+          return { source: "server" as ResourceSource, data: result };
         }
 
         // On client, call the client callback
@@ -73,17 +55,13 @@ export function createUniversalResource<T>(
           throw new Error(validationResult.error);
         }
 
-        return result;
+        return { source: "client" as ResourceSource, data: result };
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
         options?.onError?.(new Error(errorMessage));
         throw error;
       }
-    },
-    {
-      initialValue: options?.initialValue,
-      name: options?.name,
     }
   );
 }

@@ -1,5 +1,5 @@
 import { A, useLocation } from "@solidjs/router";
-import { createEffect, createMemo, createSignal, Show } from "solid-js";
+import { createMemo, Show } from "solid-js";
 
 import { cn } from "~/lib/utils";
 import { useDataStore } from "~/stores/useDataStore";
@@ -13,7 +13,6 @@ import { Shell } from "./Icon";
 export function NavBar() {
   const refreshCurrent = useDataStore((s) => s.refreshCurrent);
   const isLoadingData = useDataStore((s) => s.isLoadingData);
-  const storyListSaveCount = useDataStore((s) => s.storyListSaveCount);
 
   const toggleHideReadItems = () => {
     setShouldHideReadItems(!shouldHideReadItems());
@@ -29,21 +28,6 @@ export function NavBar() {
     refreshCurrent(url());
   };
 
-  const [didCountChange, setDidCountChange] = createSignal(false);
-
-  createEffect(() => {
-    if (storyListSaveCount() > 0) {
-      setDidCountChange(true);
-    }
-    // timer to reset in 1 second
-    const timer = setTimeout(() => {
-      setDidCountChange(false);
-    }, 2000);
-
-    // Clear timeout if the component is unmounted
-    return () => clearTimeout(timer);
-  });
-
   const listUrls = ["/", "/day", "/week"];
 
   const isListUrl = () => listUrls.includes(url());
@@ -57,7 +41,6 @@ export function NavBar() {
             alt="Hacker News Logo"
             class={cn("w-8 h-8", {
               "animate-spin": isLoadingData(),
-              "animate-bounce": didCountChange(),
             })}
           />
           <h1 class="text-2xl font-bold">Offline</h1>

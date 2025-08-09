@@ -8,14 +8,12 @@ import { findNextSibling } from "./findNextSibling";
 import { setScrollToId } from "./scrollSignal";
 import { LOCAL_FORAGE_TO_USE } from "./useDataStore";
 
-const LOCAL_COLLAPSED_COMMENTS = "COLLAPSED_COMMENTS";
-
 export type CollapsedTimestampMap = Record<number, number>;
 
 export const [collapsedTimestamps, setCollapsedTimestamps] = makePersisted(
   createStore<CollapsedTimestampMap>({}),
   {
-    name: LOCAL_COLLAPSED_COMMENTS,
+    name: "COLLAPSED_COMMENTS",
     storage: isServer ? undefined : LOCAL_FORAGE_TO_USE,
   }
 );

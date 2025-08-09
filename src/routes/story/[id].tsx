@@ -5,10 +5,10 @@ import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { getColorsForStory } from "~/lib/getColorsForStory";
 import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { validateHnItemWithComments } from "~/lib/validation";
+import { HnItem } from "~/models/interfaces";
 import { getFullDataForIds } from "~/server/getFullDataForIds";
 import { setColorMap } from "~/stores/colorMap";
 import { useDataStore } from "~/stores/useDataStore";
-import { HnItem } from "~/models/interfaces";
 
 export default function Story() {
   const params = useParams();
@@ -31,7 +31,7 @@ export default function Story() {
   );
 
   createEffect(() => {
-    const storyData = data() as HnItem;
+    const storyData = data()?.data as HnItem;
     const colors = getColorsForStory(storyData);
     setColorMap(colors);
   });
@@ -39,7 +39,7 @@ export default function Story() {
   return (
     <div>
       <Show when={data()} fallback={<div>Loading...</div>}>
-        {(data) => <HnStoryPage id={id} storyData={data()} />}
+        {(data) => <HnStoryPage id={id} storyData={data()?.data} />}
       </Show>
     </div>
   );

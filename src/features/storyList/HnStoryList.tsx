@@ -1,10 +1,9 @@
-import { For, onMount, Show } from "solid-js";
-import { isServer } from "solid-js/web";
+import { For, Show } from "solid-js";
 
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { createHasRendered } from "~/lib/createHasRendered";
-import { StoryPage, useDataStore } from "~/stores/useDataStore";
 import { HnStorySummary } from "~/models/interfaces";
+import { StoryPage } from "~/stores/useDataStore";
 import { readItems, shouldHideReadItems } from "~/stores/useReadItemsStore";
 
 import { HnListItem } from "./HnListItem";
@@ -18,27 +17,6 @@ interface HnStoryListProps {
 export function HnStoryList(props: HnStoryListProps) {
   const itemsToRender = () =>
     useSortFunction(props.items, props.sortType) ?? [];
-
-  const initializeLocalStorage = useDataStore(
-    (s) => s.initializeFromLocalForage
-  );
-
-  const saveStoryList = useDataStore((s) => s.saveStoryList);
-
-  onMount(async () => {
-    // TODO: move this init code into a single function helper
-    // client only
-    if (isServer) {
-      console.log("HnStoryList mounted, but not on client");
-      return;
-    }
-
-    console.log("HnStoryList mounted on client");
-    await initializeLocalStorage();
-    if (props.page) {
-      await saveStoryList(props.page, props.items ?? []);
-    }
-  });
 
   const hasRendered = createHasRendered();
 
