@@ -6,6 +6,7 @@ import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { createHasRendered } from "~/lib/createHasRendered";
 import { isValidComment } from "~/lib/isValidComment";
 import { cn, isNavigator, timeSince } from "~/lib/utils";
+import { KidsObj3 } from "~/models/interfaces";
 import { activeStoryData } from "~/stores/activeStorySignal";
 import { colorMap } from "~/stores/colorMap";
 import { clearScrollToId, scrollToIdSignal } from "~/stores/scrollSignal";
@@ -13,7 +14,6 @@ import {
   collapsedTimestamps,
   handleCollapseEvent,
 } from "~/stores/useCommentStore";
-import { KidsObj3 } from "~/models/interfaces";
 
 import { HnCommentList } from "./HnCommentList";
 
@@ -136,7 +136,8 @@ export function HnComment(props: HnCommentProps) {
     };
   });
 
-  const borderColor = () => colorMap()[props.comment?.by ?? ""] ?? "#000";
+  const borderColor = () =>
+    colorMap()[props.comment?.by ?? ""] ?? "transparent";
   const childComments = () =>
     (props.comment.kidsObj || []).filter(isValidComment);
 

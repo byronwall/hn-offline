@@ -57,6 +57,8 @@ pre {
 
   background-color: white;
   box-shadow: none;
+
+  transition: border-left-color 0.3s ease-in-out;
 }
 
 .collapsed {

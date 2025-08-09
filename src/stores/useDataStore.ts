@@ -1,5 +1,5 @@
 import { makePersisted } from "@solid-primitives/storage";
-import { createSignal } from "solid-js";
+import { createMemo, createReaction, createSignal } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
@@ -13,6 +13,7 @@ import { validateHnItemWithComments } from "~/lib/validation";
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 
 import { LOCAL_FORAGE_TO_USE } from "./localforage";
+import { readItems } from "./useReadItemsStore";
 
 export type StoryPage = "front" | "day" | "week";
 
@@ -27,6 +28,7 @@ type PersistedStoryList = {
 type StoryListStore = Record<StoryPage, PersistedStoryList>;
 
 export const [storyListStore, setStoryListStore] = makePersisted(
+  // eslint-disable-next-line solid/reactivity
   createStore<StoryListStore>({} as StoryListStore),
   {
     name: "STORY_LIST_STORE",
@@ -35,6 +37,11 @@ export const [storyListStore, setStoryListStore] = makePersisted(
     deserialize: (value) => value as unknown as StoryListStore,
   }
 );
+
+// After initial hydration/change of the story lists, schedule a purge of old raw_* entries
+const hasStoreLoaded = createMemo(() => Object.keys(storyListStore).length > 0);
+const schedulePurge = createReaction(() => setTimeout(purgeLocalForage, 1000));
+schedulePurge(hasStoreLoaded);
 
 export async function saveStoryListViaReactive(
   page: StoryPage,
@@ -82,47 +89,47 @@ export async function saveStoryListViaReactive(
   }
 }
 
-// TODO: implement this again with new approach
-const purgeLocalForage = async () => {
-  // goal is to remove stories that are not current or recently read
-
-  console.log("purging localforage");
+// Remove stories that are not in current lists or recently read
+export const purgeLocalForage = async () => {
+  console.log("*** purging localforage");
 
   const idsToKeep = new Set<number>();
+  for (const page in storyListStore) {
+    const persistedList = storyListStore[page as StoryPage];
 
-  // get the three main story lists - front, day, week
-  // add those ids to the keep list
+    for (const item of persistedList.data) {
+      idsToKeep.add(item.id);
+    }
+  }
+
+  // Collect IDs from the READ_ITEMS store (recently read)
+  for (const idStr of Object.keys(readItems)) {
+    const id = Number(idStr);
+    if (!Number.isNaN(id)) {
+      idsToKeep.add(id);
+    }
+  }
 
   const keys = await LOCAL_FORAGE_TO_USE.keys();
 
-  // bad ones have a / in them - remove them
-  const badStoryLists = keys.filter((key) => key.includes("/"));
-  for (const key of badStoryLists) {
+  // Remove legacy/accidental keys that contain a slash
+  const badKeys = keys.filter((key) => key.includes("/"));
+  for (const key of badKeys) {
     console.log("removing bad key", key);
     await LOCAL_FORAGE_TO_USE.removeItem(key);
   }
 
-  const storyIds = keys.filter((key) => key.startsWith("STORIES_"));
-
-  for (const key of storyIds) {
-    const list = await LOCAL_FORAGE_TO_USE.getItem<HnStorySummary[]>(key);
-
-    if (list) {
-      console.log("list to keep", list.length, key);
-      for (const item of list) {
-        idsToKeep.add(item.id);
-      }
-    }
+  // Optionally remove old list keys from previous versions
+  const legacyListKeys = keys.filter((key) => key.startsWith("STORIES_"));
+  for (const key of legacyListKeys) {
+    await LOCAL_FORAGE_TO_USE.removeItem(key);
   }
 
-  // get all keys starting with RAW_
+  // Delete any raw_* entries that are not in idsToKeep
   const rawKeys = keys.filter((key) => key.startsWith("raw_"));
-
-  console.log("all keys", rawKeys.length, idsToKeep.size);
-
+  console.log("raw keys:", rawKeys.length, "ids to keep:", idsToKeep.size);
   for (const key of rawKeys) {
     const id = Number(key.replace("raw_", ""));
-
     if (!idsToKeep.has(id)) {
       console.log("deleting", id);
       await LOCAL_FORAGE_TO_USE.removeItem(key);
