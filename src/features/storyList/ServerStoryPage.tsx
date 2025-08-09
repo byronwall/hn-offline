@@ -8,16 +8,16 @@ import { validateHnStorySummaryArray } from "~/lib/validation";
 import { HnItem, HnStorySummary, TopStoriesType } from "~/models/interfaces";
 import { getTopStories } from "~/server/getTopStories";
 import {
+  getContentForPage,
   saveStoryListViaReactive,
   StoryPage,
-  useDataStore,
 } from "~/stores/useDataStore";
 
 import { HnStoryList } from "./HnStoryList";
 
 export function ServerStoryPage(props: { page: TopStoriesType }) {
   const [data] = createUniversalResource<HnStorySummary[]>(
-    () => useDataStore.getState().getContentForPage(props.page),
+    () => getContentForPage(props.page),
     () => getTopStories(props.page),
     {
       validateResponse: validateHnStorySummaryArray,

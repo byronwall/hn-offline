@@ -8,14 +8,14 @@ import { validateHnItemWithComments } from "~/lib/validation";
 import { HnItem } from "~/models/interfaces";
 import { getFullDataForIds } from "~/server/getFullDataForIds";
 import { setColorMap } from "~/stores/colorMap";
-import { useDataStore } from "~/stores/useDataStore";
+import { getContent } from "~/stores/useDataStore";
 
 export default function Story() {
   const params = useParams();
   const id = +params.id;
 
   const [data] = createUniversalResource<HnItem & { kids?: number[] }>(
-    () => useDataStore.getState().getContent(id),
+    () => getContent(id),
     async () => {
       const storyData = await getFullDataForIds([id]);
       if (storyData.length > 0 && storyData[0]) {

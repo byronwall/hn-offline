@@ -13,7 +13,6 @@ import {
   collapsedTimestamps,
   updateCollapsedState,
 } from "~/stores/useCommentStore";
-import { useDataStore } from "~/stores/useDataStore";
 import { saveIdToReadList } from "~/stores/useReadItemsStore";
 
 import { HnCommentList } from "./HnCommentList";

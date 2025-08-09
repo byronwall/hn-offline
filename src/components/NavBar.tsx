@@ -2,7 +2,7 @@ import { A, useLocation } from "@solidjs/router";
 import { createMemo, Show } from "solid-js";
 
 import { cn } from "~/lib/utils";
-import { useDataStore } from "~/stores/useDataStore";
+import { isLoadingData, refreshCurrent } from "~/stores/useDataStore";
 import {
   setShouldHideReadItems,
   shouldHideReadItems,
@@ -11,9 +11,6 @@ import {
 import { Shell } from "./Icon";
 
 export function NavBar() {
-  const refreshCurrent = useDataStore((s) => s.refreshCurrent);
-  const isLoadingData = useDataStore((s) => s.isLoadingData);
-
   const toggleHideReadItems = () => {
     setShouldHideReadItems(!shouldHideReadItems());
   };

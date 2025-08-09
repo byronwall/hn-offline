@@ -1,8 +1,8 @@
 import { makePersisted } from "@solid-primitives/storage";
 import localforage from "localforage";
+import { createSignal } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
-import { createWithSignal } from "solid-zustand";
 
 import { convertPathToStoryPage } from "~/lib/convertPathToStoryPage";
 import { getContentViaFetch } from "~/lib/getContentViaFetch";
@@ -16,20 +16,6 @@ import { HnItem, HnStorySummary } from "~/models/interfaces";
 export type StoryPage = "front" | "day" | "week";
 
 type StoryId = number;
-
-type DataStore = {
-  isLoadingData: boolean;
-};
-
-type DataStoreActions = {
-  getContent: (id: StoryId, fromLocalStorageOnly?: boolean) => Promise<HnItem>;
-
-  getContentForPage: (page: string) => Promise<HnStorySummary[]>;
-
-  saveContent: (id: StoryId, content: HnItem) => Promise<void>;
-
-  refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
-};
 
 if (!isServer) {
   localforage.config({
@@ -158,123 +144,115 @@ const purgeLocalForage = async () => {
   }
 };
 
-export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
-  (set, get) => ({
-    isLoadingData: false,
+const saveContent = async (id: StoryId, content: HnItem) => {
+  await localforage.setItem("raw_" + id, content);
 
-    saveContent: async (id: StoryId, content: HnItem) => {
-      // TODO: move this is out of the store
-      await localforage.setItem("raw_" + id, content);
+  console.log("saved to localforage", "raw_" + id, content);
+};
 
-      console.log("saved to localforage", "raw_" + id, content);
-    },
+export async function getContent(id: StoryId, fromLocalStorageOnly = false) {
+  // attempt to load from local info
+  console.log("getContent", id);
 
-    refreshCurrent: async (url: string) => {
-      // attempt to load from local info
-      const { saveContent } = get();
+  const url = "/api/story/" + id;
 
-      console.log("refreshing", url);
+  // load the item from localforage
+  const item = await localforage.getItem<HnItem>("raw_" + id);
 
-      // determine if page is a story or a list
-      const isStory = url.startsWith("/story");
+  if (item) {
+    console.log("found item in localforage", item);
+    return item;
+  }
 
-      if (isStory) {
-        const apiUrl = "/api" + url;
+  if (fromLocalStorageOnly) {
+    console.log("fromLocalStorageOnly");
+    throw new Error("fromLocalStorageOnly");
+  }
 
-        set({ isLoadingData: true });
-        const newContent = await getContentViaFetch(apiUrl);
-        set({ isLoadingData: false });
+  const data = await getContentViaFetch(url);
+  if (data) {
+    await saveContent(id, data);
+  }
 
-        if (newContent) {
-          saveContent(newContent.id, newContent);
-        }
+  if (!data) {
+    throw new Error("data is undefined");
+  }
 
-        return newContent;
-      }
+  return data;
+}
 
-      const isFrontPage = url === "/";
+export const [isLoadingData, setIsLoadingData] = createSignal(false);
 
-      if (isFrontPage) {
-        url = "/topstories";
-      }
+export const refreshCurrent = async (url: string) => {
+  // attempt to load from local info
+  console.log("refreshing", url);
 
-      // need to hit topstories API
-      const apiUrl = "/api/topstories" + url;
-      set({ isLoadingData: true });
-      const { data, storySummaries } = await getSummaryViaFetch(apiUrl);
+  // determine if page is a story or a list
+  const isStory = url.startsWith("/story");
 
-      console.log("storySummaries", storySummaries);
+  if (isStory) {
+    const apiUrl = "/api" + url;
 
-      set({ isLoadingData: false });
+    setIsLoadingData(true);
+    const newContent = await getContentViaFetch(apiUrl);
+    setIsLoadingData(false);
 
-      await saveStoryListViaReactive(url.replace("/", "") as StoryPage, data);
+    if (newContent) {
+      saveContent(newContent.id, newContent);
+    }
 
-      return storySummaries;
-    },
+    return newContent;
+  }
 
-    async getContent(id: StoryId, fromLocalStorageOnly = false) {
-      // attempt to load from local info
-      const { saveContent } = get();
-      console.log("getContent", id);
+  const isFrontPage = url === "/";
 
-      const url = "/api/story/" + id;
+  if (isFrontPage) {
+    url = "/topstories";
+  }
 
-      // load the item from localforage
-      const item = await localforage.getItem<HnItem>("raw_" + id);
+  // need to hit topstories API
+  const apiUrl = "/api/topstories" + url;
+  setIsLoadingData(true);
+  const { data, storySummaries } = await getSummaryViaFetch(apiUrl);
 
-      if (item) {
-        console.log("found item in localforage", item);
-        return item;
-      }
+  console.log("storySummaries", storySummaries);
 
-      if (fromLocalStorageOnly) {
-        console.log("fromLocalStorageOnly");
-        throw new Error("fromLocalStorageOnly");
-      }
+  setIsLoadingData(false);
 
-      const data = await getContentViaFetch(url);
-      if (data) {
-        await saveContent(id, data);
-      }
+  await saveStoryListViaReactive(url.replace("/", "") as StoryPage, data);
 
-      if (!data) {
-        throw new Error("data is undefined");
-      }
+  return storySummaries;
+};
 
-      return data;
-    },
+export async function getContentForPage(rawPage: string) {
+  console.log("*** getContentForPage", rawPage);
+  // attempt to load from local info
 
-    async getContentForPage(rawPage: string) {
-      console.log("*** getContentForPage", rawPage);
-      // attempt to load from local info
+  const page = convertPathToStoryPage(rawPage);
 
-      const page = convertPathToStoryPage(rawPage);
+  // TODO: URL slug should move into the fetch call
+  const urlSlug = "/api/topstories/" + page;
 
-      // TODO: URL slug should move into the fetch call
-      const urlSlug = "/api/topstories/" + page;
+  if (urlSlug === undefined) {
+    throw new Error("urlSlug is undefined");
+  }
 
-      if (urlSlug === undefined) {
-        throw new Error("urlSlug is undefined");
-      }
+  // load the list from localforage
+  const list = storyListStore[page as StoryPage];
 
-      // load the list from localforage
-      const list = storyListStore[page as StoryPage];
+  if (list) {
+    console.log("*** loaded from localforage", unwrap(list), page);
+    return list.data;
+  }
 
-      if (list) {
-        console.log("*** loaded from localforage", unwrap(list), page);
-        return list.data;
-      }
+  console.log("*** no list found, fetching from api", page);
+  const { data, storySummaries } = await getSummaryViaFetch(urlSlug);
 
-      console.log("*** no list found, fetching from api", page);
-      const { data, storySummaries } = await getSummaryViaFetch(urlSlug);
+  if (!storySummaries) {
+    throw new Error("storySummaries is undefined");
+  }
 
-      if (!storySummaries) {
-        throw new Error("storySummaries is undefined");
-      }
+  await saveStoryListViaReactive(page as StoryPage, data);
 
-      await saveStoryListViaReactive(page as StoryPage, data);
-
-      return storySummaries;
-    },
-  })
-);
+  return storySummaries;
+}
