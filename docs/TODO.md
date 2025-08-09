@@ -10,3 +10,4 @@
 - [ ] Get the Docker builds working again
 - [ ] Deploy to server and verify all is working
 - [ ] Figure out how to handle icons better (if desired)
+- [ ] Get the link interceptor working again

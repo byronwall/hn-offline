@@ -23,8 +23,6 @@ interface HnStoryPageProps {
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
-  // using persisted comment store utilities
-
   const hasRendered = createHasRendered();
 
   const textToRender = () =>

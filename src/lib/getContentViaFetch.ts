@@ -1,6 +1,9 @@
 import { HnItem } from "~/models/interfaces";
+import { StoryId } from "~/stores/useDataStore";
 
-export async function getContentViaFetch(url: string) {
+export async function getContentViaFetch(id: StoryId) {
+  const url = "/api/story/" + id;
+
   const response = await fetch(url);
   if (!response.ok) {
     console.error("Failed to fetch", { url });

@@ -15,9 +15,10 @@ import { HnItem, HnStorySummary } from "~/models/interfaces";
 import { LOCAL_FORAGE_TO_USE } from "./localforage";
 import { readItems } from "./useReadItemsStore";
 
+// TODO: reconcile this with the labels on the server side
 export type StoryPage = "front" | "day" | "week";
 
-type StoryId = number;
+export type StoryId = number;
 
 type PersistedStoryList = {
   timestamp: number;
@@ -145,19 +146,17 @@ export const purgeLocalForage = async () => {
   }
 };
 
-const saveContent = async (id: StoryId, content: HnItem) => {
+export const persistStoryToStorage = async (id: StoryId, content: HnItem) => {
+  console.log("*** persistStoryToStorage", id, content);
+
   await LOCAL_FORAGE_TO_USE.setItem("raw_" + id, content);
 
   console.log("saved to localforage", "raw_" + id, content);
 };
 
-export async function getContent(id: StoryId, fromLocalStorageOnly = false) {
-  // attempt to load from local info
-  console.log("getContent", id);
+export async function getContent(id: StoryId) {
+  console.log("*** getContent", id);
 
-  const url = "/api/story/" + id;
-
-  // load the item from localforage
   const item = await LOCAL_FORAGE_TO_USE.getItem<HnItem>("raw_" + id);
 
   if (item) {
@@ -165,19 +164,13 @@ export async function getContent(id: StoryId, fromLocalStorageOnly = false) {
     return item;
   }
 
-  if (fromLocalStorageOnly) {
-    console.log("fromLocalStorageOnly");
-    throw new Error("fromLocalStorageOnly");
-  }
-
-  const data = await getContentViaFetch(url);
-  if (data) {
-    await saveContent(id, data);
-  }
+  const data = await getContentViaFetch(id);
 
   if (!data) {
     throw new Error("data is undefined");
   }
+
+  void persistStoryToStorage(id, data); // fire and forget
 
   return data;
 }

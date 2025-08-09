@@ -7,7 +7,7 @@ import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { HnItem } from "~/models/interfaces";
 import { getFullDataForIds } from "~/server/getFullDataForIds";
 import { setColorMap } from "~/stores/colorMap";
-import { getContent } from "~/stores/useDataStore";
+import { getContent, persistStoryToStorage } from "~/stores/useDataStore";
 
 export default function Story() {
   const params = useParams();
@@ -22,6 +22,12 @@ export default function Story() {
       }
       throw new Error("Story not found");
     },
+  });
+
+  createEffect(() => {
+    if (data()?.source === "server") {
+      void persistStoryToStorage(id, data()?.data as HnItem);
+    }
   });
 
   createEffect(() => {
