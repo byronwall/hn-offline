@@ -1,23 +1,15 @@
 import { useNavigate } from "@solidjs/router";
-import {
-  createEffect,
-  createMemo,
-  Match,
-  onMount,
-  Show,
-  Switch,
-} from "solid-js";
+import { createEffect, Match, onMount, Show, Switch } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
+import { createHasRendered } from "~/lib/createHasRendered";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, timeSince } from "~/lib/utils";
 import { setActiveStoryData } from "~/stores/activeStorySignal";
 import { setScrollToId } from "~/stores/scrollSignal";
 import {
-  collapsedIds,
-  fetchInitialCollapsedState,
-  isCollapsedStateReady,
+  collapsedTimestamps,
   updateCollapsedState,
 } from "~/stores/useCommentStore";
 import { HnItem, useDataStore } from "~/stores/useDataStore";
@@ -32,6 +24,8 @@ interface HnStoryPageProps {
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
   // using persisted comment store utilities
+
+  const hasRendered = createHasRendered();
 
   const textToRender = () =>
     processHtmlAndTruncateAnchorText(props.storyData?.text || "");
@@ -50,8 +44,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   onMount(() => {
     // initialize local storage
     initializeLocalStorage();
-    // initialize comment store
-    fetchInitialCollapsedState();
   });
 
   createEffect(() => {
@@ -66,6 +58,10 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       }
 
       const link = e.target as HTMLAnchorElement;
+
+      if (!link || !link.href) {
+        return;
+      }
 
       const regex = /https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/;
       const matches = link.href.match(regex);
@@ -93,17 +89,13 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     };
   });
 
-  const getCollapsedIds = collapsedIds;
-
-  const _isOpen = () =>
-    props.storyData?.id
-      ? getCollapsedIds()[props.storyData.id] !== true
-      : false;
-  const isTextOpen = createMemo(_isOpen);
-
-  // reactive derivation only
-
-  const isTextCollapsed = () => isTextOpen() === false;
+  // Guard against scenarios which remove DOM node too early
+  // Need SSR to match the DOM
+  // need comment store to be ready
+  const isTextOpen = () =>
+    !hasRendered() ||
+    (props.storyData?.id &&
+      collapsedTimestamps[props.storyData.id] === undefined);
 
   const comments = () => (props.storyData.kidsObj || []).filter(isValidComment);
 
@@ -142,15 +134,11 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       </h2>
 
       <div
-        class={cn(
-          {
-            "border-l-4 border-orange-500 px-2 rounded-tl rounded-bl":
-              props.storyData.text,
-          },
-          {
-            collapsed: isCollapsedStateReady() && isTextCollapsed(),
-          }
-        )}
+        class={cn({
+          "border-l-4 border-orange-500 px-2 rounded-tl rounded-bl":
+            props.storyData.text,
+          collapsed: !isTextOpen(),
+        })}
         onClick={handleStoryTextClick}
       >
         <h4 class="mb-2">
@@ -171,16 +159,11 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
           </button>
         </h4>
 
-        <Show
-          when={
-            props.storyData.text !== undefined &&
-            isCollapsedStateReady() &&
-            !isTextCollapsed()
-          }
-        >
-          {/* TODO: this is not working... */}
-          {/*  eslint-disable-next-line solid/no-innerhtml */}
-          <p class="user-text break-words " innerHTML={textToRender()} />
+        <Show when={props.storyData.text !== undefined && isTextOpen()}>
+          <div>
+            {/*  eslint-disable-next-line solid/no-innerhtml */}
+            <p class="user-text break-words " innerHTML={textToRender()} />
+          </div>
         </Show>
       </div>
 

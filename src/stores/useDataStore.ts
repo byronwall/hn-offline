@@ -7,6 +7,7 @@ import {
   getSummaryViaFetch,
   mapStoriesToSummaries,
 } from "~/lib/getSummaryViaFetch";
+import { validateHnItemWithComments } from "~/lib/validation";
 import { HasAuthorAndTime } from "~/models/interfaces";
 
 import {
@@ -89,6 +90,10 @@ if (typeof window !== "undefined") {
     description: "some description",
   });
 }
+
+// this is meant to be the primary reference to localforage
+// goal is to ensure it's only configured in 1 file
+export const LOCAL_FORAGE_TO_USE = localforage;
 
 export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
   (set, get) => ({
@@ -186,6 +191,12 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
       await localforage.setItem("TIMESTAMP_" + page, dataTimestamp);
 
       for (const item of data) {
+        // tracking down when bad items are saved
+        const isValid = validateHnItemWithComments(item);
+        if (!isValid.success) {
+          console.error("invalid item", isValid.error);
+          throw new Error("invalid item");
+        }
         await localforage.setItem("raw_" + item.id, item);
       }
 

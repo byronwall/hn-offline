@@ -6,7 +6,7 @@ export function findNextSibling(
   _comments: (KidsObj3 | null)[],
   searchId: number,
   nextParentId: number | undefined,
-  collapsedIds: Record<number, true>
+  collapsedTimestamps: Record<number, number>
 ): number | undefined {
   let found = false;
 
@@ -18,7 +18,7 @@ export function findNextSibling(
       continue;
     }
 
-    if (found && !collapsedIds[comment.id]) {
+    if (found && !collapsedTimestamps[comment.id]) {
       // only scroll to open comments
       return comment.id;
     }
@@ -42,7 +42,7 @@ export function findNextSibling(
     }
 
     if (nextSiblingId === -2) {
-      if (!collapsedIds[comment.id]) {
+      if (!collapsedTimestamps[comment.id]) {
         console.log("next parent", nextParentId, comment.id);
         return comment.id;
       }
@@ -55,17 +55,21 @@ export function findNextSibling(
       comment.kidsObj || [],
       searchId,
       -2,
-      collapsedIds
+      collapsedTimestamps
     );
 
     // check if -1 came out, if so, return
     const nextId = comments[idx + 1]?.id;
 
-    if (nextSiblingId === -2 && nextId && !collapsedIds[nextId]) {
+    if (nextSiblingId === -2 && nextId && !collapsedTimestamps[nextId]) {
       return nextId;
     }
 
-    if (nextSiblingId && nextSiblingId > 0 && !collapsedIds[nextSiblingId]) {
+    if (
+      nextSiblingId &&
+      nextSiblingId > 0 &&
+      !collapsedTimestamps[nextSiblingId]
+    ) {
       return nextSiblingId;
     }
   }

@@ -1,4 +1,5 @@
 import { For, onMount, Show } from "solid-js";
+import { isServer } from "solid-js/web";
 
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { HnStorySummary, StoryPage, useDataStore } from "~/stores/useDataStore";
@@ -24,7 +25,7 @@ export function HnStoryList(props: HnStoryListProps) {
   onMount(async () => {
     // TODO: move this init code into a single function helper
     // client only
-    if (typeof window === "undefined") {
+    if (isServer) {
       console.log("HnStoryList mounted, but not on client");
       return;
     }

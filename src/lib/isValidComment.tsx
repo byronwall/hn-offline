@@ -2,7 +2,7 @@ import { KidsObj3 } from "~/stores/useDataStore";
 
 export function isValidComment(comment: KidsObj3 | null) {
   // TODO: these items need to be removed somewhere else
-  if (comment === null) {
+  if (comment === null || comment === undefined) {
     return false;
   }
   const isBad =

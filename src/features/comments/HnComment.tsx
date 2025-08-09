@@ -3,15 +3,15 @@ import sanitizeHtml from "sanitize-html";
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
+import { createHasRendered } from "~/lib/createHasRendered";
 import { isValidComment } from "~/lib/isValidComment";
 import { cn, isNavigator, timeSince } from "~/lib/utils";
 import { activeStoryData } from "~/stores/activeStorySignal";
 import { colorMap } from "~/stores/colorMap";
 import { clearScrollToId, scrollToIdSignal } from "~/stores/scrollSignal";
 import {
-  collapsedIds,
+  collapsedTimestamps,
   handleCollapseEvent,
-  isCollapsedStateReady,
 } from "~/stores/useCommentStore";
 import { KidsObj3 } from "~/stores/useDataStore";
 
@@ -26,10 +26,13 @@ export interface HnCommentProps {
 export function HnComment(props: HnCommentProps) {
   const [divRef, setDivRef] = createSignal<HTMLDivElement | null>(null);
 
-  const getCollapsedIds = collapsedIds;
+  const hasRendered = createHasRendered();
 
-  const _isOpen = () => getCollapsedIds()[props.comment.id] !== true;
-  const isOpen = createMemo(_isOpen);
+  // this needs to get one good render so that the DOM matches SSR
+  // then it needs to know that the comment store is OK
+  const isOpen = () =>
+    !hasRendered() ||
+    (props.comment?.id && collapsedTimestamps[props.comment.id] === undefined);
 
   const onCollapse = handleCollapseEvent;
 
@@ -204,16 +207,17 @@ export function HnComment(props: HnCommentProps) {
             <ArrowUpRightFromSquare size={16} />
           </button>
         </p>
-        <Show when={isCollapsedStateReady() && isOpen()}>
+        <Show when={isOpen()}>
           {/* eslint-disable-next-line solid/no-innerhtml */}
           <p class="comment" innerHTML={props.comment.text || ""} />
-          {childComments().length > 0 && (
+
+          <Show when={childComments().length > 0}>
             <HnCommentList
               childComments={childComments()}
               depth={props.depth + 1}
               authorChain={[...props.authorChain, props.comment.by]}
             />
-          )}
+          </Show>
         </Show>
       </div>
     </Show>
