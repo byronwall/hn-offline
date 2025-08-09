@@ -105,3 +105,33 @@ export interface Item {
    */
   descendants?: number;
 }
+export interface HnItem extends HasAuthorAndTime {
+  descendants?: number;
+  id: number;
+  score: number;
+  title: string;
+  type: string;
+  url?: string; // optional for Ask HN and internal items
+  kidsObj?: Array<KidsObj3 | null>;
+  text?: string; // this is for Ask HN and others that are internal
+  by: string; // override to make required
+  time: number; // override to make required
+}
+export interface KidsObj3 {
+  by?: string;
+  id: number;
+  parent: number;
+  text?: string;
+  time: number;
+  type: string;
+  kidsObj?: KidsObj3[];
+  deleted?: boolean;
+  dead?: boolean;
+}
+export interface HnStorySummary extends HasAuthorAndTime {
+  title?: string;
+  score?: number;
+  id: number;
+  url?: string;
+  descendants?: number;
+}

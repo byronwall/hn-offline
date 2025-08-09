@@ -1,4 +1,5 @@
-import { HnItem, HnStorySummary } from "~/stores/useDataStore";
+import { HnStorySummary } from "~/models/interfaces";
+import { HnItem } from "~/models/interfaces";
 
 export async function getSummaryViaFetch(url: string) {
   try {

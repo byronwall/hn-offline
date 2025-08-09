@@ -1,6 +1,6 @@
 import { For } from "solid-js";
 
-import { KidsObj3 } from "~/stores/useDataStore";
+import { KidsObj3 } from "~/models/interfaces";
 
 import { HnComment } from "./HnComment";
 

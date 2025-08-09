@@ -3,7 +3,8 @@ import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { validateHnStorySummaryArray } from "~/lib/validation";
 import { TopStoriesType } from "~/models/interfaces";
 import { getTopStories } from "~/server/getTopStories";
-import { HnStorySummary, StoryPage, useDataStore } from "~/stores/useDataStore";
+import { StoryPage, useDataStore } from "~/stores/useDataStore";
+import { HnStorySummary } from "~/models/interfaces";
 
 import { HnStoryList } from "./HnStoryList";
 

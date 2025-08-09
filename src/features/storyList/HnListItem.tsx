@@ -3,7 +3,7 @@ import { A } from "@solidjs/router";
 import { ChevronUp, MessageSquareQuote } from "~/components/Icon";
 import { trueIfRendered } from "~/lib/createHasRendered";
 import { cn, getDomain, timeSince } from "~/lib/utils";
-import { HnStorySummary } from "~/stores/useDataStore";
+import { HnStorySummary } from "~/models/interfaces";
 import { readItems } from "~/stores/useReadItemsStore";
 
 export interface HnStoryProps {

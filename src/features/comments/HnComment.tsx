@@ -13,7 +13,7 @@ import {
   collapsedTimestamps,
   handleCollapseEvent,
 } from "~/stores/useCommentStore";
-import { KidsObj3 } from "~/stores/useDataStore";
+import { KidsObj3 } from "~/models/interfaces";
 
 import { HnCommentList } from "./HnCommentList";
 

@@ -1,4 +1,4 @@
-import { KidsObj3 } from "~/stores/useDataStore";
+import { KidsObj3 } from "~/models/interfaces";
 
 export function isValidComment(comment: KidsObj3 | null) {
   // TODO: these items need to be removed somewhere else

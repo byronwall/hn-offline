@@ -1,6 +1,6 @@
 import { isValidComment } from "~/lib/isValidComment";
 
-import { KidsObj3 } from "./useDataStore";
+import { KidsObj3 } from "~/models/interfaces";
 
 export function findNextSibling(
   _comments: (KidsObj3 | null)[],

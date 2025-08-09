@@ -1,4 +1,5 @@
 import localforage from "localforage";
+import { isServer } from "solid-js/web";
 import { createWithSignal } from "solid-zustand";
 
 import { getCleanPathName } from "~/lib/getCleanPathName";
@@ -8,42 +9,7 @@ import {
   mapStoriesToSummaries,
 } from "~/lib/getSummaryViaFetch";
 import { validateHnItemWithComments } from "~/lib/validation";
-import { HasAuthorAndTime } from "~/models/interfaces";
-
-// TODO: these types are all a mess.  Use Pick and Omit and get it right later.
-
-export interface HnItem extends HasAuthorAndTime {
-  descendants?: number;
-  id: number;
-  score: number;
-  title: string;
-  type: string;
-  url?: string; // optional for Ask HN and internal items
-  kidsObj?: Array<KidsObj3 | null>;
-  text?: string; // this is for Ask HN and others that are internal
-  by: string; // override to make required
-  time: number; // override to make required
-}
-
-export interface KidsObj3 {
-  by?: string;
-  id: number;
-  parent: number;
-  text?: string;
-  time: number;
-  type: string;
-  kidsObj?: KidsObj3[];
-  deleted?: boolean;
-  dead?: boolean;
-}
-
-export interface HnStorySummary extends HasAuthorAndTime {
-  title?: string;
-  score?: number;
-  id: number;
-  url?: string;
-  descendants?: number;
-}
+import { HnItem, HnStorySummary } from "~/models/interfaces";
 
 export type StoryPage = "front" | "day" | "week";
 
@@ -75,7 +41,7 @@ type DataStoreActions = {
   purgeLocalForage: () => Promise<void>;
 };
 
-if (typeof window !== "undefined") {
+if (!isServer) {
   localforage.config({
     driver: localforage.INDEXEDDB, // Force WebSQL; same as using setDriver()
     name: "hn_next",

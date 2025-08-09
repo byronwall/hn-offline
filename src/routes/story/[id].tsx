@@ -7,7 +7,8 @@ import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { validateHnItemWithComments } from "~/lib/validation";
 import { getFullDataForIds } from "~/server/getFullDataForIds";
 import { setColorMap } from "~/stores/colorMap";
-import { HnItem, useDataStore } from "~/stores/useDataStore";
+import { useDataStore } from "~/stores/useDataStore";
+import { HnItem } from "~/models/interfaces";
 
 export default function Story() {
   const params = useParams();

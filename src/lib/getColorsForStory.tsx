@@ -1,7 +1,8 @@
 import { orderBy, uniq } from "lodash-es";
 import { mhvcToHex } from "munsell";
 
-import { HnItem, KidsObj3 } from "~/stores/useDataStore";
+import { KidsObj3 } from "~/models/interfaces";
+import { HnItem } from "~/models/interfaces";
 
 const recentHues: number[] = [];
 

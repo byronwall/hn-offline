@@ -1,4 +1,4 @@
-import { HnStorySummary } from "~/stores/useDataStore";
+import { HnStorySummary } from "~/models/interfaces";
 import { readItems } from "~/stores/useReadItemsStore";
 
 // NOTE: these depend on readItems but do not modify the DOM, so don't need to worry about rendering

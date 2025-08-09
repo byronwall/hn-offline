@@ -3,7 +3,8 @@ import { isServer } from "solid-js/web";
 
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { createHasRendered } from "~/lib/createHasRendered";
-import { HnStorySummary, StoryPage, useDataStore } from "~/stores/useDataStore";
+import { StoryPage, useDataStore } from "~/stores/useDataStore";
+import { HnStorySummary } from "~/models/interfaces";
 import { readItems, shouldHideReadItems } from "~/stores/useReadItemsStore";
 
 import { HnListItem } from "./HnListItem";

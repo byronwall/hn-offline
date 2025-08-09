@@ -1,4 +1,4 @@
-import { HnItem } from "~/stores/useDataStore";
+import { HnItem } from "~/models/interfaces";
 
 export async function getContentViaFetch(url: string) {
   const response = await fetch(url);
