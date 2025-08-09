@@ -1,6 +1,7 @@
 import { A } from "@solidjs/router";
 
 import { ChevronUp, MessageSquareQuote } from "~/components/Icon";
+import { trueIfRendered } from "~/lib/createHasRendered";
 import { cn, getDomain, timeSince } from "~/lib/utils";
 import { HnStorySummary } from "~/stores/useDataStore";
 import { readItems } from "~/stores/useReadItemsStore";
@@ -10,10 +11,12 @@ export interface HnStoryProps {
 }
 
 export function HnListItem(props: HnStoryProps) {
+  const isRead = trueIfRendered(() => readItems[props.data.id] !== undefined);
+
   return (
     <div
       class={cn("grid grid-cols-subgrid col-span-4", {
-        "opacity-20": readItems()[props.data.id] !== undefined,
+        "opacity-20": isRead(),
       })}
     >
       <p class="col-span-4 mt-1.5 font-medium mb-1 hover:underline">

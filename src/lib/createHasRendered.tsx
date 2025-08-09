@@ -10,3 +10,16 @@ export function createHasRendered() {
   });
   return hasRendered;
 }
+
+export function trueIfRendered(fn: () => boolean) {
+  // this delays a true condition until after the first render
+  // this is useful for hiding things in client only
+
+  const hasRendered = createHasRendered();
+  return () => {
+    if (hasRendered()) {
+      return fn();
+    }
+    return false;
+  };
+}

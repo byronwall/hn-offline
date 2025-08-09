@@ -4,7 +4,6 @@ import { createEffect, createMemo, createSignal, Show } from "solid-js";
 import { cn } from "~/lib/utils";
 import { useDataStore } from "~/stores/useDataStore";
 import {
-  isLocalForageInitialized,
   setShouldHideReadItems,
   shouldHideReadItems,
 } from "~/stores/useReadItemsStore";
@@ -56,13 +55,10 @@ export function NavBar() {
           <img
             src="/favicon-32x32.png"
             alt="Hacker News Logo"
-            class={cn(
-              "w-8 h-8",
-              { "animate-spin": isLoadingData() },
-              { "animate-bounce": didCountChange() },
-              { "opacity-20": !isLocalForageInitialized() },
-              { "opacity-100": isLocalForageInitialized() }
-            )}
+            class={cn("w-8 h-8", {
+              "animate-spin": isLoadingData(),
+              "animate-bounce": didCountChange(),
+            })}
           />
           <h1 class="text-2xl font-bold">Offline</h1>
         </A>

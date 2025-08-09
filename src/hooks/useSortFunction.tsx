@@ -1,5 +1,7 @@
 import { HnStorySummary } from "~/stores/useDataStore";
-import { readItems, shouldHideReadItems } from "~/stores/useReadItemsStore";
+import { readItems } from "~/stores/useReadItemsStore";
+
+// NOTE: these depend on readItems but do not modify the DOM, so don't need to worry about rendering
 
 export function useSortFunction(
   items: HnStorySummary[] | undefined,
@@ -9,29 +11,22 @@ export function useSortFunction(
     return items;
   }
 
-  const itemsToRender = shouldHideReadItems()
-    ? items.filter((item) => readItems()[item.id] === undefined)
-    : items;
-
   if (!sortType) {
-    return itemsToRender;
+    return items;
   }
 
   if (sortType === "score") {
-    return toSortedShim(
-      itemsToRender,
-      (a, b) => (b.score ?? 0) - (a.score ?? 0)
-    );
+    return toSortedShim(items, (a, b) => (b.score ?? 0) - (a.score ?? 0));
   }
 
   if (sortType === "read-then-points") {
-    return toSortedShim(itemsToRender, (a, b) => {
-      const aIsRead = readItems()[a.id] !== undefined;
-      const bIsRead = readItems()[b.id] !== undefined;
+    return toSortedShim(items, (a, b) => {
+      const aIsRead = readItems[a.id] !== undefined;
+      const bIsRead = readItems[b.id] !== undefined;
 
       if (aIsRead && bIsRead) {
-        const aTimestamp = readItems()[a.id];
-        const bTimestamp = readItems()[b.id];
+        const aTimestamp = readItems[a.id]!;
+        const bTimestamp = readItems[b.id]!;
         return bTimestamp - aTimestamp;
       }
 
@@ -47,7 +42,7 @@ export function useSortFunction(
     });
   }
 
-  return itemsToRender;
+  return items;
 }
 
 function toSortedShim<T>(arr: T[], compareFn: (a: T, b: T) => number): T[] {
