@@ -1,26 +1,27 @@
-import { HnStorySummary } from "~/models/interfaces";
-import { HnItem } from "~/models/interfaces";
+import { HnItem, HnStorySummary } from "~/models/interfaces";
+import { StoryPage } from "~/stores/useDataStore";
 
-export async function getSummaryViaFetch(url: string) {
+export async function getAllStoryDataForPage(
+  page: StoryPage
+): Promise<HnItem[]> {
+  const url = "/api/topstories/" + (page === "front" ? "topstories" : page);
+
   try {
     const response = await fetch(url);
 
     if (!response.ok) {
       console.error("Failed to fetch", { url });
       console.error(response);
-      return { data: [], storySummaries: [] as HnStorySummary[] };
+      return [];
     }
 
     const data = (await response.json()) as HnItem[];
 
-    // replace the list with the new IDs
-    const storySummaries = mapStoriesToSummaries(data);
-
-    return { data, storySummaries };
+    return data;
   } catch (e) {
     console.error("Failed to fetch", { url, env: process.env });
     console.error(e);
-    return { data: [], storySummaries: [] as HnStorySummary[] };
+    return [];
   }
 }
 
@@ -31,6 +32,8 @@ export function mapStoriesToSummaries(
     return undefined;
   }
 
+  // this really exists to remove the kidsObj from the data
+  // this allows us to store the info in a very compact format
   return data.map<HnStorySummary>((c) => ({
     id: c.id,
     score: c.score,

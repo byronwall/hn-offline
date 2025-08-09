@@ -6,7 +6,7 @@ import { isServer } from "solid-js/web";
 import { convertPathToStoryPage } from "~/lib/convertPathToStoryPage";
 import { getContentViaFetch } from "~/lib/getContentViaFetch";
 import {
-  getSummaryViaFetch,
+  getAllStoryDataForPage,
   mapStoriesToSummaries,
 } from "~/lib/getSummaryViaFetch";
 import { validateHnItemWithComments } from "~/lib/validation";
@@ -47,6 +47,8 @@ export async function saveStoryListViaReactive(
   page: StoryPage,
   data: HnItem[]
 ) {
+  console.log("*** saveStoryListViaReactive", page, data);
+
   // Map raw items to summaries for list storage
   const storySummaries = mapStoriesToSummaries(data);
 
@@ -176,76 +178,32 @@ export async function getContent(id: StoryId, fromLocalStorageOnly = false) {
 
 export const [isLoadingData, setIsLoadingData] = createSignal(false);
 
-export const refreshCurrent = async (url: string) => {
-  // attempt to load from local info
-  console.log("refreshing", url);
-
-  // determine if page is a story or a list
-  const isStory = url.startsWith("/story");
-
-  if (isStory) {
-    const apiUrl = "/api" + url;
-
-    setIsLoadingData(true);
-    const newContent = await getContentViaFetch(apiUrl);
-    setIsLoadingData(false);
-
-    if (newContent) {
-      saveContent(newContent.id, newContent);
+export type ContentForPage =
+  | {
+      type: "summaryOnly";
+      data: HnStorySummary[];
     }
+  | {
+      type: "fullData";
+      data: HnItem[];
+    };
 
-    return newContent;
-  }
-
-  const isFrontPage = url === "/";
-
-  if (isFrontPage) {
-    url = "/topstories";
-  }
-
-  // need to hit topstories API
-  const apiUrl = "/api/topstories" + url;
-  setIsLoadingData(true);
-  const { data, storySummaries } = await getSummaryViaFetch(apiUrl);
-
-  console.log("storySummaries", storySummaries);
-
-  setIsLoadingData(false);
-
-  await saveStoryListViaReactive(url.replace("/", "") as StoryPage, data);
-
-  return storySummaries;
-};
-
-export async function getContentForPage(rawPage: string) {
+export async function getContentForPage(
+  rawPage: string
+): Promise<ContentForPage> {
   console.log("*** getContentForPage", rawPage);
-  // attempt to load from local info
 
   const page = convertPathToStoryPage(rawPage);
 
-  // TODO: URL slug should move into the fetch call
-  const urlSlug = "/api/topstories/" + page;
-
-  if (urlSlug === undefined) {
-    throw new Error("urlSlug is undefined");
-  }
-
-  // load the list from localforage
   const list = storyListStore[page as StoryPage];
 
   if (list) {
-    console.log("*** loaded from localforage", unwrap(list), page);
-    return list.data;
+    return { type: "summaryOnly", data: list.data };
   }
 
   console.log("*** no list found, fetching from api", page);
-  const { data, storySummaries } = await getSummaryViaFetch(urlSlug);
 
-  if (!storySummaries) {
-    throw new Error("storySummaries is undefined");
-  }
+  const data = await getAllStoryDataForPage(page);
 
-  await saveStoryListViaReactive(page as StoryPage, data);
-
-  return storySummaries;
+  return { type: "fullData", data };
 }

@@ -5,9 +5,10 @@ import { convertPathToStoryPage } from "~/lib/convertPathToStoryPage";
 import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
 import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { validateHnStorySummaryArray } from "~/lib/validation";
-import { HnItem, HnStorySummary, TopStoriesType } from "~/models/interfaces";
+import { HnItem, TopStoriesType } from "~/models/interfaces";
 import { getTopStories } from "~/server/getTopStories";
 import {
+  ContentForPage,
   getContentForPage,
   saveStoryListViaReactive,
   StoryPage,
@@ -16,11 +17,14 @@ import {
 import { HnStoryList } from "./HnStoryList";
 
 export function ServerStoryPage(props: { page: TopStoriesType }) {
-  const [data] = createUniversalResource<HnStorySummary[]>(
+  const [data] = createUniversalResource<ContentForPage>(
     () => getContentForPage(props.page),
-    () => getTopStories(props.page),
+    async () => ({
+      type: "fullData",
+      data: (await getTopStories(props.page)) as HnItem[],
+    }),
     {
-      validateResponse: validateHnStorySummaryArray,
+      // validateResponse: validateHnStorySummaryArray,
       onError: (error) =>
         console.error("Failed to fetch stories:", error.message),
     }
@@ -41,18 +45,21 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
       return;
     }
 
-    if (data()?.source === "client") {
-      console.log("*** skipping save, data is from client");
+    if (storyData.type === "summaryOnly") {
+      console.log("*** skipping save, data is summary only");
       return;
     }
 
     // we now know that we only have HnItem[] instead of HnStorySummary[]
     console.log("*** saving story data to localforage from client mount");
     const storyPage = convertPathToStoryPage(props.page);
-    saveStoryListViaReactive(storyPage, storyData as HnItem[]);
+    saveStoryListViaReactive(storyPage, storyData.data);
   });
 
-  const summaries = () => mapStoriesToSummaries(data()?.data ?? []);
+  const summaries = () =>
+    data()?.data.type === "summaryOnly"
+      ? data()?.data.data
+      : mapStoriesToSummaries(data()?.data.data ?? []);
 
   return (
     <HnStoryList
