@@ -7,7 +7,11 @@ import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { validateHnStorySummaryArray } from "~/lib/validation";
 import { HnItem, HnStorySummary, TopStoriesType } from "~/models/interfaces";
 import { getTopStories } from "~/server/getTopStories";
-import { StoryPage, useDataStore } from "~/stores/useDataStore";
+import {
+  saveStoryListViaReactive,
+  StoryPage,
+  useDataStore,
+} from "~/stores/useDataStore";
 
 import { HnStoryList } from "./HnStoryList";
 
@@ -45,7 +49,7 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
     // we now know that we only have HnItem[] instead of HnStorySummary[]
     console.log("*** saving story data to localforage from client mount");
     const storyPage = convertPathToStoryPage(props.page);
-    useDataStore.getState().saveStoryList(storyPage, storyData as HnItem[]);
+    saveStoryListViaReactive(storyPage, storyData as HnItem[]);
   });
 
   const summaries = () => mapStoriesToSummaries(data()?.data ?? []);

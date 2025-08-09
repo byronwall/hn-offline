@@ -26,7 +26,6 @@ type DataStoreActions = {
 
   getContentForPage: (page: string) => Promise<HnStorySummary[]>;
 
-  saveStoryList: (page: StoryPage, data: HnItem[]) => Promise<void>;
   saveContent: (id: StoryId, content: HnItem) => Promise<void>;
 
   refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
@@ -65,12 +64,22 @@ export const [storyListStore, setStoryListStore] = makePersisted(
   }
 );
 
-function saveStoryListViaReactive(page: StoryPage, data: HnStorySummary[]) {
+export async function saveStoryListViaReactive(
+  page: StoryPage,
+  data: HnItem[]
+) {
+  // Map raw items to summaries for list storage
+  const storySummaries = mapStoriesToSummaries(data);
+
+  if (!storySummaries) {
+    throw new Error("storySummaries is undefined");
+  }
+
   const current = storyListStore[page];
 
   if (current) {
     const maxTimestampOfData = Math.max(
-      ...data.map((item) => item.time ?? 0),
+      ...storySummaries.map((item) => item.time ?? 0),
       0
     );
     const isSavedNewerOrSame = current.timestamp >= maxTimestampOfData;
@@ -84,10 +93,21 @@ function saveStoryListViaReactive(page: StoryPage, data: HnStorySummary[]) {
   setStoryListStore(page, {
     timestamp: Date.now(),
     page,
-    data,
+    data: storySummaries,
   });
 
-  console.log("*** saved to localforage via new store", page, data);
+  console.log("*** saved to localforage via new store", page, storySummaries);
+
+  // Persist raw items individually for detail pages
+  console.log("*** saving single stories now", page, data);
+  for (const item of data) {
+    const isValid = validateHnItemWithComments(item);
+    if (!isValid.success) {
+      console.error("invalid item", isValid.error, item);
+      continue;
+    }
+    await localforage.setItem("raw_" + item.id, item);
+  }
 }
 
 // TODO: implement this again with new approach
@@ -149,38 +169,9 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
       console.log("saved to localforage", "raw_" + id, content);
     },
 
-    saveStoryList: async (page: StoryPage, data: HnItem[]) => {
-      // TODO: move this is out of the store
-      const storySummaries = mapStoriesToSummaries(data);
-
-      if (!storySummaries) {
-        // this really shouldn't happen -- figure out source
-        throw new Error("storySummaries is undefined");
-      }
-
-      saveStoryListViaReactive(page, storySummaries);
-
-      // TODO: this needs to convert to reactive store next
-
-      console.log("*** saving single stories now", page, data);
-
-      for (const item of data) {
-        // console.log("*** saving single story now", item);
-        // tracking down when bad items are saved
-        // this guards against a summary being stored as the raw item
-        // TODO: figure out that code path - no good - saving client data - should be OK now
-        const isValid = validateHnItemWithComments(item);
-        if (!isValid.success) {
-          console.error("invalid item", isValid.error, item);
-          continue;
-        }
-        await localforage.setItem("raw_" + item.id, item);
-      }
-    },
-
     refreshCurrent: async (url: string) => {
       // attempt to load from local info
-      const { saveContent, saveStoryList } = get();
+      const { saveContent } = get();
 
       console.log("refreshing", url);
 
@@ -216,7 +207,7 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
 
       set({ isLoadingData: false });
 
-      await saveStoryList(url.replace("/", "") as StoryPage, data);
+      await saveStoryListViaReactive(url.replace("/", "") as StoryPage, data);
 
       return storySummaries;
     },
@@ -256,7 +247,6 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
     async getContentForPage(rawPage: string) {
       console.log("*** getContentForPage", rawPage);
       // attempt to load from local info
-      const { saveStoryList } = get();
 
       const page = convertPathToStoryPage(rawPage);
 
@@ -282,7 +272,7 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
         throw new Error("storySummaries is undefined");
       }
 
-      await saveStoryList(page as StoryPage, data);
+      await saveStoryListViaReactive(page as StoryPage, data);
 
       return storySummaries;
     },
