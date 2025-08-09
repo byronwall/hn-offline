@@ -4,6 +4,7 @@
 
 - [ ] Loading a story page from server should update local storage - avoid bump on re-nav
 - [ ] Enabled refresh button on the front page
+- [ ] Collapsed comments and read items should not be stringified
 - [ ] Sort out service worker and better integrate into vite
 - [ ] Reimplement the virtual rendering for comments
 - [ ] Get the Docker builds working again

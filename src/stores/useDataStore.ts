@@ -65,19 +65,14 @@ export async function saveStoryListViaReactive(
     );
     const isSavedNewerOrSame = current.timestamp >= maxTimestampOfData;
 
-    if (isSavedNewerOrSame) {
-      console.log("*** no need to save, current is newer or same");
-      return;
+    if (!isSavedNewerOrSame) {
+      setStoryListStore(page, {
+        timestamp: Date.now(),
+        page,
+        data: storySummaries,
+      });
     }
   }
-
-  setStoryListStore(page, {
-    timestamp: Date.now(),
-    page,
-    data: storySummaries,
-  });
-
-  console.log("*** saved to localforage via new store", page, storySummaries);
 
   // Persist raw items individually for detail pages
   console.log("*** saving single stories now", page, data);
@@ -87,6 +82,17 @@ export async function saveStoryListViaReactive(
       console.error("invalid item", isValid.error, item);
       continue;
     }
+
+    // only save if the new items is newer than the current item
+    const currentItem = await LOCAL_FORAGE_TO_USE.getItem<HnItem>(
+      "raw_" + item.id
+    );
+
+    if (currentItem && currentItem.time >= item.time) {
+      // skip saving since the current item is same or newer
+      continue;
+    }
+
     await LOCAL_FORAGE_TO_USE.setItem("raw_" + item.id, item);
   }
 }
