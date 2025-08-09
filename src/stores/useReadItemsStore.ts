@@ -7,17 +7,15 @@ import { LOCAL_FORAGE_TO_USE } from "./useDataStore";
 
 export type TimestampHash = Record<number, number>;
 
-const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
-const SHOULD_HIDE_READ_ITEMS = "SHOULD_HIDE_READ_ITEMS";
-
 export const [shouldHideReadItems, setShouldHideReadItems] = makePersisted(
   createSignal(false),
   {
-    name: SHOULD_HIDE_READ_ITEMS,
+    name: "SHOULD_HIDE_READ_ITEMS",
     storage: isServer ? undefined : LOCAL_FORAGE_TO_USE,
   }
 );
 
+const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
 // Simple signals for read items functionality
 export const [readItems, setReadItems] = createSignal<TimestampHash>({});
 
@@ -74,13 +72,8 @@ export const initializeReadItemsFromLocalForage = async () => {
     savedReadItems[id] = Date.now();
   }
 
-  // get the shouldHideReadItems
-  const savedShouldHideReadItems =
-    (await localforage.getItem<boolean>(SHOULD_HIDE_READ_ITEMS)) || false;
-
   console.log("**** initializeReadItemsFromLocalForage done", {
     readItems: savedReadItems,
-    shouldHideReadItems: savedShouldHideReadItems,
   });
 
   setIsLocalForageInitialized(true);
