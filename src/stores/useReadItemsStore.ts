@@ -1,18 +1,28 @@
+import { makePersisted } from "@solid-primitives/storage";
 import localforage from "localforage";
 import { createSignal } from "solid-js";
+import { isServer } from "solid-js/web";
+
+import { LOCAL_FORAGE_TO_USE } from "./useDataStore";
 
 export type TimestampHash = Record<number, number>;
 
 const LOCAL_READ_ITEMS = "STORAGE_READ_ITEMS";
 const SHOULD_HIDE_READ_ITEMS = "SHOULD_HIDE_READ_ITEMS";
 
+export const [shouldHideReadItems, setShouldHideReadItems] = makePersisted(
+  createSignal(false),
+  {
+    name: SHOULD_HIDE_READ_ITEMS,
+    storage: isServer ? undefined : LOCAL_FORAGE_TO_USE,
+  }
+);
+
 // Simple signals for read items functionality
 export const [readItems, setReadItems] = createSignal<TimestampHash>({});
-export const [pendingReadItems, setPendingReadItems] = createSignal<number[]>(
-  []
-);
-export const [shouldHideReadItems, setShouldHideReadItemsSignal] =
-  createSignal(false);
+
+const [pendingReadItems, setPendingReadItems] = createSignal<number[]>([]);
+
 export const [isLocalForageInitialized, setIsLocalForageInitialized] =
   createSignal(false);
 
@@ -41,15 +51,6 @@ export const saveIdToReadList = async (id: number) => {
 
   await localforage.setItem(LOCAL_READ_ITEMS, newReadList);
   setReadItems(newReadList);
-};
-
-// Action to set should hide read items
-export const setShouldHideReadItems = async (shouldHide = false) => {
-  console.log("setShouldHideReadItems", shouldHide);
-  setShouldHideReadItemsSignal(shouldHide);
-
-  // save via localforage
-  await localforage.setItem(SHOULD_HIDE_READ_ITEMS, shouldHide);
 };
 
 // Initialize from localforage
@@ -85,7 +86,6 @@ export const initializeReadItemsFromLocalForage = async () => {
   setIsLocalForageInitialized(true);
   setReadItems(savedReadItems);
   setPendingReadItems([]);
-  setShouldHideReadItemsSignal(savedShouldHideReadItems);
 };
 
 // Purge old read items (used in purgeLocalForage)

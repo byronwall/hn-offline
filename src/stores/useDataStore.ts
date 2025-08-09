@@ -10,11 +10,6 @@ import {
 import { validateHnItemWithComments } from "~/lib/validation";
 import { HasAuthorAndTime } from "~/models/interfaces";
 
-import {
-  initializeReadItemsFromLocalForage,
-  purgeOldReadItems,
-} from "./useReadItemsStore";
-
 // TODO: these types are all a mess.  Use Pick and Omit and get it right later.
 
 export interface HnItem extends HasAuthorAndTime {
@@ -130,12 +125,6 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
             idsToKeep.add(item.id);
           }
         }
-      }
-
-      // get the recent read items to keep
-      const readItemsToKeep = await purgeOldReadItems();
-      for (const id of readItemsToKeep) {
-        idsToKeep.add(id);
       }
 
       // get all keys starting with RAW_
@@ -254,9 +243,6 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
       const { purgeLocalForage } = get();
 
       console.log("initializeFromLocalForage");
-
-      // Initialize read items store
-      await initializeReadItemsFromLocalForage();
 
       // do a purge in the future, 1 seconds
       setTimeout(purgeLocalForage, 1000);
