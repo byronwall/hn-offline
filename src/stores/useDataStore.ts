@@ -26,14 +26,10 @@ type DataStoreActions = {
 
   getContentForPage: (page: string) => Promise<HnStorySummary[]>;
 
-  initializeFromLocalForage: () => Promise<void>;
-
   saveStoryList: (page: StoryPage, data: HnItem[]) => Promise<void>;
   saveContent: (id: StoryId, content: HnItem) => Promise<void>;
 
   refreshCurrent(url: string): Promise<HnItem | HnStorySummary[] | undefined>;
-
-  purgeLocalForage: () => Promise<void>;
 };
 
 if (!isServer) {
@@ -94,57 +90,57 @@ function saveStoryListViaReactive(page: StoryPage, data: HnStorySummary[]) {
   console.log("*** saved to localforage via new store", page, data);
 }
 
+// TODO: implement this again with new approach
+const purgeLocalForage = async () => {
+  // goal is to remove stories that are not current or recently read
+
+  console.log("purging localforage");
+
+  const idsToKeep = new Set<number>();
+
+  // get the three main story lists - front, day, week
+  // add those ids to the keep list
+
+  const keys = await localforage.keys();
+
+  // bad ones have a / in them - remove them
+  const badStoryLists = keys.filter((key) => key.includes("/"));
+  for (const key of badStoryLists) {
+    console.log("removing bad key", key);
+    await localforage.removeItem(key);
+  }
+
+  const storyIds = keys.filter((key) => key.startsWith("STORIES_"));
+
+  for (const key of storyIds) {
+    const list = await localforage.getItem<HnStorySummary[]>(key);
+
+    if (list) {
+      console.log("list to keep", list.length, key);
+      for (const item of list) {
+        idsToKeep.add(item.id);
+      }
+    }
+  }
+
+  // get all keys starting with RAW_
+  const rawKeys = keys.filter((key) => key.startsWith("raw_"));
+
+  console.log("all keys", rawKeys.length, idsToKeep.size);
+
+  for (const key of rawKeys) {
+    const id = Number(key.replace("raw_", ""));
+
+    if (!idsToKeep.has(id)) {
+      console.log("deleting", id);
+      await localforage.removeItem(key);
+    }
+  }
+};
+
 export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
   (set, get) => ({
     isLoadingData: false,
-    storyListSaveCount: 0,
-
-    purgeLocalForage: async () => {
-      // goal is to remove stories that are not current or recently read
-
-      console.log("purging localforage");
-
-      const idsToKeep = new Set<number>();
-
-      // get the three main story lists - front, day, week
-      // add those ids to the keep list
-
-      const keys = await localforage.keys();
-
-      // bad ones have a / in them - remove them
-      const badStoryLists = keys.filter((key) => key.includes("/"));
-      for (const key of badStoryLists) {
-        console.log("removing bad key", key);
-        await localforage.removeItem(key);
-      }
-
-      const storyIds = keys.filter((key) => key.startsWith("STORIES_"));
-
-      for (const key of storyIds) {
-        const list = await localforage.getItem<HnStorySummary[]>(key);
-
-        if (list) {
-          console.log("list to keep", list.length, key);
-          for (const item of list) {
-            idsToKeep.add(item.id);
-          }
-        }
-      }
-
-      // get all keys starting with RAW_
-      const rawKeys = keys.filter((key) => key.startsWith("raw_"));
-
-      console.log("all keys", rawKeys.length, idsToKeep.size);
-
-      for (const key of rawKeys) {
-        const id = Number(key.replace("raw_", ""));
-
-        if (!idsToKeep.has(id)) {
-          console.log("deleting", id);
-          await localforage.removeItem(key);
-        }
-      }
-    },
 
     saveContent: async (id: StoryId, content: HnItem) => {
       // TODO: move this is out of the store
@@ -166,7 +162,10 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
 
       // TODO: this needs to convert to reactive store next
 
+      console.log("*** saving single stories now", page, data);
+
       for (const item of data) {
+        // console.log("*** saving single story now", item);
         // tracking down when bad items are saved
         // this guards against a summary being stored as the raw item
         // TODO: figure out that code path - no good - saving client data - should be OK now
@@ -220,15 +219,6 @@ export const useDataStore = createWithSignal<DataStore & DataStoreActions>(
       await saveStoryList(url.replace("/", "") as StoryPage, data);
 
       return storySummaries;
-    },
-
-    initializeFromLocalForage: async () => {
-      const { purgeLocalForage } = get();
-
-      console.log("initializeFromLocalForage");
-
-      // do a purge in the future, 1 seconds
-      setTimeout(purgeLocalForage, 1000);
     },
 
     async getContent(id: StoryId, fromLocalStorageOnly = false) {

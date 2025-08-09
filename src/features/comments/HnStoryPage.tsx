@@ -6,6 +6,7 @@ import { createHasRendered } from "~/lib/createHasRendered";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, timeSince } from "~/lib/utils";
+import { HnItem } from "~/models/interfaces";
 import { setActiveStoryData } from "~/stores/activeStorySignal";
 import { setScrollToId } from "~/stores/scrollSignal";
 import {
@@ -13,7 +14,6 @@ import {
   updateCollapsedState,
 } from "~/stores/useCommentStore";
 import { useDataStore } from "~/stores/useDataStore";
-import { HnItem } from "~/models/interfaces";
 import { saveIdToReadList } from "~/stores/useReadItemsStore";
 
 import { HnCommentList } from "./HnCommentList";
@@ -36,16 +36,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   };
 
   const navigate = useNavigate();
-
-  const initializeLocalStorage = useDataStore(
-    (s) => s.initializeFromLocalForage
-  );
-  // initialize comment store from persisted storage on mount
-
-  onMount(() => {
-    // initialize local storage
-    initializeLocalStorage();
-  });
 
   createEffect(() => {
     // update the global story data when it changes
