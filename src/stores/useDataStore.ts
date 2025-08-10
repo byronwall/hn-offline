@@ -47,7 +47,8 @@ const schedulePurge = createReaction(() => setTimeout(purgeLocalForage, 1000));
 schedulePurge(hasStoreLoaded);
 
 export async function persistStoryList(page: StoryPage, data: HnItem[]) {
-  console.log("*** saveStoryListViaReactive", page, data);
+  // overall goals: update store -> saves list to local forage
+  // then go through all items and save them to local forage
 
   // Map raw items to summaries for list storage
   const storySummaries = mapStoriesToSummaries(data);
@@ -56,26 +57,23 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
     throw new Error("storySummaries is undefined");
   }
 
+  const incomingTimestamp = Math.max(
+    ...storySummaries.map((item) => item.lastUpdated ?? 0),
+    0
+  );
+
   const current = storyListStore[page];
 
-  if (current) {
-    const maxTimestampOfData = Math.max(
-      ...storySummaries.map((item) => item.lastUpdated ?? 0),
-      0
-    );
-    const isSavedNewerOrSame = current.timestamp >= maxTimestampOfData;
-
-    if (!isSavedNewerOrSame) {
-      setStoryListStore(page, {
-        timestamp: Date.now(),
-        page,
-        data: storySummaries,
-      });
-    }
+  if (!current || incomingTimestamp > current.timestamp) {
+    // save if none or if the incoming timestamp is newer
+    setStoryListStore(page, {
+      timestamp: incomingTimestamp,
+      page,
+      data: storySummaries,
+    });
   }
 
   // Persist raw items individually for detail pages
-  console.log("*** saving single stories now", page, data);
   for (const item of data) {
     const isValid = validateHnItemWithComments(item);
     if (!isValid.success) {
@@ -83,17 +81,7 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
       continue;
     }
 
-    // only save if the new items is newer than the current item
-    const currentItem = await LOCAL_FORAGE_TO_USE.getItem<HnItem>(
-      "raw_" + item.id
-    );
-
-    if (currentItem && currentItem.lastUpdated >= item.lastUpdated) {
-      // skip saving since the current item is same or newer
-      continue;
-    }
-
-    await LOCAL_FORAGE_TO_USE.setItem("raw_" + item.id, item);
+    persistStoryToStorage(item.id, item);
   }
 }
 
@@ -146,11 +134,14 @@ export const purgeLocalForage = async () => {
 };
 
 export const persistStoryToStorage = async (id: StoryId, content: HnItem) => {
-  console.log("*** persistStoryToStorage", id, content);
+  // attempt to load item, only save if lastUpdated is newer
+  const currentItem = await LOCAL_FORAGE_TO_USE.getItem<HnItem>("raw_" + id);
+
+  if (currentItem && currentItem.lastUpdated >= content.lastUpdated) {
+    return;
+  }
 
   await LOCAL_FORAGE_TO_USE.setItem("raw_" + id, content);
-
-  console.log("saved to localforage", "raw_" + id, content);
 };
 
 export async function getContent(id: StoryId) {

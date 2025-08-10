@@ -2,7 +2,6 @@
 
 ## Conversion to SolidJS
 
-- [ ] Loading a story page from server should update local storage - avoid bump on re-nav
 - [ ] Add a trap to show client data if available if server does not respond
 - [ ] Enabled refresh button on the front page
 - [ ] Collapsed comments and read items should not be stringified
