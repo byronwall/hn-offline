@@ -1,10 +1,11 @@
 // @refresh reload
 import { mount, StartClient } from "@solidjs/start/client";
-import { registerSW } from "virtual:pwa-register";
 
-/* reconcile SW
+mount(() => <StartClient />, document.getElementById("app")!);
 
-// load service worker @ sw.js
+// register PWA service worker
+// manual registration because file is not in expected path
+// Dockerfile moves it to /public/sw.js from /public/_build/sw.js
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
@@ -20,10 +21,3 @@ if ("serviceWorker" in navigator) {
       });
   });
 }
-
-*/
-
-mount(() => <StartClient />, document.getElementById("app")!);
-
-// register PWA service worker
-registerSW({ immediate: true });

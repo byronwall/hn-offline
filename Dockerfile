@@ -12,6 +12,7 @@ RUN pnpm install --no-frozen-lockfile
 # Build server and client
 COPY . .
 RUN pnpm build
+RUN if [ -f .output/public/_build/sw.js ]; then mv .output/public/_build/sw.js .output/public/sw.js; fi
 
 ##########
 # Runner Stage
