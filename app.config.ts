@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  middleware: "src/middleware/sw-headers.ts",
   vite: {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     plugins: [
