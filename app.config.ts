@@ -8,44 +8,12 @@ export default defineConfig({
     plugins: [
       tailwindcss(),
       VitePWA({
-        registerType: "autoUpdate",
+        strategies: "injectManifest",
+        srcDir: "src",
+        filename: "sw.ts",
         injectRegister: "auto",
-        devOptions: { enabled: true },
-        includeAssets: [
-          "/favicon.ico",
-          "/apple-touch-icon.png",
-          "/android-chrome-192x192.png",
-          "/android-chrome-512x512.png",
-        ],
-        workbox: {
-          clientsClaim: true,
-          skipWaiting: true,
-          navigationPreload: true,
-          globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
-          additionalManifestEntries: [
-            { url: "/", revision: "v1" },
-            { url: "/day", revision: "v1" },
-            { url: "/week", revision: "v1" },
-            { url: "/offline.html", revision: "v1" },
-          ],
-          runtimeCaching: [
-            {
-              // Cache-first for same-origin, non-API requests (allow localhost in dev)
-              urlPattern: ({ request, url, sameOrigin }) =>
-                sameOrigin &&
-                // Avoid handling document navigations here so Workbox's navigation
-                // fallback can respond with offline.html when needed
-                request.mode !== "navigate" &&
-                !url.pathname.startsWith("/api"),
-              handler: "CacheFirst",
-              options: {
-                cacheName: "runtime",
-                cacheableResponse: { statuses: [0, 200] },
-              },
-            },
-          ],
-        },
-
+        registerType: "autoUpdate",
+        devOptions: { enabled: false }, // test offline only on build+preview
         manifest: {
           name: "Hacker News: Offline First",
           short_name: "HN Offline",
