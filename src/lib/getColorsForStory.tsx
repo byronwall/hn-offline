@@ -1,12 +1,17 @@
 import { orderBy, uniq } from "lodash-es";
 import { mhvcToHex } from "munsell";
 
-import { KidsObj3 } from "~/models/interfaces";
-import { HnItem } from "~/models/interfaces";
+import { HnItem, KidsObj3 } from "~/models/interfaces";
 
 const recentHues: number[] = [];
 
-export function getColorsForStory(story: HnItem): Record<string, string> {
+export function getColorsForStory(
+  story: HnItem | undefined
+): Record<string, string> {
+  if (!story) {
+    throw new Error("Story is undefined");
+  }
+
   recentHues.length = 0;
 
   // iterate through the comments and assign unique colors to each user

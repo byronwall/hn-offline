@@ -1,7 +1,7 @@
 import { HnItem, HnStorySummary } from "~/models/interfaces";
-import { StoryPage } from "~/stores/useDataStore";
+import { persistStoryList, StoryPage } from "~/stores/useDataStore";
 
-export async function getAllStoryDataForPage(
+export async function fetchAllStoryDataForPage(
   page: StoryPage
 ): Promise<HnItem[]> {
   const url = "/api/topstories/" + (page === "front" ? "topstories" : page);
@@ -16,6 +16,9 @@ export async function getAllStoryDataForPage(
     }
 
     const data = (await response.json()) as HnItem[];
+
+    // save to localforage after fetching
+    void persistStoryList(page, data);
 
     return data;
   } catch (e) {

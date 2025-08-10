@@ -6,8 +6,7 @@ import { createHasRendered } from "~/lib/createHasRendered";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, timeSince } from "~/lib/utils";
-import { HnItem } from "~/models/interfaces";
-import { setActiveStoryData } from "~/stores/activeStorySignal";
+import { activeStoryData } from "~/stores/activeStorySignal";
 import { setScrollToId } from "~/stores/scrollSignal";
 import {
   collapsedTimestamps,
@@ -19,25 +18,19 @@ import { HnCommentList } from "./HnCommentList";
 
 interface HnStoryPageProps {
   id: number | undefined;
-  storyData: HnItem;
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
   const hasRendered = createHasRendered();
 
   const textToRender = () =>
-    processHtmlAndTruncateAnchorText(props.storyData?.text || "");
+    processHtmlAndTruncateAnchorText(activeStoryData()?.text || "");
 
   const handleShareClick = () => {
     navigator.share?.({ url: window.location.href });
   };
 
   const navigate = useNavigate();
-
-  createEffect(() => {
-    // update the global story data when it changes
-    setActiveStoryData(props.storyData);
-  });
 
   onMount(() => {
     const anchorClickHandler = (e: MouseEvent) => {
@@ -82,18 +75,19 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   // need comment store to be ready
   const isTextOpen = () =>
     !hasRendered() ||
-    (props.storyData?.id &&
-      collapsedTimestamps[props.storyData.id] === undefined);
+    (activeStoryData()?.id &&
+      collapsedTimestamps[activeStoryData()!.id] === undefined);
 
-  const comments = () => (props.storyData.kidsObj || []).filter(isValidComment);
+  const comments = () =>
+    (activeStoryData()?.kidsObj || []).filter(isValidComment);
 
   function handleStoryTextClick() {
-    if (!props.storyData?.text) {
+    if (!activeStoryData()?.text) {
       return;
     }
 
     const newIsCollapsed = !!isTextOpen();
-    updateCollapsedState(props.storyData.id, newIsCollapsed);
+    updateCollapsedState(activeStoryData()!.id, newIsCollapsed);
 
     // scroll to first comment if it exists
     // schedule out 200ms to allow the collapse animation to finish
@@ -105,6 +99,10 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     }, 100);
   }
 
+  createEffect(() => {
+    console.log("*** activeStoryData", activeStoryData());
+  });
+
   return (
     <div class="relative">
       <h2
@@ -112,11 +110,11 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
         style={{ "overflow-wrap": "break-word" }}
       >
         <Switch>
-          <Match when={props.storyData.url === undefined}>
-            <span>{props.storyData.title}</span>
+          <Match when={activeStoryData()?.url === undefined}>
+            <span>{activeStoryData()?.title}</span>
           </Match>
-          <Match when={props.storyData.url !== undefined}>
-            <a href={props.storyData.url}>{props.storyData.title}</a>
+          <Match when={activeStoryData()?.url !== undefined}>
+            <a href={activeStoryData()?.url}>{activeStoryData()?.title}</a>
           </Match>
         </Switch>
       </h2>
@@ -124,22 +122,22 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       <div
         class={cn({
           "border-l-4 border-orange-500 px-2 rounded-tl rounded-bl":
-            props.storyData.text,
+            activeStoryData()?.text,
           collapsed: !isTextOpen(),
         })}
         onClick={handleStoryTextClick}
       >
         <h4 class="mb-2">
-          <span>{props.storyData.by}</span>
+          <span>{activeStoryData()?.by}</span>
           <span>{" | "}</span>
           <span>
-            {props.storyData.score}
+            {activeStoryData()?.score}
             {" points"}
           </span>
           <span>{" | "}</span>
-          <span>{timeSince(props.storyData.time)} ago</span>
+          <span>{timeSince(activeStoryData()?.time)} ago</span>
           <span>{" | "}</span>
-          <span>{getDomain(props.storyData.url)}</span>
+          <span>{getDomain(activeStoryData()?.url)}</span>
 
           <span>{" | "}</span>
           <button onClick={handleShareClick} class="hover:text-orange-500">
@@ -147,7 +145,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
           </button>
         </h4>
 
-        <Show when={props.storyData.text !== undefined && isTextOpen()}>
+        <Show when={activeStoryData()?.text !== undefined && isTextOpen()}>
           <div>
             {/*  eslint-disable-next-line solid/no-innerhtml */}
             <p class="user-text break-words " innerHTML={textToRender()} />

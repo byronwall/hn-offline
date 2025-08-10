@@ -1,24 +1,35 @@
-import { For, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { createHasRendered } from "~/lib/createHasRendered";
 import { HnStorySummary } from "~/models/interfaces";
 import { StoryPage } from "~/stores/useDataStore";
-import { readItems, shouldHideReadItems } from "~/stores/useReadItemsStore";
+import {
+  readItems,
+  setShouldHideReadItems,
+  shouldHideReadItems,
+} from "~/stores/useReadItemsStore";
 
 import { HnListItem } from "./HnListItem";
 
 interface HnStoryListProps {
-  items?: HnStorySummary[];
   sortType?: "score" | "read-then-points";
   page?: StoryPage;
 }
 
+export const [activeStoryList, setActiveStoryList] = createSignal<
+  HnStorySummary[]
+>([]);
+
 export function HnStoryList(props: HnStoryListProps) {
   const itemsToRender = () =>
-    useSortFunction(props.items, props.sortType) ?? [];
+    useSortFunction(activeStoryList(), props.sortType) ?? [];
 
   const hasRendered = createHasRendered();
+
+  const toggleHideReadItems = () => {
+    setShouldHideReadItems(!shouldHideReadItems());
+  };
 
   return (
     <Show when={itemsToRender()} fallback={<div>Loading...</div>}>
@@ -49,6 +60,18 @@ export function HnStoryList(props: HnStoryListProps) {
           </For>
         </div>
       </Show>
+      <div class="flex items-center gap-2">
+        <label class="inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={shouldHideReadItems()}
+            onChange={toggleHideReadItems}
+            class="peer sr-only"
+          />
+
+          <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-600" />
+        </label>
+      </div>
     </Show>
   );
 }

@@ -1,22 +1,25 @@
 import { HnItem } from "~/models/interfaces";
-import { StoryId } from "~/stores/useDataStore";
+import { persistStoryToStorage, StoryId } from "~/stores/useDataStore";
 
-export async function getContentViaFetch(id: StoryId) {
+export async function fetchObjById(id: StoryId) {
   const url = "/api/story/" + id;
 
   const response = await fetch(url);
   if (!response.ok) {
     console.error("Failed to fetch", { url });
     console.error(response);
-    return undefined;
+    throw new Error("Failed to fetch story");
   }
   const data: HnItem | { error: string } = await response.json();
 
   if (!data || "error" in data) {
     console.error(data);
 
-    return undefined;
+    throw new Error("data is undefined");
   }
+
+  // save to localforage after fetching
+  void persistStoryToStorage(id, data); // fire and forget
 
   return data;
 }

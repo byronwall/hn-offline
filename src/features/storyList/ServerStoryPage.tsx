@@ -1,7 +1,5 @@
-import { onMount } from "solid-js";
-import { isServer } from "solid-js/web";
+import { createRenderEffect } from "solid-js";
 
-import { convertPathToStoryPage } from "~/lib/convertPathToStoryPage";
 import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
 import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { HnItem, TopStoriesType } from "~/models/interfaces";
@@ -9,11 +7,11 @@ import { getTopStories } from "~/server/getTopStories";
 import {
   ContentForPage,
   getContentForPage,
-  saveStoryListViaReactive,
+  setRefreshType,
   StoryPage,
 } from "~/stores/useDataStore";
 
-import { HnStoryList } from "./HnStoryList";
+import { HnStoryList, setActiveStoryList } from "./HnStoryList";
 
 export function ServerStoryPage(props: { page: TopStoriesType }) {
   const [data] = createUniversalResource<ContentForPage>({
@@ -24,40 +22,19 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
     }),
   });
 
-  onMount(() => {
-    console.log("*** ServerStoryPage mounted", data()?.source);
-
-    if (isServer) {
-      console.log("ServerStoryPage mounted, but not on client");
-      return;
-    }
-
-    const storyData = data()?.data;
-
-    if (!storyData) {
-      console.error("No data found for page", props.page);
-      return;
-    }
-
-    if (storyData.type === "summaryOnly") {
-      console.log("*** skipping save, data is summary only");
-      return;
-    }
-
-    // we now know that we only have HnItem[] instead of HnStorySummary[]
-    console.log("*** saving story data to localforage from client mount");
-    const storyPage = convertPathToStoryPage(props.page);
-    saveStoryListViaReactive(storyPage, storyData.data);
-  });
-
   const summaries = () =>
     data()?.data.type === "summaryOnly"
       ? data()?.data.data
       : mapStoriesToSummaries(data()?.data.data ?? []);
 
+  createRenderEffect(() => {
+    // TODO: continue this thread to set from the refresh method, repeat for story data
+    setActiveStoryList(summaries() ?? []);
+    setRefreshType({ type: "storyList", page: props.page as StoryPage });
+  });
+
   return (
     <HnStoryList
-      items={summaries()}
       page={props.page as StoryPage}
       sortType={props.page === "topstories" ? undefined : "score"}
     />

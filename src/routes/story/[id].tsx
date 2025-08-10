@@ -1,13 +1,18 @@
 import { useParams } from "@solidjs/router";
-import { createEffect, Show } from "solid-js";
+import { createEffect, createRenderEffect, Show } from "solid-js";
 
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { getColorsForStory } from "~/lib/getColorsForStory";
 import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { HnItem } from "~/models/interfaces";
 import { getFullDataForIds } from "~/server/getFullDataForIds";
+import { setActiveStoryData } from "~/stores/activeStorySignal";
 import { setColorMap } from "~/stores/colorMap";
-import { getContent, persistStoryToStorage } from "~/stores/useDataStore";
+import {
+  getContent,
+  persistStoryToStorage,
+  setRefreshType,
+} from "~/stores/useDataStore";
 
 export default function Story() {
   const params = useParams();
@@ -30,17 +35,29 @@ export default function Story() {
     }
   });
 
-  createEffect(() => {
+  createRenderEffect(() => {
+    if (!data()) {
+      return;
+    }
+
+    setActiveStoryData(data()?.data as HnItem);
+    setRefreshType({ type: "story", id });
+  });
+
+  createRenderEffect(() => {
     const storyData = data()?.data as HnItem;
+
+    if (!storyData) {
+      return;
+    }
+
     const colors = getColorsForStory(storyData);
     setColorMap(colors);
   });
 
   return (
-    <div>
-      <Show when={data()} fallback={<div>Loading...</div>}>
-        {(data) => <HnStoryPage id={id} storyData={data()?.data} />}
-      </Show>
-    </div>
+    <Show when={data()} fallback={<div>Loading...</div>}>
+      <HnStoryPage id={id} />
+    </Show>
   );
 }

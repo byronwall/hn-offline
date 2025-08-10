@@ -3,15 +3,17 @@ import { createMemo, createReaction, createSignal } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
+import { setActiveStoryList } from "~/features/storyList/HnStoryList";
 import { convertPathToStoryPage } from "~/lib/convertPathToStoryPage";
-import { getContentViaFetch } from "~/lib/getContentViaFetch";
+import { fetchObjById } from "~/lib/getContentViaFetch";
 import {
-  getAllStoryDataForPage,
+  fetchAllStoryDataForPage,
   mapStoriesToSummaries,
 } from "~/lib/getSummaryViaFetch";
 import { validateHnItemWithComments } from "~/lib/validation";
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 
+import { setActiveStoryData } from "./activeStorySignal";
 import { LOCAL_FORAGE_TO_USE } from "./localforage";
 import { readItems } from "./useReadItemsStore";
 
@@ -44,10 +46,7 @@ const hasStoreLoaded = createMemo(() => Object.keys(storyListStore).length > 0);
 const schedulePurge = createReaction(() => setTimeout(purgeLocalForage, 1000));
 schedulePurge(hasStoreLoaded);
 
-export async function saveStoryListViaReactive(
-  page: StoryPage,
-  data: HnItem[]
-) {
+export async function persistStoryList(page: StoryPage, data: HnItem[]) {
   console.log("*** saveStoryListViaReactive", page, data);
 
   // Map raw items to summaries for list storage
@@ -164,15 +163,7 @@ export async function getContent(id: StoryId) {
     return item;
   }
 
-  const data = await getContentViaFetch(id);
-
-  if (!data) {
-    throw new Error("data is undefined");
-  }
-
-  void persistStoryToStorage(id, data); // fire and forget
-
-  return data;
+  return await fetchObjById(id);
 }
 
 export const [isLoadingData, setIsLoadingData] = createSignal(false);
@@ -202,7 +193,43 @@ export async function getContentForPage(
 
   console.log("*** no list found, fetching from api", page);
 
-  const data = await getAllStoryDataForPage(page);
+  const data = await fetchAllStoryDataForPage(page);
 
   return { type: "fullData", data };
+}
+
+type RefreshType =
+  | {
+      type: "storyList";
+      page: StoryPage;
+    }
+  | {
+      type: "story";
+      id: StoryId;
+    };
+
+export const [refreshType, setRefreshType] = createSignal<
+  RefreshType | undefined
+>(undefined);
+
+export async function refreshActive() {
+  console.log("*** refreshActive", refreshType());
+
+  const type = refreshType();
+  if (!type) {
+    return;
+  }
+
+  setIsLoadingData(true);
+
+  if (type.type === "storyList") {
+    const pageData = await fetchAllStoryDataForPage(type.page);
+    setActiveStoryList(pageData);
+  } else if (type.type === "story") {
+    const storyData = await fetchObjById(type.id);
+    setActiveStoryData(storyData);
+  }
+
+  setIsLoadingData(false);
+  setRefreshType(undefined);
 }
