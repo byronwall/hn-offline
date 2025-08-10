@@ -42,6 +42,8 @@ export default defineConfig({
         },
       }),
     ] as unknown as any,
+    server: { headers: { "Service-Worker-Allowed": "/" } },
+
     /* eslint-enable @typescript-eslint/no-explicit-any */
   },
 });
