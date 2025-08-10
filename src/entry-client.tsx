@@ -1,5 +1,6 @@
 // @refresh reload
 import { mount, StartClient } from "@solidjs/start/client";
+import { registerSW } from "virtual:pwa-register";
 
 /* reconcile SW
 
@@ -23,3 +24,6 @@ if ("serviceWorker" in navigator) {
 */
 
 mount(() => <StartClient />, document.getElementById("app")!);
+
+// register PWA service worker
+registerSW({ immediate: true });

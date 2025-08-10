@@ -26,6 +26,7 @@
     "solid-js": "^1.9.5",
     "tailwind-merge": "^2.2.1",
     "vinxi": "^0.5.7",
+    "workbox-window": "^7.3.0",
     "zod": "^4.0.14"
   },
   "devDependencies": {
@@ -43,7 +44,8 @@
     "eslint-plugin-jsx-a11y": "^6.7.1",
     "eslint-plugin-solid": "^0.14.5",
     "tailwindcss": "^4.0.7",
-    "typescript": "^5.1.6"
+    "typescript": "^5.1.6",
+    "vite-plugin-pwa": "^1.0.2"
   },
   "engines": {
     "node": ">=22"
