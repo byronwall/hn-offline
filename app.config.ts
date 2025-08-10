@@ -15,6 +15,7 @@ export default defineConfig({
         injectRegister: "auto",
         registerType: "autoUpdate",
         scope: "/",
+        buildBase: "/_build/",
         devOptions: { enabled: false }, // test offline only on build+preview
         manifest: {
           name: "Hacker News: Offline First",
