@@ -1,6 +1,6 @@
 import { makePersisted } from "@solid-primitives/storage";
 import { createMemo, createReaction } from "solid-js";
-import { createStore, reconcile } from "solid-js/store";
+import { createStore, reconcile, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
 import { activeStoryData } from "./activeStorySignal";
@@ -15,6 +15,8 @@ export const [collapsedTimestamps, setCollapsedTimestamps] = makePersisted(
   {
     name: "COLLAPSED_COMMENTS",
     storage: isServer ? undefined : LOCAL_FORAGE_TO_USE,
+    serialize: (value) => unwrap(value) as any,
+    deserialize: (value) => value as unknown as CollapsedTimestampMap,
   }
 );
 

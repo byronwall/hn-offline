@@ -3,8 +3,6 @@
 ## Conversion to SolidJS
 
 - [ ] Add a trap to show client data if available if server does not respond
-- [ ] Enabled refresh button on the front page
-- [ ] Collapsed comments and read items should not be stringified
 - [ ] Sort out service worker and better integrate into vite
 - [ ] Reimplement the virtual rendering for comments
 - [ ] Get the Docker builds working again

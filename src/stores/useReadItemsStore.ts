@@ -1,6 +1,6 @@
 import { makePersisted } from "@solid-primitives/storage";
 import { createMemo, createReaction, createSignal } from "solid-js";
-import { createStore, reconcile } from "solid-js/store";
+import { createStore, reconcile, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
 import { LOCAL_FORAGE_TO_USE } from "./localforage";
@@ -21,6 +21,8 @@ export const [readItems, setReadItems] = makePersisted(
   {
     name: "READ_ITEMS",
     storage: isServer ? undefined : LOCAL_FORAGE_TO_USE,
+    serialize: (value) => unwrap(value) as any,
+    deserialize: (value) => value as unknown as TimestampHash,
   }
 );
 
