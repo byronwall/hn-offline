@@ -60,7 +60,7 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
 
   if (current) {
     const maxTimestampOfData = Math.max(
-      ...storySummaries.map((item) => item.time ?? 0),
+      ...storySummaries.map((item) => item.lastUpdated ?? 0),
       0
     );
     const isSavedNewerOrSame = current.timestamp >= maxTimestampOfData;
@@ -88,7 +88,7 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
       "raw_" + item.id
     );
 
-    if (currentItem && currentItem.time >= item.time) {
+    if (currentItem && currentItem.lastUpdated >= item.lastUpdated) {
       // skip saving since the current item is same or newer
       continue;
     }
