@@ -13,6 +13,7 @@ export default defineConfig({
         filename: "sw.ts",
         injectRegister: "auto",
         registerType: "autoUpdate",
+        scope: "/",
         devOptions: { enabled: false }, // test offline only on build+preview
         manifest: {
           name: "Hacker News: Offline First",
