@@ -7,7 +7,7 @@
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "typecheck": "tsc",
     "dev": "vinxi dev",
-    "build": "vinxi build",
+    "build": "vinxi build && node ./scripts/stamp-sw-version.mjs",
     "start": "vinxi start"
   },
   "dependencies": {
