@@ -20,8 +20,8 @@
         const cache = await caches.open(STATIC_CACHE);
         // Precache the offline shell for navigation fallbacks
         try {
-          await cache.addAll(["/offline.html"]);
-          console.log("📦 Precached offline shell: /offline.html");
+          await cache.addAll(["/offline"]);
+          console.log("📦 Precached offline shell: /offline");
         } catch (e) {
           console.debug("SW: failed to precache offline shell", e);
         }
@@ -177,9 +177,18 @@
       }
     }
 
+    // If the network returned a 404 for an unknown page, serve offline shell
+    if (response && response.status === 404) {
+      const offline = await caches.match("/offline", { ignoreVary: true });
+      if (offline) {
+        console.log("🚧 404 encountered, serving offline shell for:", pathname);
+        return offline;
+      }
+    }
+
     // Final fallback: serve offline shell
     if (!response) {
-      response = await caches.match("/offline.html", { ignoreVary: true });
+      response = await caches.match("/offline", { ignoreVary: true });
       if (response) {
         console.log("🧱 Serving offline shell for:", pathname);
       }
