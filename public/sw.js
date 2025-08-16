@@ -11,19 +11,16 @@
   const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
   const PAGES_CACHE = `${CACHE_PREFIX}pages-${VERSION}`;
 
-  const PRECACHE_PAGES = ["/", "/day", "/week"]; // optional: precache real HTML for offline
+  // We do NOT precache SSR pages. Instead, precache a minimal offline shell.
 
   // Install: precache offline shell and initial HTML pages
   self.addEventListener("install", (event) => {
     event.waitUntil(
       (async () => {
         const cache = await caches.open(STATIC_CACHE);
-
-        // Precache the key navigations so direct visits work offline.
-        // Ignore errors (e.g., if server blocks caching); SW will still install.
+        // Precache the offline shell for navigation fallbacks
         try {
-          const pages = await caches.open(PAGES_CACHE);
-          await pages.addAll(PRECACHE_PAGES);
+          await cache.addAll(["/offline.html"]);
         } catch (_) {}
         await self.skipWaiting();
       })()
@@ -159,7 +156,12 @@
       response = await pages.match(req, { ignoreVary: true });
     }
 
-    // Ensure we always return *something* (even if undefined would throw)
+    // Final fallback: serve offline shell
+    if (!response) {
+      response = await caches.match("/offline.html", { ignoreVary: true });
+    }
+
+    // Ensure we always return *something*
     return (
       response ||
       new Response("", {
