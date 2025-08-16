@@ -6,7 +6,7 @@
 
   // Bump VERSION when you want to drop old caches immediately.
   // (Later you can inject this automatically via Vite `define`.)
-  const VERSION = "v1";
+  const VERSION = "v1" + +Date.now();
   const CACHE_PREFIX = "app-";
   const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
   const PAGES_CACHE = `${CACHE_PREFIX}pages-${VERSION}`;
@@ -50,6 +50,13 @@
         }
 
         await self.clients.claim();
+
+        // Notify clients that SW is ready and provide a version hint
+        const allClients = await self.clients.matchAll({ type: "window" });
+        for (const client of allClients) {
+          client.postMessage({ type: "SW_READY" });
+          client.postMessage({ type: "SW_VERSION", version: VERSION });
+        }
       })()
     );
   });
@@ -57,13 +64,19 @@
   // Core fetch logic
   self.addEventListener("fetch", (event) => {
     const req = event.request;
-    if (req.method !== "GET") return;
+    if (req.method !== "GET") {
+      return;
+    }
 
     // Skip cross-origin (let the browser handle), and skip your APIs explicitly.
     const url = new URL(req.url);
     const sameOrigin = url.origin === self.location.origin;
-    if (!sameOrigin) return;
-    if (url.pathname.startsWith("/api/")) return;
+    if (!sameOrigin) {
+      return;
+    }
+    if (url.pathname.startsWith("/api/")) {
+      return;
+    }
 
     // Navigations: Network-First with a short timeout and offline fallbacks.
     if (req.mode === "navigate") {
@@ -82,7 +95,9 @@
 
   // Allow the page to trigger an immediate activation (optional)
   self.addEventListener("message", (e) => {
-    if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
+    if (e.data && e.data.type === "SKIP_WAITING") {
+      self.skipWaiting();
+    }
   });
 
   // ---- Strategies ----------------------------------------------------------
@@ -90,7 +105,9 @@
   async function cacheFirst(req, cacheName) {
     const cache = await caches.open(cacheName);
     const hit = await cache.match(req, { ignoreVary: true });
-    if (hit) return hit;
+    if (hit) {
+      return hit;
+    }
 
     const resp = await fetch(req);
     if (isCacheable(resp)) {
