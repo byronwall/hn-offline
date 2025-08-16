@@ -1,9 +1,16 @@
 import { useParams } from "@solidjs/router";
-import { createEffect, createRenderEffect, Show } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createRenderEffect,
+  createResource,
+  Show,
+} from "solid-js";
+import { isServer } from "solid-js/web";
 
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { getColorsForStory } from "~/lib/getColorsForStory";
-import { createUniversalResource } from "~/lib/universalDataFetcher";
+import { ResourceSource } from "~/lib/universalDataFetcher";
 import { HnItem } from "~/models/interfaces";
 import { getFullDataForIds } from "~/server/getFullDataForIds";
 import { setActiveStoryData } from "~/stores/activeStorySignal";
@@ -16,22 +23,37 @@ import {
 
 export default function Story() {
   const params = useParams();
-  const id = +params.id;
+  const id = createMemo(() => +params.id);
 
-  const [data] = createUniversalResource<HnItem & { kids?: number[] }>({
-    clientCallback: () => getContent(id),
-    serverCallback: async () => {
-      const storyData = await getFullDataForIds([id]);
+  createEffect(() => {
+    console.log("*** Story", id());
+  });
+
+  const [data] = createResource(id, async (idParam) => {
+    // this thing evaluates when the data is requested...
+    console.log("*** createUniversalResource", idParam);
+    console.log("*** isServer", isServer);
+
+    if (isServer) {
+      const storyData = await getFullDataForIds([idParam]);
       if (storyData.length > 0 && storyData[0]) {
-        return storyData[0] as HnItem & { kids?: number[] };
+        return {
+          source: "server" as ResourceSource,
+          data: storyData[0] as HnItem & { kids?: number[] },
+        };
       }
       throw new Error("Story not found");
-    },
+    } else {
+      return {
+        source: "client" as ResourceSource,
+        data: await getContent(idParam),
+      };
+    }
   });
 
   createEffect(() => {
     if (data()?.source === "server") {
-      void persistStoryToStorage(id, data()?.data as HnItem);
+      void persistStoryToStorage(id(), data()?.data as HnItem);
     }
   });
 
@@ -41,7 +63,7 @@ export default function Story() {
     }
 
     setActiveStoryData(data()?.data as HnItem);
-    setRefreshType({ type: "story", id });
+    setRefreshType({ type: "story", id: id() });
   });
 
   createRenderEffect(() => {
@@ -57,7 +79,7 @@ export default function Story() {
 
   return (
     <Show when={data()} fallback={<div>Loading...</div>}>
-      <HnStoryPage id={id} />
+      <HnStoryPage id={id()} />
     </Show>
   );
 }

@@ -19,7 +19,7 @@ if (typeof navigator !== "undefined") {
 // // manual registration because file is not in expected path
 // // Dockerfile moves it to /public/sw.js from /public/_build/sw.js
 // // app entry (e.g., src/main.ts or main.jsx)
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
   (async () => {
     const reg = await navigator.serviceWorker.register("/sw.js", {
       scope: "/",

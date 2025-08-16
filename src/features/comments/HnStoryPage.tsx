@@ -1,5 +1,12 @@
 import { useNavigate } from "@solidjs/router";
-import { createEffect, Match, onMount, Show, Switch } from "solid-js";
+import {
+  createEffect,
+  Match,
+  onCleanup,
+  onMount,
+  Show,
+  Switch,
+} from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { createHasRendered } from "~/lib/createHasRendered";
@@ -44,30 +51,40 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
         return;
       }
 
+      const pathName = new URL(link.href).pathname;
+
+      const internalPaths = ["/story", "/day", "/week", "/month"];
+      if (internalPaths.some((path) => pathName.startsWith(path))) {
+        // let the navigation happen
+        return;
+      }
+
       const regex = /https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/;
       const matches = link.href.match(regex);
 
       if (matches === null) {
-        // TODO: this is definitely breaking links when navigating around - find a better way
-        // link.target = "_blank";
+        // external link = open in new tab
+        link.target = "_blank";
         return;
       }
 
+      // we have an HN link - reroute internally
       navigate("/story/" + matches[1]);
       e.preventDefault();
       return false;
     };
 
-    window.scrollTo({ top: 0 });
     document.body.addEventListener("click", anchorClickHandler);
+
+    onCleanup(() => {
+      document.body.removeEventListener("click", anchorClickHandler);
+    });
+
+    window.scrollTo({ top: 0 });
 
     if (props.id !== undefined) {
       saveIdToReadList(props.id);
     }
-
-    return () => {
-      document.body.removeEventListener("click", anchorClickHandler);
-    };
   });
 
   // Guard against scenarios which remove DOM node too early

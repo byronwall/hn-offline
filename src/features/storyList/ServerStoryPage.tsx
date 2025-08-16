@@ -16,6 +16,7 @@ import { HnStoryList, setActiveStoryList } from "./HnStoryList";
 
 export function ServerStoryPage(props: { page: TopStoriesType }) {
   const [data] = createUniversalResource<ContentForPage>({
+    id: () => props.page,
     clientCallback: () => getContentForPage(props.page),
     serverCallback: async () => ({
       type: "fullData",

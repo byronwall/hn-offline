@@ -66,7 +66,26 @@
   // Core fetch logic
   self.addEventListener("fetch", (event) => {
     const req = event.request;
+    try {
+      const u = new URL(req.url);
+      console.debug("SW: fetch event", {
+        url: req.url,
+        mode: req.mode,
+        destination: req.destination,
+        method: req.method,
+        sameOrigin: u.origin === self.location.origin,
+        pathname: u.pathname,
+      });
+    } catch (e) {
+      console.debug("SW: fetch event URL parse failed", e);
+    }
     if (req.method !== "GET") {
+      try {
+        const { pathname } = new URL(req.url);
+        console.debug("SW: skip non-GET", req.method, pathname);
+      } catch (e) {
+        console.debug("SW: non-GET URL parse failed", e);
+      }
       return;
     }
 
@@ -74,17 +93,27 @@
     const url = new URL(req.url);
     const sameOrigin = url.origin === self.location.origin;
     if (!sameOrigin) {
+      console.debug("SW: skip cross-origin", {
+        origin: url.origin,
+        pathname: url.pathname,
+      });
       return;
     }
     if (url.pathname.startsWith("/api/")) {
+      console.debug("SW: skip /api request", url.pathname);
       return;
     }
     if (url.pathname.startsWith("/story/")) {
+      console.debug(
+        "SW: bypass /story navigation to app (let browser handle)",
+        url.pathname
+      );
       return;
     }
 
     // Navigations: Network-First with a short timeout and offline fallbacks.
     if (req.mode === "navigate") {
+      console.log("SW: handle navigation", url.pathname);
       event.respondWith(handleNavigation(event));
       return;
     }
@@ -140,6 +169,8 @@
     const { pathname } = new URL(req.url);
     const PRIMARY_PAGES = new Set(["/", "/day", "/day/", "/week", "/week/"]);
     console.log("➡️ Navigate:", pathname);
+    console.time && console.time(`[NAV] ${pathname}`);
+    let resolution = undefined; // preload | network | page-cache | offline-shell | offline-shell-404 | timeout-504
 
     // 1) Try navigation preload (if enabled) or network
     const preload = event.preloadResponse
@@ -148,17 +179,33 @@
     const networkPromise = (async () => {
       const fromPreload = await preload;
       const usedPreload = Boolean(fromPreload);
-      const resp = fromPreload || (await fetch(req));
+      let resp;
+      try {
+        resp = fromPreload || (await fetch(req));
+      } catch (e) {
+        console.warn("🛜 Network fetch failed:", pathname, e);
+        resp = undefined;
+      }
       console.log(
         usedPreload ? "🛰️ Using navigation preload:" : "🛜 Network response:",
         pathname
       );
+      if (resp) {
+        console.debug("SW: nav response meta", {
+          status: resp.status,
+          ok: resp.ok,
+          type: resp.type,
+        });
+      }
+      resolution = usedPreload ? "preload" : "network";
       if (isCacheable(resp) && !PRIMARY_PAGES.has(pathname)) {
         // Keep a copy for offline for non-primary pages only
         pages.put(req, resp.clone()).catch(() => {});
         console.log("💾 Cached page:", pathname);
       } else if (PRIMARY_PAGES.has(pathname)) {
         console.log("🚫 Skipping cache for primary page:", pathname);
+      } else if (!resp) {
+        console.debug("SW: nav response not available to cache", pathname);
       }
       return resp;
     })();
@@ -171,12 +218,16 @@
       response = await promiseWithTimeout(networkPromise, TIMEOUT_MS);
     } catch (_) {
       console.warn("⏱️ Network timeout, falling back:", pathname);
+      resolution = "timeout";
     }
 
     if (!response && !PRIMARY_PAGES.has(pathname)) {
       response = await pages.match(req, { ignoreVary: true });
       if (response) {
         console.log("📦 Page cache HIT:", pathname);
+        resolution = "page-cache";
+      } else {
+        console.debug("📦 Page cache MISS:", pathname);
       }
     }
 
@@ -185,7 +236,13 @@
       const offline = await caches.match("/offline", { ignoreVary: true });
       if (offline) {
         console.log("🚧 404 encountered, serving offline shell for:", pathname);
+        resolution = "offline-shell-404";
         return offline;
+      } else {
+        console.debug(
+          "SW: offline shell not found while handling 404:",
+          pathname
+        );
       }
     }
 
@@ -194,17 +251,32 @@
       response = await caches.match("/offline", { ignoreVary: true });
       if (response) {
         console.log("🧱 Serving offline shell for:", pathname);
+        resolution =
+          resolution === "timeout"
+            ? "offline-shell"
+            : resolution || "offline-shell";
+      } else {
+        console.debug("SW: offline shell not available:", pathname);
       }
     }
 
     // Ensure we always return *something*
-    return (
+    const finalResponse =
       response ||
       new Response("", {
         status: 504,
         statusText: "Offline and no fallback available",
-      })
-    );
+      });
+    if (!response) {
+      resolution = resolution || "timeout-504";
+    }
+    console.log("✅ Navigation resolved", {
+      path: pathname,
+      resolution,
+      status: finalResponse.status,
+    });
+    console.timeEnd && console.timeEnd(`[NAV] ${pathname}`);
+    return finalResponse;
   }
 
   function promiseWithTimeout(promise, ms) {
