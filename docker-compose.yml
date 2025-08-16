@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  hn-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hn-client:latest
+    container_name: hn-client
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - db_path=/home/appuser/db/db.json
+    volumes:
+      - hnclient-db:/home/appuser/db
+    restart: unless-stopped
+
+volumes:
+  hnclient-db:
