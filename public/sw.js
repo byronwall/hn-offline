@@ -79,6 +79,9 @@
     if (url.pathname.startsWith("/api/")) {
       return;
     }
+    if (url.pathname.startsWith("/story/")) {
+      return;
+    }
 
     // Navigations: Network-First with a short timeout and offline fallbacks.
     if (req.mode === "navigate") {
