@@ -1,10 +1,9 @@
 import { useParams } from "@solidjs/router";
 import { Match, Switch } from "solid-js";
 
+import Offline from "~/components/offline";
 import { ServerStoryPage } from "~/features/storyList/ServerStoryPage";
 import { TopStoriesType } from "~/models/interfaces";
-
-import Offline from "./offline";
 
 export default function StoryPage() {
   const params = useParams();
