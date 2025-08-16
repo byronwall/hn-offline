@@ -21,7 +21,10 @@
         // Precache the offline shell for navigation fallbacks
         try {
           await cache.addAll(["/offline.html"]);
-        } catch (_) {}
+          console.log("📦 Precached offline shell: /offline.html");
+        } catch (e) {
+          console.debug("SW: failed to precache offline shell", e);
+        }
         await self.skipWaiting();
       })()
     );
@@ -43,7 +46,9 @@
         if (self.registration.navigationPreload) {
           try {
             await self.registration.navigationPreload.enable();
-          } catch (_) {}
+          } catch (e) {
+            console.debug("SW: navigationPreload enable failed", e);
+          }
         }
 
         await self.clients.claim();
@@ -103,6 +108,7 @@
     const cache = await caches.open(cacheName);
     const hit = await cache.match(req, { ignoreVary: true });
     if (hit) {
+      console.log("📦 Asset cache HIT:", req.url);
       return hit;
     }
 
@@ -110,6 +116,7 @@
     if (isCacheable(resp)) {
       // Clone required: response bodies are one-shot
       cache.put(req, resp.clone()).catch(() => {});
+      console.log("🛜 Asset fetched & cached:", req.url);
     }
     return resp;
   }
@@ -127,6 +134,9 @@
   async function handleNavigation(event) {
     const req = event.request;
     const pages = await caches.open(PAGES_CACHE);
+    const { pathname } = new URL(req.url);
+    const PRIMARY_PAGES = new Set(["/", "/day", "/day/", "/week", "/week/"]);
+    console.log("➡️ Navigate:", pathname);
 
     // 1) Try navigation preload (if enabled) or network
     const preload = event.preloadResponse
@@ -134,10 +144,18 @@
       : Promise.resolve(undefined);
     const networkPromise = (async () => {
       const fromPreload = await preload;
+      const usedPreload = Boolean(fromPreload);
       const resp = fromPreload || (await fetch(req));
-      if (isCacheable(resp)) {
-        // Keep a copy for offline; this ensures `/`, `/day`, `/week` are usable offline
+      console.log(
+        usedPreload ? "🛰️ Using navigation preload:" : "🛜 Network response:",
+        pathname
+      );
+      if (isCacheable(resp) && !PRIMARY_PAGES.has(pathname)) {
+        // Keep a copy for offline for non-primary pages only
         pages.put(req, resp.clone()).catch(() => {});
+        console.log("💾 Cached page:", pathname);
+      } else if (PRIMARY_PAGES.has(pathname)) {
+        console.log("🚫 Skipping cache for primary page:", pathname);
       }
       return resp;
     })();
@@ -149,16 +167,22 @@
     try {
       response = await promiseWithTimeout(networkPromise, TIMEOUT_MS);
     } catch (_) {
-      // timed out; fall back to cache
+      console.warn("⏱️ Network timeout, falling back:", pathname);
     }
 
-    if (!response) {
+    if (!response && !PRIMARY_PAGES.has(pathname)) {
       response = await pages.match(req, { ignoreVary: true });
+      if (response) {
+        console.log("📦 Page cache HIT:", pathname);
+      }
     }
 
     // Final fallback: serve offline shell
     if (!response) {
       response = await caches.match("/offline.html", { ignoreVary: true });
+      if (response) {
+        console.log("🧱 Serving offline shell for:", pathname);
+      }
     }
 
     // Ensure we always return *something*
