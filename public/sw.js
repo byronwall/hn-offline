@@ -6,7 +6,7 @@
 
   // Bump VERSION when you want to drop old caches immediately.
   // (Later you can inject this automatically via Vite `define`.)
-  const VERSION = "v1" + +Date.now();
+  const VERSION = "v1";
   const CACHE_PREFIX = "app-";
   const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
   const PAGES_CACHE = `${CACHE_PREFIX}pages-${VERSION}`;
