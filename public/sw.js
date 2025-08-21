@@ -23,7 +23,12 @@
           await cache.addAll(["/offline"]);
           console.log("📦 Precached offline shell: /offline");
         } catch (e) {
-          console.debug("SW: failed to precache offline shell", e);
+          console.error(
+            "SW: failed to precache offline shell — aborting install to keep previous SW active",
+            e
+          );
+          // Abort install so an existing SW (and its caches) keep serving
+          throw e;
         }
         await self.skipWaiting();
       })()
@@ -256,7 +261,26 @@
             ? "offline-shell"
             : resolution || "offline-shell";
       } else {
-        console.debug("SW: offline shell not available:", pathname);
+        console.warn(
+          "SW: offline shell not available in cache, serving inline fallback:",
+          pathname
+        );
+        const offlineHtml =
+          '<!doctype html><html><head><meta charset="utf-8">' +
+          '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+          "<title>Offline</title>" +
+          "<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#0b1324;color:#e6edf3}main{padding:24px;text-align:center;max-width:640px}h1{font-size:28px;margin:0 0 12px}p{opacity:.85;margin:8px 0}</style>" +
+          "</head><body><main>" +
+          "<h1>You're offline</h1>" +
+          "<p>We couldn't reach the network and no cached page was available.</p>" +
+          "<p>Try again once you're back online. The app will refresh automatically.</p>" +
+          "</main></body></html>";
+        response = new Response(offlineHtml, {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+          status: 200,
+          statusText: "Offline Fallback",
+        });
+        resolution = resolution || "inline-offline";
       }
     }
 
