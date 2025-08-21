@@ -1,3 +1,4 @@
+import { Meta, Title } from "@solidjs/meta";
 import { useParams } from "@solidjs/router";
 import { Match, Switch } from "solid-js";
 
@@ -15,6 +16,11 @@ export default function StoryPage() {
         <Offline />
       </Match>
       <Match when={true}>
+        <Title>
+          HN Offline: {type?.charAt(0).toUpperCase()}
+          {type?.slice(1)}
+        </Title>
+        <Meta name="description" content={`Hacker News ${type} page`} />
         <ServerStoryPage page={type ?? ("topstories" as TopStoriesType)} />
       </Match>
     </Switch>

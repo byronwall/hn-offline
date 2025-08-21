@@ -1,4 +1,5 @@
 // @refresh reload
+import { MetaProvider } from "@solidjs/meta";
 import { mount, StartClient } from "@solidjs/start/client";
 
 import { setIsOnline, setupNetworkListeners } from "./stores/networkStatus";
@@ -7,7 +8,14 @@ import {
   setServiceWorkerVersion,
 } from "./stores/serviceWorkerStatus";
 
-mount(() => <StartClient />, document.getElementById("app")!);
+mount(
+  () => (
+    <MetaProvider>
+      <StartClient />
+    </MetaProvider>
+  ),
+  document.getElementById("app")!
+);
 
 // // Initialize network online/offline listeners and initial state
 setupNetworkListeners();

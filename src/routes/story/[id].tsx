@@ -1,3 +1,4 @@
+import { Meta, Title } from "@solidjs/meta";
 import { useParams } from "@solidjs/router";
 import {
   createEffect,
@@ -11,6 +12,7 @@ import { isServer } from "solid-js/web";
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { getColorsForStory } from "~/lib/getColorsForStory";
 import { ResourceSource } from "~/lib/universalDataFetcher";
+import { getDomain } from "~/lib/utils";
 import { HnItem } from "~/models/interfaces";
 import { getFullDataForIds } from "~/server/getFullDataForIds";
 import { setActiveStoryData } from "~/stores/activeStorySignal";
@@ -79,7 +81,34 @@ export default function Story() {
 
   return (
     <Show when={data()} fallback={<div>Loading...</div>}>
-      <HnStoryPage id={id()} />
+      {(data) => {
+        const storyData = data().data as HnItem | undefined;
+        return (
+          <Show when={storyData} fallback={<HnStoryPage id={id()} />}>
+            {(_) => {
+              const titlePrefix =
+                storyData!.type === "comment"
+                  ? "HN Offline Comment by " + storyData!.by
+                  : "HN Offline: " + storyData!.title;
+              const description =
+                storyData!.type === "comment"
+                  ? `${storyData!.text ?? "Comment"}`
+                  : `${storyData!.score} points at ${getDomain(
+                      storyData!.url
+                    )} by ${storyData!.by} - ${
+                      storyData!.descendants
+                    } comments`;
+              return (
+                <>
+                  <Title>{titlePrefix}</Title>
+                  <Meta name="description" content={description} />
+                  <HnStoryPage id={id()} />
+                </>
+              );
+            }}
+          </Show>
+        );
+      }}
     </Show>
   );
 }
