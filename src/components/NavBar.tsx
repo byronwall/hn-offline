@@ -1,11 +1,6 @@
 import { A } from "@solidjs/router";
 
 import { cn } from "~/lib/utils";
-import { isOnline } from "~/stores/networkStatus";
-import {
-  serviceWorkerStatus,
-  serviceWorkerVersion,
-} from "~/stores/serviceWorkerStatus";
 import { isLoadingData, refreshActive } from "~/stores/useDataStore";
 
 import { Shell } from "./Icon";
@@ -24,21 +19,6 @@ export function NavBar() {
           />
           <h1 class="text-2xl font-bold">Offline</h1>
         </A>
-      </div>
-
-      <div class="flex-1 text-center text-sm">
-        <span class="inline-flex items-center gap-2">
-          <span class="text-red-600" title="Offline">
-            {isOnline() ? "Online" : "Offline"}
-          </span>
-
-          <span class="text-green-600" title="Service Worker Active">
-            {serviceWorkerStatus()}
-          </span>
-          <span class="text-blue-600" title="Service Worker Version">
-            {serviceWorkerVersion() ?? "v-"}
-          </span>
-        </span>
       </div>
 
       <div class="flex items-center gap-2 text-xl">

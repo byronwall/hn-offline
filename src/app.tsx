@@ -4,6 +4,7 @@ import { FileRoutes } from "@solidjs/start/router";
 import { Suspense } from "solid-js";
 
 import { NavBar } from "./components/NavBar";
+import { StatusBar } from "./components/StatusBar";
 
 import "./app.css";
 
@@ -20,6 +21,7 @@ export default function App() {
           <div class="border border-slate-300 flex-1 w-full p-1">
             <Suspense>{props.children}</Suspense>
           </div>
+          <StatusBar />
         </main>
       )}
     >
