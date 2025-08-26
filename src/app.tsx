@@ -17,7 +17,7 @@ export default function App() {
           <div class="sticky top-0 bg-white z-10 w-full">
             <NavBar />
           </div>
-          <div class="border flex-1 w-full p-1">
+          <div class="border border-slate-300 flex-1 w-full p-1">
             <Suspense>{props.children}</Suspense>
           </div>
         </main>

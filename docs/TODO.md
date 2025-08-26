@@ -2,9 +2,7 @@
 
 ## Conversion to SolidJS
 
-- [ ] Add a trap to show client data if available if server does not respond
 - [ ] Share icon on stories does not get proper meta data?
-- [ ] Styles are not quite an exact match to the original
 
 ## For later
 

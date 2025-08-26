@@ -9,7 +9,7 @@ import { Shell } from "./Icon";
 
 export function NavBar() {
   return (
-    <nav class="flex w-full justify-between items-center space-x-2 border p-1">
+    <nav class="flex w-full justify-between items-center space-x-2 border border-slate-300 p-1">
       <div class="flex items-center">
         <A href="/" class="flex items-center gap-1 hover:underline">
           <img
@@ -25,11 +25,9 @@ export function NavBar() {
 
       <div class="flex-1 text-center text-sm">
         <span class="inline-flex items-center gap-2">
-          {!isOnline() && (
-            <span class="text-red-600" title="Offline">
-              O
-            </span>
-          )}
+          <span class="text-red-600" title="Offline">
+            {isOnline() ? "Online" : "Offline"}
+          </span>
 
           <span class="text-green-600" title="Service Worker Active">
             {serviceWorkerStatus()}

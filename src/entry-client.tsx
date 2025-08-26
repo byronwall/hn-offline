@@ -2,7 +2,7 @@
 import { MetaProvider } from "@solidjs/meta";
 import { mount, StartClient } from "@solidjs/start/client";
 
-import { setIsOnline, setupNetworkListeners } from "./stores/networkStatus";
+import { setIsOnline } from "./stores/networkStatus";
 import {
   setServiceWorkerStatus,
   setServiceWorkerVersion,
@@ -22,7 +22,7 @@ mount(
 // // Dockerfile moves it to /public/sw.js from /public/_build/sw.js
 // // app entry (e.g., src/main.ts or main.jsx)
 
-const skipDev = import.meta.env.PROD || true;
+const skipDev = import.meta.env.PROD;
 
 if ("serviceWorker" in navigator && skipDev) {
   (async () => {
