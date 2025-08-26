@@ -82,6 +82,8 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
     0
   );
 
+  await waitingToLoad;
+
   const current = storyListStore[page];
 
   if (!current || incomingTimestamp > current.timestamp) {
