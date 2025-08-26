@@ -1,7 +1,7 @@
-import { createEffect, createRenderEffect } from "solid-js";
+import { createEffect, createRenderEffect, createResource } from "solid-js";
+import { isServer } from "solid-js/web";
 
 import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
-import { createUniversalResource } from "~/lib/universalDataFetcher";
 import { HnItem, TopStoriesType } from "~/models/interfaces";
 import { getTopStories } from "~/server/getTopStories";
 import {
@@ -14,15 +14,29 @@ import {
 
 import { HnStoryList, setActiveStoryList } from "./HnStoryList";
 
+export type ResourceSource = "client" | "server";
+
 export function ServerStoryPage(props: { page: TopStoriesType }) {
-  const [data] = createUniversalResource<ContentForPage>({
-    id: () => props.page,
-    clientCallback: () => getContentForPage(props.page),
-    serverCallback: async () => ({
-      type: "fullData",
-      data: (await getTopStories(props.page)) as HnItem[],
-    }),
-  });
+  const [data] = createResource(
+    () => props.page,
+    async (page) => {
+      if (isServer) {
+        const fullData = (await getTopStories(page)) as HnItem[];
+        return {
+          source: "server" as ResourceSource,
+          data: {
+            type: "fullData",
+            data: fullData,
+          } as ContentForPage,
+        };
+      } else {
+        return {
+          source: "client" as ResourceSource,
+          data: await getContentForPage(page),
+        };
+      }
+    }
+  );
 
   const summaries = () =>
     data()?.data.type === "summaryOnly"

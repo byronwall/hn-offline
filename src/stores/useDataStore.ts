@@ -1,5 +1,10 @@
 import { makePersisted } from "@solid-primitives/storage";
-import { createMemo, createReaction, createSignal } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createReaction,
+  createSignal,
+} from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
@@ -45,6 +50,21 @@ export const [storyListStore, setStoryListStore] = makePersisted(
 const hasStoreLoaded = createMemo(() => Object.keys(storyListStore).length > 0);
 const schedulePurge = createReaction(() => setTimeout(purgeLocalForage, 1000));
 schedulePurge(hasStoreLoaded);
+
+const waitingToLoad = new Promise<boolean>((resolve) => {
+  createEffect(() => {
+    if (hasStoreLoaded()) {
+      resolve(true);
+    }
+  });
+});
+
+createEffect(() => {
+  console.log("*** storyListStore changed", {
+    hasStoreLoaded: hasStoreLoaded(),
+    storyListStore,
+  });
+});
 
 export async function persistStoryList(page: StoryPage, data: HnItem[]) {
   // overall goals: update store -> saves list to local forage
@@ -176,7 +196,13 @@ export async function getContentForPage(
 
   const page = convertPathToStoryPage(rawPage);
 
+  console.log("*** waiting to load", waitingToLoad);
+  await waitingToLoad;
+  console.log("*** waiting to load done");
+
   const list = storyListStore[page as StoryPage];
+
+  console.log("*** storyListStore", storyListStore, hasStoreLoaded());
 
   if (list) {
     return { type: "summaryOnly", data: list.data };

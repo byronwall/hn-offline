@@ -10,8 +10,8 @@ import {
 import { isServer } from "solid-js/web";
 
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
+import { ResourceSource } from "~/features/storyList/ServerStoryPage";
 import { getColorsForStory } from "~/lib/getColorsForStory";
-import { ResourceSource } from "~/lib/universalDataFetcher";
 import { getDomain } from "~/lib/utils";
 import { HnItem } from "~/models/interfaces";
 import { getFullDataForIds } from "~/server/getFullDataForIds";
