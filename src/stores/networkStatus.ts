@@ -1,8 +1,12 @@
-import { createSignal } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 
 export const [isOnline, setIsOnline] = createSignal<boolean>(
   typeof navigator === "undefined" ? true : navigator.onLine
 );
+
+onMount(() => {
+  setupNetworkListeners();
+});
 
 export function setupNetworkListeners() {
   if (typeof window === "undefined") {
@@ -14,4 +18,6 @@ export function setupNetworkListeners() {
 
   window.addEventListener("online", onlineHandler);
   window.addEventListener("offline", offlineHandler);
+
+  setIsOnline(navigator.onLine);
 }

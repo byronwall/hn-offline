@@ -108,13 +108,7 @@
       console.debug("SW: skip /api request", url.pathname);
       return;
     }
-    if (url.pathname.startsWith("/story/")) {
-      console.debug(
-        "SW: bypass /story navigation to app (let browser handle)",
-        url.pathname
-      );
-      return;
-    }
+    // Do not bypass /story navigations; handle them so we can provide offline fallbacks
 
     // Navigations: Network-First with a short timeout and offline fallbacks.
     if (req.mode === "navigate") {

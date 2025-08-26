@@ -17,12 +17,6 @@ mount(
   document.getElementById("app")!
 );
 
-// // Initialize network online/offline listeners and initial state
-setupNetworkListeners();
-if (typeof navigator !== "undefined") {
-  setIsOnline(navigator.onLine);
-}
-
 // // register PWA service worker
 // // manual registration because file is not in expected path
 // // Dockerfile moves it to /public/sw.js from /public/_build/sw.js
