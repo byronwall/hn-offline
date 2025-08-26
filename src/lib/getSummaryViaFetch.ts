@@ -15,7 +15,10 @@ export async function fetchAllStoryDataForPage(
       return [];
     }
 
-    const data = (await response.json()) as HnItem[];
+    const rawData = (await response.json()) as HnItem[];
+
+    // remove any nulls or undefineds
+    const data = rawData.filter(Boolean);
 
     // save to localforage after fetching
     void persistStoryList(page, data);

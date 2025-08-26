@@ -77,7 +77,7 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
   for (const item of data) {
     const isValid = validateHnItemWithComments(item);
     if (!isValid.success) {
-      console.error("invalid item", isValid.error, item);
+      console.error("invalid item", { error: isValid.error, item });
       continue;
     }
 

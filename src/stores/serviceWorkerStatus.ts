@@ -15,9 +15,14 @@ const initialStatus: ServiceWorkerStatus =
     ? "registering"
     : "unsupported";
 
-export const [serviceWorkerStatus, setServiceWorkerStatus] =
+export const [serviceWorkerStatus, _setServiceWorkerStatus] =
   createSignal<ServiceWorkerStatus>(initialStatus);
 
 export const [serviceWorkerVersion, setServiceWorkerVersion] = createSignal<
   string | undefined
 >(undefined);
+
+export const setServiceWorkerStatus = (status: ServiceWorkerStatus) => {
+  console.log("*** setting service worker status", status);
+  _setServiceWorkerStatus(status);
+};
