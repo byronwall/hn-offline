@@ -100,6 +100,24 @@ if ("serviceWorker" in navigator && skipDev) {
             break;
         }
       });
+
+      // Request SW version proactively once controlling or ready
+      const requestVersion = () => {
+        try {
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              type: "GET_VERSION",
+            });
+          }
+        } catch (_) {
+          // no-op
+        }
+      };
+
+      if (navigator.serviceWorker.controller) {
+        requestVersion();
+      }
+      navigator.serviceWorker.ready.then(requestVersion).catch(() => {});
     } catch (e) {
       setServiceWorkerStatus("error");
       // eslint-disable-next-line no-console

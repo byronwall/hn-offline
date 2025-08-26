@@ -128,8 +128,32 @@
 
   // Allow the page to trigger an immediate activation (optional)
   self.addEventListener("message", (e) => {
-    if (e.data && e.data.type === "SKIP_WAITING") {
+    if (!e || !e.data || typeof e.data !== "object") {
+      return;
+    }
+    if (e.data.type === "SKIP_WAITING") {
       self.skipWaiting();
+      return;
+    }
+    if (e.data.type === "GET_VERSION") {
+      const source = e.source;
+      if (source && typeof source.postMessage === "function") {
+        try {
+          source.postMessage({ type: "SW_VERSION", version: VERSION });
+        } catch (_) {
+          // no-op
+        }
+      } else {
+        // Fallback: broadcast to all clients
+        self.clients
+          .matchAll({ type: "window" })
+          .then((all) =>
+            all.forEach((client) =>
+              client.postMessage({ type: "SW_VERSION", version: VERSION })
+            )
+          )
+          .catch(() => {});
+      }
     }
   });
 

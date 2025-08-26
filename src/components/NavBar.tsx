@@ -2,7 +2,10 @@ import { A } from "@solidjs/router";
 
 import { cn } from "~/lib/utils";
 import { isOnline } from "~/stores/networkStatus";
-import { serviceWorkerStatus } from "~/stores/serviceWorkerStatus";
+import {
+  serviceWorkerStatus,
+  serviceWorkerVersion,
+} from "~/stores/serviceWorkerStatus";
 import { isLoadingData, refreshActive } from "~/stores/useDataStore";
 
 import { Shell } from "./Icon";
@@ -31,6 +34,9 @@ export function NavBar() {
 
           <span class="text-green-600" title="Service Worker Active">
             {serviceWorkerStatus()}
+          </span>
+          <span class="text-blue-600" title="Service Worker Version">
+            {serviceWorkerVersion() ?? "v-"}
           </span>
         </span>
       </div>
