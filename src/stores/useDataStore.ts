@@ -20,6 +20,7 @@ import { HnItem, HnStorySummary } from "~/models/interfaces";
 
 import { setActiveStoryData } from "./activeStorySignal";
 import { LOCAL_FORAGE_TO_USE } from "./localforage";
+import { addMessage } from "./messages";
 import { readItems } from "./useReadItemsStore";
 
 // TODO: reconcile this with the labels on the server side
@@ -34,6 +35,10 @@ type PersistedStoryList = {
 };
 
 type StoryListStore = Record<StoryPage, PersistedStoryList>;
+
+console.time("makePersisted");
+
+addMessage("makePersisted init");
 
 export const [storyListStore, setStoryListStore] = makePersisted(
   // eslint-disable-next-line solid/reactivity
@@ -55,6 +60,8 @@ const waitingToLoad = new Promise<boolean>((resolve) => {
   createEffect(() => {
     if (hasStoreLoaded()) {
       resolve(true);
+      console.timeEnd("makePersisted");
+      addMessage("makePersisted done");
     }
   });
 });
@@ -69,6 +76,7 @@ createEffect(() => {
 export async function persistStoryList(page: StoryPage, data: HnItem[]) {
   // overall goals: update store -> saves list to local forage
   // then go through all items and save them to local forage
+  addMessage("persistStoryList init");
 
   // Map raw items to summaries for list storage
   const storySummaries = mapStoriesToSummaries(data);
@@ -105,6 +113,8 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
 
     persistStoryToStorage(item.id, item);
   }
+
+  addMessage("persistStoryList done");
 }
 
 // Remove stories that are not in current lists or recently read
