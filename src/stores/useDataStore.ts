@@ -58,6 +58,8 @@ const schedulePurge = createReaction(
 );
 schedulePurge(hasStoreLoaded);
 
+addMessage("persist", "past makePersisted");
+
 const waitingToLoad = new Promise<boolean>((resolve) => {
   createEffect(() => {
     if (hasStoreLoaded()) {
@@ -68,12 +70,16 @@ const waitingToLoad = new Promise<boolean>((resolve) => {
   });
 });
 
+addMessage("persist", "past waitingToLoad");
+
 createEffect(() => {
   console.log("*** storyListStore changed", {
     hasStoreLoaded: hasStoreLoaded(),
     storyListStore,
   });
 });
+
+addMessage("persist", "past createEffect");
 
 export async function persistStoryList(page: StoryPage, data: HnItem[]) {
   // overall goals: update store -> saves list to local forage
@@ -269,3 +275,5 @@ export async function refreshActive() {
   setIsLoadingData(false);
   setRefreshType(undefined);
 }
+
+addMessage("persist", "EOF");
