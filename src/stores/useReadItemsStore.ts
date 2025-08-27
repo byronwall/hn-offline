@@ -33,9 +33,11 @@ export const [readItems, setReadItems] = makePersisted(
 const hasLength = createMemo(() => Object.keys(readItems).length);
 const scheduleCleanup = createReaction(() => {
   addMessage("readItems", "scheduleCleanup init");
-  setTimeout(() => {
-    cleanUpOldReadEntries();
-  }, 1000);
+  if (!isServer) {
+    setTimeout(() => {
+      cleanUpOldReadEntries();
+    }, 1000);
+  }
 });
 scheduleCleanup(hasLength);
 

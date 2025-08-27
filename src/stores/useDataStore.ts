@@ -53,7 +53,9 @@ export const [storyListStore, setStoryListStore] = makePersisted(
 
 // After initial hydration/change of the story lists, schedule a purge of old raw_* entries
 const hasStoreLoaded = createMemo(() => Object.keys(storyListStore).length > 0);
-const schedulePurge = createReaction(() => setTimeout(purgeLocalForage, 1000));
+const schedulePurge = createReaction(
+  () => !isServer && setTimeout(purgeLocalForage, 1000)
+);
 schedulePurge(hasStoreLoaded);
 
 const waitingToLoad = new Promise<boolean>((resolve) => {

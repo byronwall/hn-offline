@@ -23,8 +23,8 @@ export const [collapsedTimestamps, setCollapsedTimestamps] = makePersisted(
 // first time the length of the store is >0, call for cleanup 1s later
 // this will fire when the store loads
 const hasLength = createMemo(() => Object.keys(collapsedTimestamps).length);
-const cleanOnChange = createReaction(() =>
-  setTimeout(() => cleanUpOldEntries(), 1000)
+const cleanOnChange = createReaction(
+  () => !isServer && setTimeout(() => cleanUpOldEntries(), 1000)
 );
 cleanOnChange(hasLength);
 
