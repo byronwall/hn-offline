@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { isServer } from "solid-js/web";
 
 export type Message = {
   id: string;
@@ -13,6 +14,10 @@ const [messages, setMessages] = createSignal<Message[]>([]);
 export const getMessages = messages;
 
 export function addMessage(key: string, message: string, ...args: unknown[]) {
+  if (isServer) {
+    return;
+  }
+
   const entry: Message = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     key,
