@@ -38,7 +38,7 @@ type StoryListStore = Record<StoryPage, PersistedStoryList>;
 
 console.time("makePersisted");
 
-addMessage("makePersisted init");
+addMessage("persist", "makePersisted init");
 
 export const [storyListStore, setStoryListStore] = makePersisted(
   // eslint-disable-next-line solid/reactivity
@@ -61,7 +61,7 @@ const waitingToLoad = new Promise<boolean>((resolve) => {
     if (hasStoreLoaded()) {
       resolve(true);
       console.timeEnd("makePersisted");
-      addMessage("makePersisted done");
+      addMessage("persist", "makePersisted done");
     }
   });
 });
@@ -76,7 +76,7 @@ createEffect(() => {
 export async function persistStoryList(page: StoryPage, data: HnItem[]) {
   // overall goals: update store -> saves list to local forage
   // then go through all items and save them to local forage
-  addMessage("persistStoryList init");
+  addMessage("persist", "persistStoryList init", { page, count: data.length });
 
   // Map raw items to summaries for list storage
   const storySummaries = mapStoriesToSummaries(data);
@@ -114,7 +114,10 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
     persistStoryToStorage(item.id, item);
   }
 
-  addMessage("persistStoryList done");
+  addMessage("persist", "persistStoryList done", {
+    page,
+    persisted: data.length,
+  });
 }
 
 // Remove stories that are not in current lists or recently read

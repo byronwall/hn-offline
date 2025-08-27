@@ -4,6 +4,7 @@ import { isServer } from "solid-js/web";
 import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
 import { HnItem, TopStoriesType } from "~/models/interfaces";
 import { getTopStories } from "~/server/getTopStories";
+import { addMessage } from "~/stores/messages";
 import {
   ContentForPage,
   getContentForPage,
@@ -57,6 +58,7 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
     // TODO: continue this thread to set from the refresh method, repeat for story data
     setActiveStoryList(summaries() ?? []);
     setRefreshType({ type: "storyList", page: props.page as StoryPage });
+    addMessage("refresh", "setRefreshType", { page: props.page });
   });
 
   return (

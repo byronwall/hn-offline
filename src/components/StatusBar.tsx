@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from "solid-js";
+import { createMemo, createSignal, For, Show } from "solid-js";
 
 import { getMessages } from "~/stores/messages";
 import {
@@ -22,8 +22,37 @@ function formatDelta(deltaMs: number): string {
   return `${Math.round(deltaMs)}ms`;
 }
 
+function hashStringToHue(input: string): number {
+  let hash = 0;
+  for (let idx = 0; idx < input.length; idx++) {
+    hash = (hash << 5) - hash + input.charCodeAt(idx);
+    hash |= 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return hue;
+}
+
 export function StatusBar() {
   const [expanded, setExpanded] = createSignal(false);
+
+  const messagesWithMeta = createMemo(() => {
+    const list = getMessages();
+    const lastTimestampByKey = new Map<string, number>();
+    const result = list.map((m) => ({
+      m,
+      hue: hashStringToHue(m.key),
+      delta: undefined as number | undefined,
+    }));
+    for (let idx = list.length - 1; idx >= 0; idx--) {
+      const item = result[idx];
+      const prevTs = lastTimestampByKey.get(item.m.key);
+      if (prevTs !== undefined) {
+        item.delta = prevTs - item.m.timestamp;
+      }
+      lastTimestampByKey.set(item.m.key, item.m.timestamp);
+    }
+    return result;
+  });
 
   return (
     <div
@@ -54,34 +83,51 @@ export function StatusBar() {
             Messages ({getMessages().length})
           </div>
           <div class="space-y-2">
-            <For each={getMessages()}>
-              {(m, i) => (
-                <div
-                  class={`text-sm border rounded px-2 py-1 flex items-start gap-2 ${
-                    m.level === "error"
-                      ? "border-red-300 text-red-700 bg-red-50"
-                      : m.level === "warn"
-                      ? "border-amber-300 text-amber-800 bg-amber-50"
-                      : "border-slate-200 text-slate-700 bg-slate-50"
-                  }`}
-                >
-                  <span class="text-[10px] text-slate-400 whitespace-nowrap">
-                    {new Date(m.timestamp).toLocaleTimeString()}
-                  </span>
-                  <Show when={getMessages()[i() + 1]}>
-                    {(() => {
-                      const prev = getMessages()[i() + 1]!;
-                      const delta = m.timestamp - prev.timestamp;
-                      return (
-                        <span class="text-[10px] text-slate-400 whitespace-nowrap">
-                          +{formatDelta(delta)}
-                        </span>
-                      );
-                    })()}
-                  </Show>
-                  <span class="flex-1">{m.text}</span>
-                </div>
-              )}
+            <For each={messagesWithMeta()}>
+              {(entry) => {
+                const { m, hue, delta } = entry;
+                const bg = `hsl(${hue}, 20%, 96%)`;
+                const border = `hsl(${hue}, 20%, 75%)`;
+                return (
+                  <div
+                    class={
+                      "text-sm rounded px-2 py-1 flex items-start gap-2 border text-slate-700"
+                    }
+                    style={{ "background-color": bg, "border-color": border }}
+                  >
+                    <span class="text-[10px] text-slate-500 whitespace-nowrap">
+                      {new Date(m.timestamp).toLocaleTimeString()}
+                    </span>
+                    <Show when={delta !== undefined}>
+                      <span class="text-[10px] text-slate-500 whitespace-nowrap">
+                        +{formatDelta(delta!)}
+                      </span>
+                    </Show>
+                    <span
+                      class="font-mono text-xs px-1 rounded"
+                      style={{ "background-color": `hsl(${hue}, 20%, 90%)` }}
+                    >
+                      {m.key}
+                    </span>
+                    <span class="flex-1">{m.message}</span>
+                    <For each={m.args}>
+                      {(arg) => (
+                        <code class="text-[11px] bg-slate-100 text-slate-700 px-1 py-[1px] rounded">
+                          {(() => {
+                            try {
+                              return typeof arg === "string"
+                                ? arg
+                                : JSON.stringify(arg);
+                            } catch {
+                              return String(arg);
+                            }
+                          })()}
+                        </code>
+                      )}
+                    </For>
+                  </div>
+                );
+              }}
             </For>
           </div>
         </div>
