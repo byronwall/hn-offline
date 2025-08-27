@@ -12,6 +12,8 @@ import { getFullDataForIds } from "./getFullDataForIds";
 
 const log = console.log;
 
+log("*** server starting");
+
 export const cachedData: { [key: string]: ItemExt[] | null } = {};
 
 async function populateCacheFromDatabase() {

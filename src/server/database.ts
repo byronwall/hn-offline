@@ -20,6 +20,7 @@ type ItemHash = {
 };
 
 let db: ItemHash = {};
+console.log("*** server database");
 const dbPath = process.env.db_path ?? "./newdb.json";
 console.log("db path", dbPath);
 
