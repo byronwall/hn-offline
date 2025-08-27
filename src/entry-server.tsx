@@ -7,13 +7,45 @@ if (typeof process !== "undefined" && process?.on) {
   console.log("*** server unhandled error logging");
 
   process.on("uncaughtException", (error) => {
-    console.error("Uncaught exception", error);
+    console.log("Uncaught exception", error.name, error.message, error.stack);
   });
   process.on("unhandledRejection", (reason) => {
-    console.error("Unhandled promise rejection", reason);
+    console.log("Unhandled promise rejection", reason);
   });
-} else {
-  console.log("*** server unhandled error logging not defined");
+  process.on("uncaughtExceptionMonitor", (error) => {
+    console.log("Uncaught exception monitor", error);
+  });
+  process.on("warning", (warning) => {
+    console.log(
+      "Process warning",
+      warning.name,
+      warning.message,
+      warning.stack
+    );
+  });
+  process.on("rejectionHandled", (promise) => {
+    console.log("Rejection later handled", promise);
+  });
+  process.on("multipleResolves", (type, promise, value) => {
+    console.log("Multiple resolves", type, promise, value);
+  });
+  process.on("beforeExit", (code) => {
+    console.log("Process beforeExit", code);
+  });
+  process.on("exit", (code) => {
+    console.log("Process exit", code);
+  });
+  (["SIGINT", "SIGTERM", "SIGHUP", "SIGUSR1", "SIGUSR2"] as const).forEach(
+    (signal) => {
+      try {
+        process.on(signal, () => {
+          console.log("Received signal", signal);
+        });
+      } catch {
+        // some signals may not be available on all platforms
+      }
+    }
+  );
 }
 
 export default createHandler(() => (
