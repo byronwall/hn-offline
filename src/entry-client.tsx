@@ -2,7 +2,6 @@
 import { MetaProvider } from "@solidjs/meta";
 import { mount, StartClient } from "@solidjs/start/client";
 
-import { setIsOnline } from "./stores/networkStatus";
 import {
   setServiceWorkerStatus,
   setServiceWorkerVersion,
@@ -89,11 +88,6 @@ if ("serviceWorker" in navigator && skipDev) {
           case "SW_VERSION":
             if (data.version) {
               setServiceWorkerVersion(data.version);
-            }
-            break;
-          case "NETWORK_STATUS":
-            if (typeof data.online === "boolean") {
-              setIsOnline(data.online);
             }
             break;
           default:

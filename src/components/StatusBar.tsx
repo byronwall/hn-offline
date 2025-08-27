@@ -1,4 +1,3 @@
-import { isOnline } from "~/stores/networkStatus";
 import {
   serviceWorkerStatus,
   serviceWorkerVersion,
@@ -9,9 +8,6 @@ export function StatusBar() {
     <div class="sticky bottom-0 bg-white z-10 w-full">
       <div class="flex w-full justify-center items-center space-x-2 border border-slate-300 p-1 text-sm">
         <span class="inline-flex items-center gap-2">
-          <span class="text-red-600" title="Offline">
-            {isOnline() ? "Online" : "Offline"}
-          </span>
           <span class="text-green-600" title="Service Worker Status">
             {serviceWorkerStatus()}
           </span>
