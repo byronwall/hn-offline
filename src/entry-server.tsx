@@ -2,6 +2,16 @@
 import { MetaProvider } from "@solidjs/meta";
 import { createHandler, StartServer } from "@solidjs/start/server";
 
+// Global server-side unhandled error logging
+if (typeof process !== "undefined" && process?.on) {
+  process.on("uncaughtException", (error) => {
+    console.error("Uncaught exception", error);
+  });
+  process.on("unhandledRejection", (reason) => {
+    console.error("Unhandled promise rejection", reason);
+  });
+}
+
 export default createHandler(() => (
   <MetaProvider>
     <StartServer

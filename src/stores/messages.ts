@@ -1,5 +1,4 @@
 import { createSignal } from "solid-js";
-import { isServer } from "solid-js/web";
 
 export type Message = {
   id: string;

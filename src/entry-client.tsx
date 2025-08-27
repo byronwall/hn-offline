@@ -7,6 +7,15 @@ import {
   setServiceWorkerVersion,
 } from "./stores/serviceWorkerStatus";
 
+// Global client-side unhandled error logging
+window.addEventListener("error", (event) => {
+  console.error("Unhandled error", event.error || event.message, event);
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("Unhandled promise rejection", event.reason, event);
+});
+
 mount(
   () => (
     <MetaProvider>
