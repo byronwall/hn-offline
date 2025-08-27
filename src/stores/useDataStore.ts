@@ -36,8 +36,6 @@ type PersistedStoryList = {
 
 type StoryListStore = Record<StoryPage, PersistedStoryList>;
 
-console.time("makePersisted");
-
 addMessage("persist", "makePersisted init");
 
 export const [storyListStore, setStoryListStore] = makePersisted(
@@ -64,22 +62,12 @@ const waitingToLoad = new Promise<boolean>((resolve) => {
   createEffect(() => {
     if (hasStoreLoaded()) {
       resolve(true);
-      console.timeEnd("makePersisted");
       addMessage("persist", "makePersisted done");
     }
   });
 });
 
 addMessage("persist", "past waitingToLoad");
-
-createEffect(() => {
-  console.log("*** storyListStore changed", {
-    hasStoreLoaded: hasStoreLoaded(),
-    storyListStore,
-  });
-});
-
-addMessage("persist", "past createEffect");
 
 export async function persistStoryList(page: StoryPage, data: HnItem[]) {
   // overall goals: update store -> saves list to local forage

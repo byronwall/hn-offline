@@ -4,12 +4,16 @@ import { createHandler, StartServer } from "@solidjs/start/server";
 
 // Global server-side unhandled error logging
 if (typeof process !== "undefined" && process?.on) {
+  console.log("*** server unhandled error logging");
+
   process.on("uncaughtException", (error) => {
     console.error("Uncaught exception", error);
   });
   process.on("unhandledRejection", (reason) => {
     console.error("Unhandled promise rejection", reason);
   });
+} else {
+  console.log("*** server unhandled error logging not defined");
 }
 
 export default createHandler(() => (
