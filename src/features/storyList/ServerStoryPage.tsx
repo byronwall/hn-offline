@@ -61,9 +61,13 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
   });
 
   createRenderEffect(() => {
-    setActiveStoryList(summaries() ?? []);
     setRefreshType({ type: "storyList", page: props.page as StoryPage });
     addMessage("refresh", "setRefreshType", { page: props.page });
+  });
+
+  createRenderEffect(() => {
+    setActiveStoryList(summaries() ?? []);
+    addMessage("render", "set summaries");
   });
 
   return (

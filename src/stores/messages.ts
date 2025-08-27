@@ -20,6 +20,9 @@ export function addMessage(key: string, message: string, ...args: unknown[]) {
     args,
     timestamp: Date.now(),
   };
+
+  console.log("*** addMessage", entry);
+
   setMessages((prev) => [entry, ...prev].slice(0, 200));
 }
 

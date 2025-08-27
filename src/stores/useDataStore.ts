@@ -215,9 +215,7 @@ export async function getContentForPage(
 
   const page = convertPathToStoryPage(rawPage);
 
-  addMessage("getContentForPage", "waiting to load", { page });
   await waitingToLoad;
-  addMessage("getContentForPage", "waiting to load done", { page });
 
   const list = storyListStore[page as StoryPage];
 
