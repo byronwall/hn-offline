@@ -29,6 +29,8 @@ export const [readItems, setReadItems] = makePersisted(
   }
 );
 
+addMessage("readItems", "past makePersisted");
+
 // After first hydration/change, schedule a cleanup
 const hasLength = createMemo(() => Object.keys(readItems).length);
 const scheduleCleanup = createReaction(() => {

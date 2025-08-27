@@ -6,9 +6,12 @@ import { isServer } from "solid-js/web";
 import { activeStoryData } from "./activeStorySignal";
 import { findNextSibling } from "./findNextSibling";
 import { LOCAL_FORAGE_TO_USE } from "./localforage";
+import { addMessage } from "./messages";
 import { setScrollToId } from "./scrollSignal";
 
 export type CollapsedTimestampMap = Record<number, number>;
+
+addMessage("commentStore", "init");
 
 export const [collapsedTimestamps, setCollapsedTimestamps] = makePersisted(
   createStore<CollapsedTimestampMap>({}),
