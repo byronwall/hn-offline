@@ -9,12 +9,12 @@ import { TopStoriesType } from "~/models/interfaces";
 
 export default function StoryPage() {
   const params = useParams();
-  const type = params.type as TopStoriesType;
+  const type = () => params.type as TopStoriesType;
 
   // check for type === "offline"
   // if client, redirect to `/`
   createEffect(() => {
-    if (!isServer && type === "offline") {
+    if (!isServer && type() === "offline") {
       console.log("*** redirecting to / because type is offline");
       redirect("/");
     }
@@ -22,16 +22,16 @@ export default function StoryPage() {
 
   return (
     <Switch>
-      <Match when={type === "offline"}>
+      <Match when={type() === "offline"}>
         <Offline />
       </Match>
       <Match when={true}>
         <Title>
-          HN Offline: {type?.charAt(0).toUpperCase()}
-          {type?.slice(1)}
+          HN Offline: {type()?.charAt(0).toUpperCase()}
+          {type()?.slice(1)}
         </Title>
-        <Meta name="description" content={`Hacker News ${type} page`} />
-        <ServerStoryPage page={type ?? ("topstories" as TopStoriesType)} />
+        <Meta name="description" content={`Hacker News ${type()} page`} />
+        <ServerStoryPage page={type() ?? ("topstories" as TopStoriesType)} />
       </Match>
     </Switch>
   );

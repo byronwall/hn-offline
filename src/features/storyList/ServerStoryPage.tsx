@@ -1,4 +1,9 @@
-import { createEffect, createRenderEffect, createResource } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createRenderEffect,
+  createResource,
+} from "solid-js";
 import { isServer } from "solid-js/web";
 
 import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
@@ -39,10 +44,11 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
     }
   );
 
-  const summaries = () =>
+  const summaries = createMemo(() =>
     data()?.data.type === "summaryOnly"
       ? data()?.data.data
-      : mapStoriesToSummaries(data()?.data.data ?? []);
+      : mapStoriesToSummaries(data()?.data.data ?? [])
+  );
 
   createEffect(() => {
     if (data()?.source === "server" && data()?.data.type === "fullData") {
@@ -55,7 +61,6 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
   });
 
   createRenderEffect(() => {
-    // TODO: continue this thread to set from the refresh method, repeat for story data
     setActiveStoryList(summaries() ?? []);
     setRefreshType({ type: "storyList", page: props.page as StoryPage });
     addMessage("refresh", "setRefreshType", { page: props.page });

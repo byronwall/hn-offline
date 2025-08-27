@@ -1,9 +1,12 @@
 import { HnItem, HnStorySummary } from "~/models/interfaces";
+import { addMessage } from "~/stores/messages";
 import { persistStoryList, StoryPage } from "~/stores/useDataStore";
 
 export async function fetchAllStoryDataForPage(
   page: StoryPage
 ): Promise<HnItem[]> {
+  addMessage("fetchAllStoryDataForPage", "init", { page });
+
   const url = "/api/topstories/" + (page === "front" ? "topstories" : page);
 
   try {
@@ -22,6 +25,8 @@ export async function fetchAllStoryDataForPage(
 
     // save to localforage after fetching
     void persistStoryList(page, data);
+
+    addMessage("fetchAllStoryDataForPage", "done", { page, data: data.length });
 
     return data;
   } catch (e) {

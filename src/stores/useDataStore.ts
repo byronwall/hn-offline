@@ -124,6 +124,8 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
 export const purgeLocalForage = async () => {
   console.log("*** purging localforage");
 
+  addMessage("purge", "purgeLocalForage init");
+
   const idsToKeep = new Set<number>();
   for (const page in storyListStore) {
     const persistedList = storyListStore[page as StoryPage];
@@ -166,6 +168,8 @@ export const purgeLocalForage = async () => {
       await LOCAL_FORAGE_TO_USE.removeItem(key);
     }
   }
+
+  addMessage("purge", "purgeLocalForage done");
 };
 
 export const persistStoryToStorage = async (id: StoryId, content: HnItem) => {
@@ -211,9 +215,9 @@ export async function getContentForPage(
 
   const page = convertPathToStoryPage(rawPage);
 
-  console.log("*** waiting to load", waitingToLoad);
+  addMessage("getContentForPage", "waiting to load", { page });
   await waitingToLoad;
-  console.log("*** waiting to load done");
+  addMessage("getContentForPage", "waiting to load done", { page });
 
   const list = storyListStore[page as StoryPage];
 

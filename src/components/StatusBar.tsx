@@ -73,7 +73,9 @@ export function StatusBar() {
             {serviceWorkerVersion() ?? "v-"}
           </span>
         </span>
-        <span class="ml-2 text-slate-500">{expanded() ? "▲" : "▼"}</span>
+        <span class="ml-2 text-slate-500">
+          {expanded() ? "▲" : "▼"} {getMessages().length}
+        </span>
       </div>
 
       <Show when={expanded()}>
@@ -91,40 +93,49 @@ export function StatusBar() {
                 return (
                   <div
                     class={
-                      "text-sm rounded px-2 py-1 flex items-start gap-2 border text-slate-700"
+                      "text-sm rounded px-2 py-1 flex flex-wrap items-start gap-2 border text-slate-700 md:grid md:grid-cols-[84px_52px_80px_1fr_auto]"
                     }
                     style={{ "background-color": bg, "border-color": border }}
                   >
                     <span class="text-[10px] text-slate-500 whitespace-nowrap">
                       {new Date(m.timestamp).toLocaleTimeString()}
                     </span>
-                    <Show when={delta !== undefined}>
+                    <Show
+                      when={delta !== undefined}
+                      fallback={
+                        <span class="text-[10px] text-slate-500 whitespace-nowrap" />
+                      }
+                    >
                       <span class="text-[10px] text-slate-500 whitespace-nowrap">
                         +{formatDelta(delta!)}
                       </span>
                     </Show>
                     <span
-                      class="font-mono text-xs px-1 rounded"
+                      class="font-mono text-xs px-1 rounded truncate"
                       style={{ "background-color": `hsl(${hue}, 20%, 90%)` }}
                     >
                       {m.key}
                     </span>
-                    <span class="flex-1">{m.message}</span>
-                    <For each={m.args}>
-                      {(arg) => (
-                        <code class="text-[11px] bg-slate-100 text-slate-700 px-1 py-[1px] rounded">
-                          {(() => {
-                            try {
-                              return typeof arg === "string"
-                                ? arg
-                                : JSON.stringify(arg);
-                            } catch {
-                              return String(arg);
-                            }
-                          })()}
-                        </code>
-                      )}
-                    </For>
+                    <span class="min-w-0 break-words basis-full md:basis-auto">
+                      {m.message}
+                    </span>
+                    <div class="flex flex-wrap gap-1 basis-full md:basis-auto">
+                      <For each={m.args}>
+                        {(arg) => (
+                          <code class="text-[11px] bg-slate-100 text-slate-700 px-1 py-[1px] rounded">
+                            {(() => {
+                              try {
+                                return typeof arg === "string"
+                                  ? arg
+                                  : JSON.stringify(arg);
+                              } catch {
+                                return String(arg);
+                              }
+                            })()}
+                          </code>
+                        )}
+                      </For>
+                    </div>
                   </div>
                 );
               }}

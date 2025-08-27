@@ -4,8 +4,11 @@ import { createStore, reconcile, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
 import { LOCAL_FORAGE_TO_USE } from "./localforage";
+import { addMessage } from "./messages";
 
 export type TimestampHash = Record<number, number>;
+
+addMessage("readItems", "init read items store");
 
 export const [shouldHideReadItems, setShouldHideReadItems] = makePersisted(
   createSignal(false),
@@ -28,11 +31,12 @@ export const [readItems, setReadItems] = makePersisted(
 
 // After first hydration/change, schedule a cleanup
 const hasLength = createMemo(() => Object.keys(readItems).length);
-const scheduleCleanup = createReaction(() =>
+const scheduleCleanup = createReaction(() => {
+  addMessage("readItems", "scheduleCleanup init");
   setTimeout(() => {
     cleanUpOldReadEntries();
-  }, 1000)
-);
+  }, 1000);
+});
 scheduleCleanup(hasLength);
 
 export function saveIdToReadList(id: number | undefined): void {
