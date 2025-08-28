@@ -6,7 +6,6 @@ services:
       context: .
       dockerfile: Dockerfile
     image: hn-client:latest
-    container_name: hn-client
     ports:
       - "3000"
     environment:
