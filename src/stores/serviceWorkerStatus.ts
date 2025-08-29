@@ -1,4 +1,6 @@
-import { createSignal } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
+
+import { addMessage } from "./messages";
 
 export type ServiceWorkerStatus =
   | "unsupported"
@@ -26,3 +28,7 @@ export const setServiceWorkerStatus = (status: ServiceWorkerStatus) => {
   console.log("*** setting service worker status", status);
   _setServiceWorkerStatus(status);
 };
+
+createEffect(() => {
+  addMessage("swStatus", serviceWorkerStatus());
+});
