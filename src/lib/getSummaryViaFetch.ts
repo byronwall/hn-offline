@@ -5,7 +5,7 @@ import { persistStoryList, StoryPage } from "~/stores/useDataStore";
 export async function fetchAllStoryDataForPage(
   page: StoryPage
 ): Promise<HnItem[]> {
-  addMessage("fetchAllStoryDataForPage", "init", { page });
+  addMessage("fetchPage", "init", { page });
 
   const url = "/api/topstories/" + (page === "front" ? "topstories" : page);
 
@@ -26,7 +26,7 @@ export async function fetchAllStoryDataForPage(
     // save to localforage after fetching
     void persistStoryList(page, data);
 
-    addMessage("fetchAllStoryDataForPage", "done", { page, data: data.length });
+    addMessage("fetchPage", "done", { page, data: data.length });
 
     return data;
   } catch (e) {

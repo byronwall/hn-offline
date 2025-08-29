@@ -87,36 +87,38 @@ export function StatusBar() {
                 return (
                   <div
                     class={
-                      "text-sm rounded px-2 py-1 flex flex-wrap items-start gap-2 border text-slate-700 md:grid md:grid-cols-[84px_52px_80px_1fr_auto]"
+                      "text-sm rounded px-2 py-1 grid grid-cols-[120px_1fr] items-start gap-2 border text-slate-700 md:grid-cols-[84px_52px_80px_1fr_auto]"
                     }
                     style={{ "background-color": bg, "border-color": border }}
                   >
-                    <span class="text-[10px] text-slate-500 whitespace-nowrap">
-                      {new Date(m.timestamp).toLocaleTimeString()}
-                    </span>
-                    <Show
-                      when={delta !== undefined}
-                      fallback={
-                        <span class="text-[10px] text-slate-500 whitespace-nowrap" />
-                      }
-                    >
+                    <div class="flex items-center gap-2 col-span-1 md:col-auto md:contents">
                       <span class="text-[10px] text-slate-500 whitespace-nowrap">
-                        +{formatDelta(delta!)}
+                        {new Date(m.timestamp).toLocaleTimeString()}
                       </span>
-                    </Show>
+                      <Show
+                        when={delta !== undefined}
+                        fallback={
+                          <span class="text-[10px] text-slate-500 whitespace-nowrap" />
+                        }
+                      >
+                        <span class="text-[10px] text-slate-500 whitespace-nowrap">
+                          +{formatDelta(delta!)}
+                        </span>
+                      </Show>
+                    </div>
                     <span
-                      class="font-mono text-xs px-1 rounded truncate"
+                      class="font-mono text-xs px-1 rounded col-span-1 col-start-1 row-start-2 md:col-auto md:row-auto break-words min-w-0"
                       style={{ "background-color": `hsl(${hue}, 20%, 90%)` }}
                     >
                       {m.key}
                     </span>
-                    <span class="min-w-0 break-words basis-full md:basis-auto">
+                    <span class="min-w-0 break-words col-span-1 col-start-2 row-start-1 md:col-auto md:row-auto">
                       {m.message}
                     </span>
-                    <div class="flex flex-wrap gap-1 basis-full md:basis-auto">
+                    <div class="flex flex-wrap gap-1 col-span-1 md:col-auto min-w-0 items-start">
                       <For each={m.args}>
                         {(arg) => (
-                          <code class="text-[11px] bg-slate-100 text-slate-700 px-1 py-[1px] rounded">
+                          <code class="text-[11px] bg-slate-100 text-slate-700 px-1 py-[1px] rounded max-w-full break-all">
                             {(() => {
                               try {
                                 return typeof arg === "string"
