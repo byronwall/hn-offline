@@ -1,10 +1,7 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 
 import { getMessages } from "~/stores/messages";
-import {
-  serviceWorkerStatus,
-  serviceWorkerVersion,
-} from "~/stores/serviceWorkerStatus";
+import { serviceWorkerVersion } from "~/stores/serviceWorkerStatus";
 
 function formatDelta(deltaMs: number): string {
   if (deltaMs >= 3600000) {
@@ -66,9 +63,6 @@ export function StatusBar() {
         title="Click to expand"
       >
         <span class="inline-flex items-center gap-2">
-          <span class="text-green-600" title="Service Worker Status">
-            {serviceWorkerStatus()}
-          </span>
           <span class="text-blue-600" title="Service Worker Version">
             {serviceWorkerVersion() ?? "v-"}
           </span>
