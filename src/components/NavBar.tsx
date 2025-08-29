@@ -32,8 +32,8 @@ export function NavBar() {
         <div onClick={refreshActive}>
           <div
             class={cn(
-              "hover:cursor-pointer hover:stroke-blue-500 transition-colors duration-300 ease-in-out",
-              { "animate-spin stroke-orange-500": isLoadingData() }
+              "hover:cursor-pointer hover:text-blue-500 transition-colors duration-300 ease-in-out",
+              { "animate-spin text-orange-500": isLoadingData() }
             )}
           >
             <Shell size="32" color="black" />
