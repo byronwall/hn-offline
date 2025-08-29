@@ -48,6 +48,8 @@ export function saveIdToReadList(id: number | undefined): void {
     return;
   }
 
+  addMessage("readItems", "saveIdToReadList", { id });
+
   setReadItems(id, Date.now());
 }
 

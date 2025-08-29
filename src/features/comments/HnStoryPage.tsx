@@ -40,6 +40,12 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const navigate = useNavigate();
 
   onMount(() => {
+    if (props.id !== undefined) {
+      saveIdToReadList(props.id);
+    }
+  });
+
+  onMount(() => {
     const anchorClickHandler = (e: MouseEvent) => {
       if (e.target instanceof HTMLElement && e.target.tagName !== "A") {
         return;
@@ -79,12 +85,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     onCleanup(() => {
       document.body.removeEventListener("click", anchorClickHandler);
     });
-
-    window.scrollTo({ top: 0 });
-
-    if (props.id !== undefined) {
-      saveIdToReadList(props.id);
-    }
   });
 
   // Guard against scenarios which remove DOM node too early
