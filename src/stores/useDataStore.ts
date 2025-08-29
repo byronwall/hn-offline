@@ -263,5 +263,4 @@ export async function refreshActive() {
   }
 
   setIsLoadingData(false);
-  setRefreshType(undefined);
 }

@@ -1,9 +1,9 @@
 import { createEffect, createSignal, ParentProps, Show } from "solid-js";
 
-import { isLoadingData, refreshActive } from "~/stores/useDataStore";
+import { isLoadingData } from "~/stores/useDataStore";
 
 type PullToRefreshProps = ParentProps<{
-  onRefresh?: () => Promise<void> | void;
+  onRefresh: () => Promise<void> | void;
   activationThreshold?: number;
   disabled?: boolean;
 }>;
@@ -70,8 +70,7 @@ export function PullToRefresh(props: PullToRefreshProps) {
         /* noop */
       }
 
-      const refresh = props.onRefresh ?? refreshActive;
-      await refresh();
+      await props.onRefresh();
     }
     setPullDistance(0);
   };

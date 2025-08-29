@@ -4,7 +4,7 @@ import { PullToRefresh } from "~/components/PullToRefresh";
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { createHasRendered } from "~/lib/createHasRendered";
 import { HnStorySummary } from "~/models/interfaces";
-import { isLoadingData, StoryPage } from "~/stores/useDataStore";
+import { isLoadingData, refreshActive, StoryPage } from "~/stores/useDataStore";
 import {
   readItems,
   setShouldHideReadItems,
@@ -43,7 +43,7 @@ export function HnStoryList(props: HnStoryListProps) {
           </div>
         }
       >
-        <PullToRefresh disabled={isLoadingData()}>
+        <PullToRefresh disabled={isLoadingData()} onRefresh={refreshActive}>
           <div class="grid grid-cols-[1fr_1fr_1fr_3fr]">
             <For each={itemsToRender()}>
               {(item) => (
