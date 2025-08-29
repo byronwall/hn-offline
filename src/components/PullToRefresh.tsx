@@ -89,7 +89,7 @@ export function PullToRefresh(props: PullToRefreshProps) {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchEnd}
-      style={{ "touch-action": "pan-x" }}
+      style={{ "touch-action": "pan-y" }}
     >
       <div
         class="flex items-center justify-center text-sm text-slate-500 transition-[height] duration-150 ease-out select-none"
