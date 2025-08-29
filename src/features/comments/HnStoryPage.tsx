@@ -121,7 +121,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   }
 
   return (
-    <div class="relative">
+    <div class="relative pb-[70vh]">
       <h2
         class="text-2xl font-bold hover:underline mb-2"
         style={{ "overflow-wrap": "break-word" }}

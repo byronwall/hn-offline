@@ -12,7 +12,7 @@ export default function App() {
   return (
     <Router
       root={(props) => (
-        <main class="bg-white mx-auto flex min-h-screen flex-col items-center justify-between max-w-[640px] w-full pb-[90vh]">
+        <main class="bg-white mx-auto flex min-h-screen flex-col items-center justify-between max-w-[640px] w-full">
           <Title>HN Offline</Title>
           <Meta name="description" content="Hacker News Offline" />
           <div class="sticky top-0 bg-white z-10 w-full">
