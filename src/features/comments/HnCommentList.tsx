@@ -4,6 +4,7 @@ import {
   createSignal,
   For,
   onCleanup,
+  Show,
 } from "solid-js";
 
 import { KidsObj3 } from "~/models/interfaces";
@@ -14,16 +15,12 @@ interface HnCommentListProps {
   childComments: Array<KidsObj3 | null>;
   depth: number;
   authorChain: (string | undefined)[];
-  batchSize?: number; // optional customization
-  padPx?: number; // optional visibility padding
 }
 
-export function HnCommentList(props: HnCommentListProps) {
-  // --- Config ---------------------------------------------------
-  const BATCH_SIZE = props.batchSize ?? 1;
-  const PAD_PX = props.padPx ?? 200; // keep in sync with rootMargin
+const BATCH_SIZE = 1;
+const PAD_PX = 200;
 
-  // --- Data derivation ------------------------------------------
+export function HnCommentList(props: HnCommentListProps) {
   const children = createMemo(() => {
     const filtered = props.childComments.filter(Boolean) as KidsObj3[];
     console.log("[children] recomputed:", filtered.length);
@@ -63,26 +60,24 @@ export function HnCommentList(props: HnCommentListProps) {
   const visibleLen = createMemo(() => visible().length);
   const showMore = createMemo(() => visibleLen() < total());
 
-  // --- Sentinel & loading loop ---------------------------------
   const [sentinel, setSentinel] = createSignal<HTMLDivElement | null>(null);
   let observer: IntersectionObserver | null = null;
   let rafId: number | null = null;
 
   const cancelRaf = () => {
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId);
-      rafId = null;
-      console.log("[raf] canceled");
+    if (rafId === null) {
+      return;
     }
+    cancelAnimationFrame(rafId);
+    rafId = null;
   };
 
   const isPaddedVisible = (el: HTMLElement): boolean => {
     const rect = el.getBoundingClientRect();
     const vh = window.innerHeight || document.documentElement.clientHeight;
-    const vw = window.innerWidth || document.documentElement.clientWidth;
     const vVis = rect.top <= vh + PAD_PX && rect.bottom >= -PAD_PX;
-    const hVis = rect.left <= vw && rect.right >= 0;
-    return vVis && hVis;
+
+    return vVis;
   };
 
   const pumpWhileVisible = (node: HTMLElement) => {
@@ -97,6 +92,7 @@ export function HnCommentList(props: HnCommentListProps) {
         rafId = null;
         return;
       }
+
       const t = total();
       if (visibleCount() >= t) {
         console.log("[pump] stop (all loaded)");
@@ -104,14 +100,7 @@ export function HnCommentList(props: HnCommentListProps) {
         return;
       }
       setVisibleCount((c) => Math.min(c + BATCH_SIZE, t));
-      console.log(
-        "[pump] +",
-        BATCH_SIZE,
-        "->",
-        visibleCount() + BATCH_SIZE,
-        "/",
-        t
-      );
+
       rafId = requestAnimationFrame(step);
     };
     rafId = requestAnimationFrame(step);
@@ -147,7 +136,6 @@ export function HnCommentList(props: HnCommentListProps) {
     });
   });
 
-  // --- Render ---------------------------------------------------
   return (
     <>
       <For each={visible()}>
@@ -160,7 +148,13 @@ export function HnCommentList(props: HnCommentListProps) {
         )}
       </For>
 
-      {showMore() && <div ref={setSentinel} style={{ height: "1px" }} />}
+      <Show when={showMore()}>
+        <div
+          ref={setSentinel}
+          style={{ height: "10px", border: "1px solid red" }}
+          onClick={() => setVisibleCount((c) => c + BATCH_SIZE)}
+        />
+      </Show>
     </>
   );
 }
