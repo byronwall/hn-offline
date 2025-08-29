@@ -33,7 +33,10 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const textToRender = () =>
     processHtmlAndTruncateAnchorText(activeStoryData()?.text || "");
 
-  const handleShareClick = () => {
+  const handleShareClick = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     navigator.share?.({ url: window.location.href });
   };
 
