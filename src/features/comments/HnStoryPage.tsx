@@ -43,9 +43,10 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const navigate = useNavigate();
 
   onMount(() => {
-    if (props.id !== undefined) {
-      saveIdToReadList(props.id);
+    if (props.id === undefined) {
+      return;
     }
+    saveIdToReadList(props.id);
   });
 
   onMount(() => {
@@ -118,10 +119,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       }
     }, 100);
   }
-
-  createEffect(() => {
-    console.log("*** activeStoryData", activeStoryData());
-  });
 
   return (
     <div class="relative">
