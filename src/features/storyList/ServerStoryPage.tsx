@@ -44,12 +44,6 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
     }
   );
 
-  const summaries = createMemo(() =>
-    data()?.data.type === "summaryOnly"
-      ? data()?.data.data
-      : mapStoriesToSummaries(data()?.data.data ?? [])
-  );
-
   createEffect(() => {
     if (data()?.source === "server" && data()?.data.type === "fullData") {
       console.log("*** persisting story list for server data", props.page);
@@ -66,8 +60,19 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
   });
 
   createRenderEffect(() => {
-    setActiveStoryList(summaries() ?? []);
-    addMessage("render", "set summaries");
+    const summaries =
+      data()?.data.type === "summaryOnly"
+        ? data()?.data.data
+        : mapStoriesToSummaries(data()?.data.data ?? []);
+
+    if (summaries === undefined) {
+      return;
+    }
+
+    setActiveStoryList(summaries);
+    addMessage("render", "set summaries", {
+      count: summaries.length,
+    });
   });
 
   return (

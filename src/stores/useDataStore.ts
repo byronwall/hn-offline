@@ -185,6 +185,7 @@ export async function getContent(id: StoryId) {
   const item = await LOCAL_FORAGE_TO_USE.getItem<HnItem>("raw_" + id);
 
   if (item) {
+    addMessage("getContent", "found item in localforage", { id });
     console.log("found item in localforage", item);
     return item;
   }
@@ -244,6 +245,7 @@ export const [refreshType, setRefreshType] = createSignal<
 
 export async function refreshActive() {
   console.log("*** refreshActive", refreshType());
+  addMessage("refreshActive", "refreshActive", { refreshType: refreshType() });
 
   const type = refreshType();
   if (!type) {
@@ -263,5 +265,3 @@ export async function refreshActive() {
   setIsLoadingData(false);
   setRefreshType(undefined);
 }
-
-addMessage("persist", "EOF");
