@@ -1,13 +1,45 @@
 import { A } from "@solidjs/router";
+import { onCleanup, onMount } from "solid-js";
 
 import { cn } from "~/lib/utils";
+import { addMessage } from "~/stores/messages";
 import { isLoadingData, refreshActive } from "~/stores/useDataStore";
 
 import { Shell } from "./Icon";
 
 export function NavBar() {
+  let navRef: HTMLElement | undefined;
+
+  onMount(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+      const el = navRef;
+      if (!el) {
+        return;
+      }
+      addMessage("nav paint", "force opacity change");
+      el.style.setProperty("-webkit-transform", "translateZ(0)");
+      const previousOpacity = el.style.opacity;
+      el.style.opacity = "0.999";
+      requestAnimationFrame(() => {
+        el.style.opacity = previousOpacity;
+      });
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    onCleanup(() => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    });
+  });
   return (
-    <nav class="flex w-full [transform:translateZ(0)] items-center justify-between space-x-2 border border-slate-300 bg-white p-1 will-change-transform [backface-visibility:hidden]">
+    <nav
+      ref={(el) => {
+        navRef = el;
+      }}
+      class="flex w-full [transform:translateZ(0)] items-center justify-between space-x-2 border border-slate-300 bg-white p-1 will-change-transform [backface-visibility:hidden]"
+    >
       <div class="flex items-center">
         <A href="/" class="flex items-center gap-1 hover:underline">
           <img
