@@ -78,3 +78,7 @@ pre {
     background: white;
   }
 }
+
+button {
+  margin: 0;
+}

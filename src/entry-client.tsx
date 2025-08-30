@@ -2,19 +2,14 @@
 import { MetaProvider } from "@solidjs/meta";
 import { mount, StartClient } from "@solidjs/start/client";
 
+import { attachGlobalErrorHandlers } from "./stores/errorOverlay";
 import {
   setServiceWorkerStatus,
   setServiceWorkerVersion,
 } from "./stores/serviceWorkerStatus";
 
-// Global client-side unhandled error logging
-window.addEventListener("error", (event) => {
-  console.error("Unhandled error", event.error || event.message, event);
-});
-
-window.addEventListener("unhandledrejection", (event) => {
-  console.error("Unhandled promise rejection", event.reason, event);
-});
+// Global client-side unhandled error logging + overlay
+attachGlobalErrorHandlers();
 
 mount(
   () => (
@@ -24,11 +19,6 @@ mount(
   ),
   document.getElementById("app")!
 );
-
-// // register PWA service worker
-// // manual registration because file is not in expected path
-// // Dockerfile moves it to /public/sw.js from /public/_build/sw.js
-// // app entry (e.g., src/main.ts or main.jsx)
 
 const skipDev = import.meta.env.PROD;
 
