@@ -39,6 +39,38 @@ export function NavBar() {
     });
   });
 
+  onMount(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) {
+        return; // only when restoring from bfcache
+      }
+      const el = navRef;
+      if (!el) {
+        return;
+      }
+
+      addMessage(
+        "nav paint",
+        "pageshow: bfcache restore; invalidate composited layer"
+      );
+
+      // Toggle position to invalidate the cached composited layer
+      const prev = getComputedStyle(el).position; // 'sticky' or 'fixed' or 'static'
+      el.style.position = "relative";
+      void el.offsetHeight; // force reflow
+      el.style.position = prev === "static" ? "" : prev;
+
+      // Secondary nudge: flip transform value then restore
+      el.style.transform = "translateZ(1px)";
+      requestAnimationFrame(() => {
+        el.style.transform = "translateZ(0)";
+      });
+    };
+
+    window.addEventListener("pageshow", onPageShow);
+    onCleanup(() => window.removeEventListener("pageshow", onPageShow));
+  });
+
   // Also force a paint after client-side navigations
   createEffect(() => {
     // Track all parts of the URL that change during navigation
