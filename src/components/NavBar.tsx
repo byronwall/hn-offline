@@ -7,13 +7,13 @@ import { Shell } from "./Icon";
 
 export function NavBar() {
   return (
-    <nav class="flex w-full justify-between items-center space-x-2 border border-slate-300 p-1">
+    <nav class="flex w-full [transform:translateZ(0)] items-center justify-between space-x-2 border border-slate-300 bg-white p-1 will-change-transform [backface-visibility:hidden]">
       <div class="flex items-center">
         <A href="/" class="flex items-center gap-1 hover:underline">
           <img
             src="/favicon-32x32.png"
             alt="Hacker News Logo"
-            class={cn("w-8 h-8", {
+            class={cn("h-8 w-8", {
               "animate-spin": isLoadingData(),
             })}
           />
@@ -32,8 +32,8 @@ export function NavBar() {
         <div onClick={refreshActive}>
           <div
             class={cn(
-              "hover:cursor-pointer hover:text-blue-500 transition-colors duration-300 ease-in-out",
-              { "animate-spin text-orange-500": isLoadingData() }
+              "transition-colors duration-300 ease-in-out hover:cursor-pointer hover:text-blue-500",
+              { "animate-spin text-orange-500": isLoadingData() },
             )}
           >
             <Shell size="32" color="black" />
