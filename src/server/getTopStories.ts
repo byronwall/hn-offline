@@ -7,7 +7,9 @@ export async function getTopStories(type: string) {
 
   if (!type || STORY_TYPE.indexOf(type as any) === -1) {
     console.log("sending 500", type);
-    throw new Error("Invalid type " + type);
+    throw new Error(
+      "Invalid type " + type + " expected one of " + STORY_TYPE.join(", ")
+    );
   }
 
   const results = cachedData[type] ?? [];
