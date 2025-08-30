@@ -1,12 +1,5 @@
 import { useNavigate } from "@solidjs/router";
-import {
-  createEffect,
-  Match,
-  onCleanup,
-  onMount,
-  Show,
-  Switch,
-} from "solid-js";
+import { Match, onCleanup, onMount, Show, Switch } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { createHasRendered } from "~/lib/createHasRendered";

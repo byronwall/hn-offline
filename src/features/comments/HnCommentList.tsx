@@ -21,46 +21,31 @@ const BATCH_SIZE = 1;
 const PAD_PX = 200;
 
 export function HnCommentList(props: HnCommentListProps) {
-  const children = createMemo(() => {
-    const filtered = props.childComments.filter(Boolean) as KidsObj3[];
-    console.log("[children] recomputed:", filtered.length);
-    return filtered;
-  });
-
+  const children = createMemo(
+    () => props.childComments.filter(Boolean) as KidsObj3[]
+  );
   const total = createMemo(() => children().length);
+
   const [visibleCount, setVisibleCount] = createSignal(0);
+  const visible = createMemo(() =>
+    children().slice(0, Math.min(visibleCount(), total()))
+  );
+  const showMore = createMemo(() => visible().length < total());
 
   // Initialize + clamp when children change
   createEffect(() => {
     const t = total();
     if (t === 0) {
-      if (visibleCount() !== 0) {
-        setVisibleCount(0);
-      }
-      return;
+      return setVisibleCount(0);
     }
-    setVisibleCount((c) => {
-      if (c === 0) {
-        console.log("[visibleCount] init ->", Math.min(BATCH_SIZE, t));
-        return Math.min(BATCH_SIZE, t);
-      }
-      const clamped = Math.min(c, t);
-      if (clamped !== c) {
-        console.log("[visibleCount] clamp ->", clamped, "(total:", t, ")");
-      }
-      return clamped;
-    });
+    setVisibleCount((c) =>
+      c === 0 ? Math.min(BATCH_SIZE, t) : Math.min(c, t)
+    );
   });
-
-  const visible = createMemo(() => {
-    const out = children().slice(0, Math.min(visibleCount(), total()));
-    return out;
-  });
-
-  const visibleLen = createMemo(() => visible().length);
-  const showMore = createMemo(() => visibleLen() < total());
 
   const [sentinel, setSentinel] = createSignal<HTMLDivElement | null>(null);
+  const [intersecting, setIntersecting] = createSignal(false);
+
   let observer: IntersectionObserver | null = null;
   let rafId: number | null = null;
 
@@ -72,68 +57,74 @@ export function HnCommentList(props: HnCommentListProps) {
     rafId = null;
   };
 
-  const isPaddedVisible = (el: HTMLElement): boolean => {
-    const rect = el.getBoundingClientRect();
-    const vh = window.innerHeight || document.documentElement.clientHeight;
-    const vVis = rect.top <= vh + PAD_PX && rect.bottom >= -PAD_PX;
-
-    return vVis;
+  const stepPump = (node: HTMLElement) => {
+    // stop if IO says not intersecting, or no more items, or node gone
+    if (!intersecting() || !showMore() || !node.isConnected) {
+      rafId = null;
+      return;
+    }
+    const t = total();
+    setVisibleCount((c) => Math.min(c + BATCH_SIZE, t));
+    rafId = requestAnimationFrame(() => stepPump(node));
   };
 
-  const pumpWhileVisible = (node: HTMLElement) => {
-    cancelRaf();
-    const step = () => {
-      if (!node) {
-        return;
-      }
-      if (!isPaddedVisible(node)) {
-        // Stop if sentinel escaped our padded viewport
-        console.log("[pump] stop (not visible)");
-        rafId = null;
-        return;
-      }
-
-      const t = total();
-      if (visibleCount() >= t) {
-        console.log("[pump] stop (all loaded)");
-        rafId = null;
-        return;
-      }
-      setVisibleCount((c) => Math.min(c + BATCH_SIZE, t));
-
-      rafId = requestAnimationFrame(step);
-    };
-    rafId = requestAnimationFrame(step);
+  const ensurePumpRunning = (node: HTMLElement) => {
+    if (rafId != null) {
+      return;
+    }
+    if (intersecting() && showMore()) {
+      rafId = requestAnimationFrame(() => stepPump(node));
+    }
   };
 
-  // Observe the sentinel; kick off pump when it intersects
+  // Observe the sentinel with the scrollRoot as IO root
   createEffect(() => {
     const node = sentinel();
     if (!node) {
       return;
     }
 
-    // Ensure clean prev
     observer?.disconnect();
     cancelRaf();
+    setIntersecting(false);
 
     observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry?.isIntersecting) {
-          return;
+        const on = !!entry?.isIntersecting;
+        setIntersecting(on);
+        if (on) {
+          ensurePumpRunning(node);
+        } else {
+          cancelRaf();
         }
-        console.log("[io] intersect -> pump");
-        pumpWhileVisible(node);
       },
-      { rootMargin: `0px 0px ${PAD_PX}px 0px`, threshold: 0.01 }
+      {
+        root: null,
+        rootMargin: `${PAD_PX}px 0px ${PAD_PX}px 0px`, // symmetric pad
+        threshold: 0, // fire as soon as it touches the padded root
+      }
     );
 
     observer.observe(node);
+
+    // If it mounts already visible, IO may not fire until next frame: nudge it.
+    queueMicrotask(() => ensurePumpRunning(node));
+
     onCleanup(() => {
       observer?.disconnect();
       observer = null;
       cancelRaf();
     });
+  });
+
+  // If showMore flips true (e.g., after collapse/expand), try to (re)start the pump.
+  createEffect(() => {
+    const node = sentinel();
+    if (node && showMore()) {
+      queueMicrotask(() => ensurePumpRunning(node));
+    } else {
+      cancelRaf();
+    }
   });
 
   return (
