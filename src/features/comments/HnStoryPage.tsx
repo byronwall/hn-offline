@@ -116,7 +116,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   return (
     <div class="relative pb-[70vh]">
       <h2
-        class="text-2xl font-bold hover:underline mb-2"
+        class="mb-2 text-2xl font-bold hover:underline"
         style={{ "overflow-wrap": "break-word" }}
       >
         <Switch>
@@ -131,7 +131,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
       <div
         class={cn({
-          "border-l-4 border-orange-500 px-2 rounded-tl rounded-bl":
+          "rounded-tl rounded-bl border-l-4 border-orange-500 px-2":
             activeStoryData()?.text,
           collapsed: !isTextOpen(),
         })}
@@ -158,7 +158,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
         <Show when={activeStoryData()?.text !== undefined && isTextOpen()}>
           <div>
             {/*  eslint-disable-next-line solid/no-innerhtml */}
-            <p class="user-text break-words " innerHTML={textToRender()} />
+            <p class="user-text break-words" innerHTML={textToRender()} />
           </div>
         </Show>
       </div>

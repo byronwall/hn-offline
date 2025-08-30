@@ -19,11 +19,11 @@
   }
 }
 .user-text a {
-  @apply text-slate-700 hover:underline hover:text-slate-600;
+  @apply text-slate-700 hover:text-slate-600 hover:underline;
 }
 
 a.active {
-  @apply text-slate-700 font-bold border-b border-b-orange-200;
+  @apply border-b border-b-orange-200 font-bold text-slate-700;
 }
 
 pre {

@@ -74,7 +74,7 @@ export default createHandler(() => (
               data-website-id="b0a4cc50-7c62-4999-b77f-e277452a636c"
             />
           </head>
-          <body class="bg-orange-50 relative">
+          <body class="relative bg-orange-50">
             <div id="app">{children}</div>
             {scripts}
           </body>

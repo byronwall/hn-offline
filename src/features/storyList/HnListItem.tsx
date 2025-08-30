@@ -15,11 +15,11 @@ export function HnListItem(props: HnStoryProps) {
 
   return (
     <div
-      class={cn("grid grid-cols-subgrid col-span-4", {
+      class={cn("col-span-4 grid grid-cols-subgrid", {
         "opacity-20": isRead(),
       })}
     >
-      <p class="col-span-4 mt-1.5 font-medium mb-1 hover:underline">
+      <p class="col-span-4 mt-1.5 mb-1 font-medium hover:underline">
         {props.data.url === undefined ? (
           <A href={"/story/" + props.data.id}>{props.data.title}</A>
         ) : (
@@ -29,7 +29,7 @@ export function HnListItem(props: HnStoryProps) {
         )}
       </p>
 
-      <span class="flex gap-1 text-gray-700 ">
+      <span class="flex gap-1 text-gray-700">
         <ChevronUp class="stroke-gray-500" />
         {props.data.score}
       </span>
@@ -42,7 +42,7 @@ export function HnListItem(props: HnStoryProps) {
           {props.data.descendants}
         </A>
       )}
-      <span class="text-gray-600 text-right mr-2">
+      <span class="mr-2 text-right text-gray-600">
         {timeSince(props.data.time)}
       </span>
       <span class="truncate text-gray-400">{getDomain(props.data.url)}</span>

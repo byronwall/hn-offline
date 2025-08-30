@@ -195,10 +195,10 @@ function formatZodError(err: any): string {
         err.received === "undefined"
           ? "undefined"
           : err.received === "null"
-          ? "null"
-          : typeof err.received === "string"
-          ? `"${err.received}"`
-          : String(err.received);
+            ? "null"
+            : typeof err.received === "string"
+              ? `"${err.received}"`
+              : String(err.received);
       errorDetails += ` (value: ${receivedValue})`;
     }
   }

@@ -33,7 +33,7 @@ export function NavBar() {
           <div
             class={cn(
               "transition-colors duration-300 ease-in-out hover:cursor-pointer hover:text-blue-500",
-              { "animate-spin text-orange-500": isLoadingData() },
+              { "animate-spin text-orange-500": isLoadingData() }
             )}
           >
             <Shell size="32" color="black" />

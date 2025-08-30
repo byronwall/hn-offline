@@ -37,7 +37,7 @@ export function HnStoryList(props: HnStoryListProps) {
       <Show
         when={itemsToRender().length > 0}
         fallback={
-          <div class="text-center text-gray-500 text-lg">
+          <div class="text-center text-lg text-gray-500">
             No items to show. Most likely, you are filtering to hide read items.
             Click the toggle above to change the setting.
           </div>
@@ -64,7 +64,7 @@ export function HnStoryList(props: HnStoryListProps) {
         </PullToRefresh>
       </Show>
       <div class="flex items-center gap-2 pt-8">
-        <label class="inline-flex items-center cursor-pointer gap-2">
+        <label class="inline-flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
             checked={shouldHideReadItems()}
@@ -72,7 +72,7 @@ export function HnStoryList(props: HnStoryListProps) {
             class="peer sr-only"
           />
 
-          <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-600" />
+          <div class="peer relative h-6 w-11 rounded-full bg-gray-200 peer-checked:bg-orange-600 peer-focus:ring-4 peer-focus:ring-orange-300 peer-focus:outline-none after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white rtl:peer-checked:after:-translate-x-full dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-orange-800" />
 
           <span>Hide read items</span>
         </label>

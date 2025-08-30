@@ -53,12 +53,12 @@ export function StatusBar() {
 
   return (
     <div
-      class={`sticky bottom-0 bg-white z-10 w-full border-t border-slate-300 transition-[height] duration-300 overflow-hidden ${
+      class={`sticky bottom-0 z-10 w-full overflow-hidden border-t border-slate-300 bg-white transition-[height] duration-300 ${
         expanded() ? "h-[300px]" : "h-[36px]"
       }`}
     >
       <div
-        class="flex w-full justify-center items-center space-x-2 p-1 text-sm cursor-pointer select-none"
+        class="flex w-full cursor-pointer items-center justify-center space-x-2 p-1 text-sm select-none"
         onClick={() => setExpanded((v) => !v)}
         title="Click to expand"
       >
@@ -74,8 +74,8 @@ export function StatusBar() {
 
       <Show when={expanded()}>
         <div class="h-[1px] w-full bg-slate-200" />
-        <div class="p-2 h-[calc(300px-36px-1px)] overflow-auto">
-          <div class="text-xs text-slate-500 mb-1">
+        <div class="h-[calc(300px-36px-1px)] overflow-auto p-2">
+          <div class="mb-1 text-xs text-slate-500">
             Messages ({getMessages().length})
           </div>
           <div class="space-y-2">
@@ -87,38 +87,38 @@ export function StatusBar() {
                 return (
                   <div
                     class={
-                      "text-sm rounded px-2 py-1 grid grid-cols-[120px_1fr] items-start gap-2 border text-slate-700 md:grid-cols-[84px_52px_80px_1fr_auto]"
+                      "grid grid-cols-[120px_1fr] items-start gap-2 rounded border px-2 py-1 text-sm text-slate-700 md:grid-cols-[84px_52px_80px_1fr_auto]"
                     }
                     style={{ "background-color": bg, "border-color": border }}
                   >
-                    <div class="flex items-center gap-2 col-span-1 md:col-auto md:contents">
-                      <span class="text-[10px] text-slate-500 whitespace-nowrap">
+                    <div class="col-span-1 flex items-center gap-2 md:col-auto md:contents">
+                      <span class="text-[10px] whitespace-nowrap text-slate-500">
                         {new Date(m.timestamp).toLocaleTimeString()}
                       </span>
                       <Show
                         when={delta !== undefined}
                         fallback={
-                          <span class="text-[10px] text-slate-500 whitespace-nowrap" />
+                          <span class="text-[10px] whitespace-nowrap text-slate-500" />
                         }
                       >
-                        <span class="text-[10px] text-slate-500 whitespace-nowrap">
+                        <span class="text-[10px] whitespace-nowrap text-slate-500">
                           +{formatDelta(delta!)}
                         </span>
                       </Show>
                     </div>
                     <span
-                      class="font-mono text-xs px-1 rounded col-span-1 col-start-1 row-start-2 md:col-auto md:row-auto break-words min-w-0"
+                      class="col-span-1 col-start-1 row-start-2 min-w-0 rounded px-1 font-mono text-xs break-words md:col-auto md:row-auto"
                       style={{ "background-color": `hsl(${hue}, 20%, 90%)` }}
                     >
                       {m.key}
                     </span>
-                    <span class="min-w-0 break-words col-span-1 col-start-2 row-start-1 md:col-auto md:row-auto">
+                    <span class="col-span-1 col-start-2 row-start-1 min-w-0 break-words md:col-auto md:row-auto">
                       {m.message}
                     </span>
-                    <div class="flex flex-wrap gap-1 col-span-1 md:col-auto min-w-0 items-start">
+                    <div class="col-span-1 flex min-w-0 flex-wrap items-start gap-1 md:col-auto">
                       <For each={m.args}>
                         {(arg) => (
-                          <code class="text-[11px] bg-slate-100 text-slate-700 px-1 py-[1px] rounded max-w-full break-all">
+                          <code class="max-w-full rounded bg-slate-100 px-1 py-[1px] text-[11px] break-all text-slate-700">
                             {(() => {
                               try {
                                 return typeof arg === "string"

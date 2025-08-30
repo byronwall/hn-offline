@@ -12,13 +12,13 @@ export default function App() {
   return (
     <Router
       root={(props) => (
-        <main class="bg-white mx-auto flex min-h-screen flex-col items-center justify-between max-w-[640px] w-full">
+        <main class="mx-auto flex min-h-screen w-full max-w-[640px] flex-col items-center justify-between bg-white">
           <Title>HN Offline</Title>
           <Meta name="description" content="Hacker News Offline" />
-          <div class="sticky top-0 bg-white z-10 w-full">
+          <div class="sticky top-0 z-10 w-full bg-white">
             <NavBar />
           </div>
-          <div class="border border-slate-300 flex-1 w-full p-1">
+          <div class="w-full flex-1 border border-slate-300 p-1">
             <Suspense>{props.children}</Suspense>
           </div>
           <StatusBar />

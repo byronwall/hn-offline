@@ -188,11 +188,11 @@ export function HnComment(props: HnCommentProps) {
             }px`,
           }}
           ref={setDivRef}
-          class={cn("font-sans flex items-center gap-1")}
+          class={cn("flex items-center gap-1 font-sans")}
         >
           <span
             class={cn({
-              "text-orange-700 font-bold":
+              "font-bold text-orange-700":
                 activeStoryData()?.by === props.comment.by,
               truncate: true,
             })}
@@ -204,7 +204,7 @@ export function HnComment(props: HnCommentProps) {
           {" ago"}
 
           <span>{"|"}</span>
-          <button onClick={handleShareClick} class="hover:text-orange-500 ml-1">
+          <button onClick={handleShareClick} class="ml-1 hover:text-orange-500">
             <ArrowUpRightFromSquare size={16} />
           </button>
         </p>
