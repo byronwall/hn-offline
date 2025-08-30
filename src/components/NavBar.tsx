@@ -40,35 +40,58 @@ export function NavBar() {
   });
 
   onMount(() => {
-    const onPageShow = (e: PageTransitionEvent) => {
-      if (!e.persisted) {
-        return; // only when restoring from bfcache
-      }
-      const el = navRef;
-      if (!el) {
+    const stash = { prevPos: "" as string };
+
+    const onPageHide = (e: PageTransitionEvent) => {
+      // Only when going into bfcache
+      if (!e.persisted || !navRef) {
         return;
       }
+      const cs = getComputedStyle(navRef);
+      stash.prevPos = cs.position; // remember sticky/fixed/static
+      navRef.style.position = "relative"; // disable sticky before snapshot
 
-      addMessage(
-        "nav paint",
-        "pageshow: bfcache restore; invalidate composited layer"
-      );
-
-      // Toggle position to invalidate the cached composited layer
-      const prev = getComputedStyle(el).position; // 'sticky' or 'fixed' or 'static'
-      el.style.position = "relative";
-      void el.offsetHeight; // force reflow
-      el.style.position = prev === "static" ? "" : prev;
-
-      // Secondary nudge: flip transform value then restore
-      el.style.transform = "translateZ(1px)";
-      requestAnimationFrame(() => {
-        el.style.transform = "translateZ(0)";
-      });
+      addMessage("nav paint", "pagehide: bfcache snapshot; disable sticky");
     };
 
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!navRef) {
+        return;
+      }
+      // Restore whatever it was (sticky/fixed) if we changed it
+      if (e.persisted && stash.prevPos) {
+        navRef.style.position = stash.prevPos;
+        // force reflow + layer refresh
+        void navRef.offsetHeight;
+        navRef.style.transform = "translateZ(1px)";
+        requestAnimationFrame(
+          () => (navRef!.style.transform = "translateZ(0)")
+        );
+      }
+
+      addMessage("nav paint", "pageshow: bfcache restore; restore sticky");
+    };
+
+    window.addEventListener("pagehide", onPageHide);
     window.addEventListener("pageshow", onPageShow);
-    onCleanup(() => window.removeEventListener("pageshow", onPageShow));
+    onCleanup(() => {
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+    });
+  });
+
+  onMount(() => {
+    const onPop = () => {
+      if (!navRef) {
+        return;
+      }
+      addMessage("nav paint", "popstate: invalidate composited layer");
+
+      navRef.style.transform = "translateZ(1px)";
+      requestAnimationFrame(() => (navRef!.style.transform = "translateZ(0)"));
+    };
+    window.addEventListener("popstate", onPop);
+    onCleanup(() => window.removeEventListener("popstate", onPop));
   });
 
   // Also force a paint after client-side navigations
