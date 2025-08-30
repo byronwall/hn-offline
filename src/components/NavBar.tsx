@@ -1,5 +1,5 @@
-import { A } from "@solidjs/router";
-import { onCleanup, onMount } from "solid-js";
+import { A, useLocation } from "@solidjs/router";
+import { createEffect, onCleanup, onMount } from "solid-js";
 
 import { cn } from "~/lib/utils";
 import { addMessage } from "~/stores/messages";
@@ -9,23 +9,28 @@ import { Shell } from "./Icon";
 
 export function NavBar() {
   let navRef: HTMLElement | undefined;
+  const location = useLocation();
+
+  const forceNavPaint = (reason: string) => {
+    if (document.visibilityState !== "visible") {
+      return;
+    }
+    const el = navRef;
+    if (!el) {
+      return;
+    }
+    addMessage("nav paint", "force opacity change", reason);
+    el.style.setProperty("-webkit-transform", "translateZ(0)");
+    const previousOpacity = el.style.opacity;
+    el.style.opacity = "0.999";
+    requestAnimationFrame(() => {
+      el.style.opacity = previousOpacity;
+    });
+  };
 
   onMount(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") {
-        return;
-      }
-      const el = navRef;
-      if (!el) {
-        return;
-      }
-      addMessage("nav paint", "force opacity change");
-      el.style.setProperty("-webkit-transform", "translateZ(0)");
-      const previousOpacity = el.style.opacity;
-      el.style.opacity = "0.999";
-      requestAnimationFrame(() => {
-        el.style.opacity = previousOpacity;
-      });
+      forceNavPaint("visibilitychange");
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -33,6 +38,16 @@ export function NavBar() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     });
   });
+
+  // Also force a paint after client-side navigations
+  createEffect(() => {
+    // Track all parts of the URL that change during navigation
+    const current = `${location.pathname}${location.search}${location.hash}`;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    current;
+    forceNavPaint("routechange");
+  });
+
   return (
     <nav
       ref={(el) => {
