@@ -1,9 +1,11 @@
 import { A } from "@solidjs/router";
 import { onMount } from "solid-js";
 
+import { addMessage } from "~/stores/messages";
+
 export default function Offline() {
   onMount(() => {
-    console.log("*** Offline");
+    addMessage("Offline", "Loading offline shell");
   });
 
   return (
