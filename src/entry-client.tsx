@@ -26,7 +26,7 @@ const skipDev = import.meta.env.PROD;
 if ("serviceWorker" in navigator && skipDev) {
   (async () => {
     try {
-      const reg = await navigator.serviceWorker.register("/sw.js", {
+      const reg = await navigator.serviceWorker.register("/_build/sw.js", {
         scope: "/",
       });
 

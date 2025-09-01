@@ -1,12 +1,21 @@
 /* Service Worker – Offline shell + Online-updating navigations (plain JS) */
 /* eslint-disable no-restricted-globals */
+import { clientsClaim } from "workbox-core";
+import { precacheAndRoute } from "workbox-precaching";
+
+// Auto update: activate new SW immediately and take control
+self.skipWaiting();
+clientsClaim();
+
+// Injected by VitePWA (injectManifest): list of build assets to precache
+precacheAndRoute(self.__WB_MANIFEST);
 
 (() => {
   "use strict";
 
   // Bump VERSION when you want to drop old caches immediately.
   // (Later you can inject this automatically via Vite `define`.)
-  const VERSION = "v1";
+  const VERSION = "v1756731035748";
   const CACHE_PREFIX = "app-";
   const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
   const PAGES_CACHE = `${CACHE_PREFIX}pages-${VERSION}`;
