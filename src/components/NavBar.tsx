@@ -1,6 +1,8 @@
 import { A } from "@solidjs/router";
+import { Show } from "solid-js";
 
 import { cn } from "~/lib/utils";
+import { isOfflineMode } from "~/stores/serviceWorkerStatus";
 import { isLoadingData, refreshActive } from "~/stores/useDataStore";
 
 import { Shell } from "./Icon";
@@ -20,7 +22,6 @@ export function NavBar() {
           <h1 class="text-2xl font-bold">Offline</h1>
         </A>
       </div>
-
       <div class="flex items-center gap-2 text-xl">
         <A href="/day" class="hover:underline">
           day
@@ -28,17 +29,25 @@ export function NavBar() {
         <A href="/week" class="hover:underline">
           week
         </A>
-
-        <div onClick={refreshActive}>
+        <Show when={!isOfflineMode()}>
           <div
-            class={cn(
-              "transition-colors duration-300 ease-in-out hover:cursor-pointer hover:text-blue-500",
-              { "animate-spin text-orange-500": isLoadingData() }
-            )}
+            onClick={() => {
+              if (isOfflineMode()) {
+                return;
+              }
+              refreshActive();
+            }}
           >
-            <Shell size="32" color="black" />
+            <div
+              class={cn(
+                "transition-colors duration-300 ease-in-out hover:cursor-pointer hover:text-blue-500",
+                { "animate-spin text-orange-500": isLoadingData() }
+              )}
+            >
+              <Shell size="32" color="black" />
+            </div>
           </div>
-        </div>
+        </Show>
       </div>
     </nav>
   );

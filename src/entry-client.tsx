@@ -4,6 +4,7 @@ import { mount, StartClient } from "@solidjs/start/client";
 
 import { attachGlobalErrorHandlers } from "./stores/errorOverlay";
 import {
+  setIsOfflineMode,
   setServiceWorkerStatus,
   setServiceWorkerVersion,
 } from "./stores/serviceWorkerStatus";
@@ -119,4 +120,16 @@ if ("serviceWorker" in navigator && skipDev) {
   })();
 } else {
   setServiceWorkerStatus("unsupported");
+}
+
+// Track browser online/offline to toggle offline mode
+try {
+  if (typeof window !== "undefined") {
+    // Initialize from current navigator state
+    setIsOfflineMode(!navigator.onLine);
+    window.addEventListener("online", () => setIsOfflineMode(false));
+    window.addEventListener("offline", () => setIsOfflineMode(true));
+  }
+} catch (_) {
+  // no-op
 }

@@ -32,3 +32,14 @@ export const setServiceWorkerStatus = (status: ServiceWorkerStatus) => {
 createEffect(() => {
   addMessage("swStatus", serviceWorkerStatus());
 });
+
+// Offline mode tracking
+export const [isOfflineMode, setIsOfflineMode] = createSignal<boolean>(false);
+
+createEffect(() => {
+  const offline = isOfflineMode();
+  addMessage(
+    "offline",
+    offline ? "Entered offline mode" : "Exited offline mode"
+  );
+});
