@@ -34,7 +34,12 @@
         // Precache primary navigable pages so first offline load works
         try {
           const primaryPagesCache = await caches.open(PAGES_CACHE);
-          await primaryPagesCache.addAll(["/", "/day", "/week"]);
+          await primaryPagesCache.addAll([
+            "/",
+            "/day",
+            "/week",
+            "/story/45018509", // random story with few comments - just the JS
+          ]);
           console.log("📦 Precached primary pages: /, /day, /week");
         } catch (e) {
           console.warn("SW: failed to precache some primary pages", e);
