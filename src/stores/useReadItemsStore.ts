@@ -1,5 +1,10 @@
 import { makePersisted } from "@solid-primitives/storage";
-import { createMemo, createReaction, createSignal } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createReaction,
+  createSignal,
+} from "solid-js";
 import { createStore, reconcile, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
@@ -43,10 +48,22 @@ const scheduleCleanup = createReaction(() => {
 });
 scheduleCleanup(hasLength);
 
-export function saveIdToReadList(id: number | undefined): void {
+const waitingToLoad = new Promise<boolean>((resolve) => {
+  createEffect(() => {
+    if (hasLength()) {
+      resolve(true);
+      addMessage("readItems", "waitingToLoad done");
+    }
+  });
+});
+
+export async function saveIdToReadList(id: number | undefined): Promise<void> {
   if (!id) {
     return;
   }
+
+  // prevent the store from being accessed before it's ready
+  await waitingToLoad;
 
   addMessage("readItems", "saveIdToReadList", { id });
 
