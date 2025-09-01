@@ -15,6 +15,7 @@
 
   // Install: precache offline shell and initial HTML pages
   self.addEventListener("install", (event) => {
+    console.log("SW: install event");
     event.waitUntil(
       (async () => {
         const cache = await caches.open(STATIC_CACHE);
@@ -33,16 +34,21 @@
 
         // Precache primary navigable pages so first offline load works
         try {
-          const primaryPagesCache = await caches.open(PAGES_CACHE);
-          await primaryPagesCache.addAll([
+          const primaryPaths = [
             "/",
             "/day",
             "/week",
-            "/story/45018509", // random story with few comments - just the JS
-          ]);
-          console.log("📦 Precached primary pages: /, /day, /week");
+            "/story/45018509",
+            "/offline",
+          ];
+          for (const path of primaryPaths) {
+            await precachePageAndAssets(path);
+          }
+          console.log(
+            "📦 Precached primary pages and assets: /, /day, /week, /story/45018509"
+          );
         } catch (e) {
-          console.warn("SW: failed to precache some primary pages", e);
+          console.warn("SW: failed to precache some primary pages/assets", e);
         }
         await self.skipWaiting();
       })()
@@ -188,6 +194,111 @@
       console.log("🛜 Asset fetched & cached:", req.url);
     }
     return resp;
+  }
+
+  // ---- Precache Helpers ----------------------------------------------------
+
+  async function precachePageAndAssets(pathname) {
+    const pages = await caches.open(PAGES_CACHE);
+    let resp;
+    try {
+      // Bypass HTTP cache and old SW caches
+      resp = await fetch(new Request(pathname, { cache: "reload" }));
+    } catch (e) {
+      console.warn("SW: failed to fetch page for precache:", pathname, e);
+      return;
+    }
+    if (!isCacheable(resp)) {
+      console.debug("SW: page not cacheable:", pathname, resp?.status);
+      return;
+    }
+    try {
+      await pages.put(new Request(pathname, { method: "GET" }), resp.clone());
+    } catch (e) {
+      console.debug("SW: pages.put failed during precache", pathname, e);
+    }
+
+    // Attempt to parse HTML and precache its module/style assets
+    let html;
+    try {
+      html = await resp.clone().text();
+    } catch (_) {
+      html = undefined;
+    }
+    if (!html) {
+      return;
+    }
+
+    const assets = extractAssetUrls(html);
+    if (assets.length === 0) {
+      return;
+    }
+    const staticCache = await caches.open(STATIC_CACHE);
+    const requests = assets.map((u) => new Request(u, { method: "GET" }));
+    try {
+      await Promise.all(
+        requests.map(async (r) => {
+          const hit = await staticCache.match(r, { ignoreVary: true });
+          if (!hit) {
+            try {
+              const res = await fetch(r);
+              if (isCacheable(res)) {
+                await staticCache.put(r, res.clone());
+              }
+            } catch (_) {
+              // ignore individual asset failures
+            }
+          }
+        })
+      );
+      console.log("📦 Precached assets for", pathname, assets);
+    } catch (e) {
+      console.debug("SW: asset precache failed for", pathname, e);
+    }
+  }
+
+  function extractAssetUrls(html) {
+    const urls = new Set();
+    const origin = self.location.origin;
+    const add = (href) => {
+      if (!href) {
+        return;
+      }
+      try {
+        const abs = new URL(href, origin);
+        if (abs.origin === origin) {
+          urls.add(abs.pathname + abs.search);
+        }
+      } catch (_) {
+        // ignore invalid URLs
+      }
+    };
+
+    // <link rel="modulepreload" href="...">
+    for (const m of html.matchAll(
+      /<link[^>]+rel=["']modulepreload["'][^>]*href=["']([^"']+)["'][^>]*>/gi
+    )) {
+      add(m[1]);
+    }
+    // <link rel="stylesheet" href="...">
+    for (const m of html.matchAll(
+      /<link[^>]+rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi
+    )) {
+      add(m[1]);
+    }
+    // <link rel="preload" as="style" href="...">
+    for (const m of html.matchAll(
+      /<link[^>]+rel=["']preload["'][^>]*as=["']style["'][^>]*href=["']([^"']+)["'][^>]*>/gi
+    )) {
+      add(m[1]);
+    }
+    // <script type="module" src="...">
+    for (const m of html.matchAll(
+      /<script[^>]+type=["']module["'][^>]*src=["']([^"']+)["'][^>]*><\/script>/gi
+    )) {
+      add(m[1]);
+    }
+    return Array.from(urls);
   }
 
   function isCacheable(resp) {
