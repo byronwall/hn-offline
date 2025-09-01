@@ -11,7 +11,7 @@
   const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
   const PAGES_CACHE = `${CACHE_PREFIX}pages-${VERSION}`;
 
-  // We do NOT precache SSR pages. Instead, precache a minimal offline shell.
+  // We precache a minimal offline shell and core navigable pages for offline first-load.
 
   // Install: precache offline shell and initial HTML pages
   self.addEventListener("install", (event) => {
@@ -29,6 +29,15 @@
           );
           // Abort install so an existing SW (and its caches) keep serving
           throw e;
+        }
+
+        // Precache primary navigable pages so first offline load works
+        try {
+          const primaryPagesCache = await caches.open(PAGES_CACHE);
+          await primaryPagesCache.addAll(["/", "/day", "/week"]);
+          console.log("📦 Precached primary pages: /, /day, /week");
+        } catch (e) {
+          console.warn("SW: failed to precache some primary pages", e);
         }
         await self.skipWaiting();
       })()
@@ -244,13 +253,26 @@
       resolution = "timeout";
     }
 
-    if (!response && !PRIMARY_PAGES.has(pathname)) {
-      response = await pages.match(req, { ignoreVary: true });
+    // Try cached page for any navigation if network failed or timed out.
+    if (!response) {
+      // For primary pages, match the canonical route (without trailing slash differences)
+      const canonicalPath =
+        pathname.endsWith("/") && pathname.length > 1
+          ? pathname.slice(0, -1)
+          : pathname;
+      const matchReq = PRIMARY_PAGES.has(canonicalPath)
+        ? new Request(canonicalPath, { method: "GET" })
+        : req;
+      response =
+        (await pages.match(matchReq, { ignoreVary: true })) ||
+        (PRIMARY_PAGES.has(canonicalPath)
+          ? await pages.match(canonicalPath, { ignoreVary: true })
+          : undefined);
       if (response) {
-        console.log("📦 Page cache HIT:", pathname);
+        console.log("📦 Page cache HIT:", canonicalPath);
         resolution = "page-cache";
       } else {
-        console.debug("📦 Page cache MISS:", pathname);
+        console.debug("📦 Page cache MISS:", canonicalPath);
       }
     }
 
