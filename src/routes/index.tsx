@@ -1,5 +1,5 @@
-import { ServerStoryPage } from "~/features/storyList/ServerStoryPage";
+import { StoryListRoute } from "~/features/storyList/StoryListRoute";
 
 export default function Home() {
-  return <ServerStoryPage page="topstories" />;
+  return <StoryListRoute page="topstories" />;
 }
