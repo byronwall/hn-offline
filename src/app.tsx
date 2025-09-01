@@ -17,9 +17,8 @@ export default function App() {
         <main class="mx-auto flex min-h-screen w-full max-w-[640px] flex-col items-center justify-between bg-white">
           <Title>HN Offline</Title>
           <Meta name="description" content="Hacker News Offline" />
-          <div class="sticky top-0 z-10 w-full bg-white">
-            <NavBar />
-          </div>
+          <NavBar />
+          <div class="h-12 w-full" />
           <div class="w-full flex-1 border border-slate-300 p-1">
             <ErrorBoundary
               fallback={(err) => {
