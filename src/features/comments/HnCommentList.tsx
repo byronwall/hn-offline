@@ -140,11 +140,7 @@ export function HnCommentList(props: HnCommentListProps) {
       </For>
 
       <Show when={showMore()}>
-        <div
-          ref={setSentinel}
-          style={{ height: "10px", border: "1px solid red" }}
-          onClick={() => setVisibleCount((c) => c + BATCH_SIZE)}
-        />
+        <div ref={setSentinel} style={{ height: "1px" }} />
       </Show>
     </>
   );
