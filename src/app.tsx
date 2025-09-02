@@ -19,7 +19,7 @@ export default function App() {
           <Meta name="description" content="Hacker News Offline" />
           <NavBar />
           <div class="h-12 w-full" />
-          <div class="w-full flex-1 border border-slate-300 p-1">
+          <div class="w-full flex-1 border-x border-b border-slate-300 p-1">
             <ErrorBoundary
               fallback={(err) => {
                 // Surface the error overlay in all environments
