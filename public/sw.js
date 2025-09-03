@@ -8,6 +8,7 @@ self.skipWaiting();
 clientsClaim();
 
 // Injected by VitePWA (injectManifest): list of build assets to precache
+console.log("precacheAndRoute", self.__WB_MANIFEST);
 precacheAndRoute(self.__WB_MANIFEST);
 
 (() => {
