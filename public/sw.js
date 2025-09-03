@@ -78,7 +78,7 @@ clientsClaim();
           try {
             await self.registration.navigationPreload.enable();
           } catch (e) {
-            console.debug("SW: navigationPreload enable failed", e);
+            console.log("SW: navigationPreload enable failed", e);
           }
         }
 
@@ -103,7 +103,7 @@ clientsClaim();
     const req = event.request;
     try {
       const u = new URL(req.url);
-      console.debug("SW: fetch event", {
+      console.log("SW: fetch event", {
         url: req.url,
         mode: req.mode,
         destination: req.destination,
@@ -112,14 +112,14 @@ clientsClaim();
         pathname: u.pathname,
       });
     } catch (e) {
-      console.debug("SW: fetch event URL parse failed", e);
+      console.log("SW: fetch event URL parse failed", e);
     }
     if (req.method !== "GET") {
       try {
         const { pathname } = new URL(req.url);
-        console.debug("SW: skip non-GET", req.method, pathname);
+        console.log("SW: skip non-GET", req.method, pathname);
       } catch (e) {
-        console.debug("SW: non-GET URL parse failed", e);
+        console.log("SW: non-GET URL parse failed", e);
       }
       return;
     }
@@ -128,14 +128,14 @@ clientsClaim();
     const url = new URL(req.url);
     const sameOrigin = url.origin === self.location.origin;
     if (!sameOrigin) {
-      console.debug("SW: skip cross-origin", {
+      console.log("SW: skip cross-origin", {
         origin: url.origin,
         pathname: url.pathname,
       });
       return;
     }
     if (url.pathname.startsWith("/api/")) {
-      console.debug("SW: skip /api request", url.pathname);
+      console.log("SW: skip /api request", url.pathname);
       return;
     }
     // Do not bypass /story navigations; handle them so we can provide offline fallbacks
@@ -217,7 +217,7 @@ clientsClaim();
   async function precacheManifestEntries() {
     const entries = self.__WB_MANIFEST || [];
     if (!Array.isArray(entries) || entries.length === 0) {
-      console.debug("SW: __WB_MANIFEST empty or not injected");
+      console.log("SW: __WB_MANIFEST empty or not injected");
       return;
     }
 
@@ -282,13 +282,13 @@ clientsClaim();
       return;
     }
     if (!isCacheable(resp)) {
-      console.debug("SW: page not cacheable:", pathname, resp?.status);
+      console.log("SW: page not cacheable:", pathname, resp?.status);
       return;
     }
     try {
       await pages.put(new Request(pathname, { method: "GET" }), resp.clone());
     } catch (e) {
-      console.debug("SW: pages.put failed during precache", pathname, e);
+      console.log("SW: pages.put failed during precache", pathname, e);
     }
 
     // Attempt to parse HTML and precache its module/style assets
@@ -329,7 +329,7 @@ clientsClaim();
       );
       console.log("📦 Precached assets for", pathname, assets);
     } catch (e) {
-      console.debug("SW: asset precache failed for", pathname, e);
+      console.log("SW: asset precache failed for", pathname, e);
     }
   }
 
@@ -416,7 +416,7 @@ clientsClaim();
         pathname
       );
       if (resp) {
-        console.debug("SW: nav response meta", {
+        console.log("SW: nav response meta", {
           status: resp.status,
           ok: resp.ok,
           type: resp.type,
@@ -430,7 +430,7 @@ clientsClaim();
       } else if (PRIMARY_PAGES.has(pathname)) {
         console.log("🚫 Skipping cache for primary page:", pathname);
       } else if (!resp) {
-        console.debug("SW: nav response not available to cache", pathname);
+        console.log("SW: nav response not available to cache", pathname);
       }
       return resp;
     })();
@@ -453,19 +453,24 @@ clientsClaim();
         pathname.endsWith("/") && pathname.length > 1
           ? pathname.slice(0, -1)
           : pathname;
+
+      console.log("canonicalPath", canonicalPath);
+
       const matchReq = PRIMARY_PAGES.has(canonicalPath)
         ? new Request(canonicalPath, { method: "GET" })
         : req;
+      console.log("matchReq", matchReq);
       response =
         (await pages.match(matchReq, { ignoreVary: true })) ||
         (PRIMARY_PAGES.has(canonicalPath)
           ? await pages.match(canonicalPath, { ignoreVary: true })
           : undefined);
+      console.log("response", response);
       if (response) {
         console.log("📦 Page cache HIT:", canonicalPath);
         resolution = "page-cache";
       } else {
-        console.debug("📦 Page cache MISS:", canonicalPath);
+        console.log("📦 Page cache MISS:", canonicalPath);
       }
     }
 
@@ -477,7 +482,7 @@ clientsClaim();
         resolution = "offline-shell-404";
         return offline;
       } else {
-        console.debug(
+        console.log(
           "SW: offline shell not found while handling 404:",
           pathname
         );
