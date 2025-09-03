@@ -26,21 +26,6 @@ clientsClaim();
     console.log("SW: install event");
     event.waitUntil(
       (async () => {
-        console.log("SW: opening static cache", STATIC_CACHE);
-        const cache = await caches.open(STATIC_CACHE);
-        // Precache the offline shell for navigation fallbacks
-        try {
-          await cache.addAll(["/offline"]);
-          console.log("📦 Precached offline shell: /offline");
-        } catch (e) {
-          console.error(
-            "SW: failed to precache offline shell — aborting install to keep previous SW active",
-            e
-          );
-          // Abort install so an existing SW (and its caches) keep serving
-          throw e;
-        }
-
         // Precache static assets listed by the injected Workbox manifest
         try {
           console.log("SW: precaching assets from __WB_MANIFEST (if present)");
