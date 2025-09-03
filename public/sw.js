@@ -150,6 +150,7 @@ precacheAndRoute(manifest);
 
     // Static assets: Cache-First (hashed assets will naturally update via new URLs)
     if (["script", "style", "font", "image"].includes(req.destination)) {
+      console.log("SW: handle static asset", req.destination);
       event.respondWith(cacheFirst(req, STATIC_CACHE));
       return;
     }
@@ -241,6 +242,7 @@ precacheAndRoute(manifest);
     }
 
     const assets = extractAssetUrls(html);
+
     if (assets.length === 0) {
       return;
     }
@@ -250,15 +252,17 @@ precacheAndRoute(manifest);
       await Promise.all(
         requests.map(async (r) => {
           const hit = await staticCache.match(r, { ignoreVary: true });
-          if (!hit) {
-            try {
-              const res = await fetch(r);
-              if (isCacheable(res)) {
-                await staticCache.put(r, res.clone());
-              }
-            } catch (_) {
-              // ignore individual asset failures
+          if (hit) {
+            return;
+          }
+          try {
+            const res = await fetch(r);
+            if (isCacheable(res)) {
+              await staticCache.put(r, res.clone());
+              console.log("📦 Precached asset:", r.url);
             }
+          } catch (_) {
+            // ignore individual asset failures
           }
         })
       );
@@ -335,6 +339,7 @@ precacheAndRoute(manifest);
     const preload = event.preloadResponse
       ? event.preloadResponse
       : Promise.resolve(undefined);
+
     const networkPromise = (async () => {
       const fromPreload = await preload;
       const usedPreload = Boolean(fromPreload);
