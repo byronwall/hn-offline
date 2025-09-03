@@ -8,15 +8,16 @@ self.skipWaiting();
 clientsClaim();
 
 // Injected by VitePWA (injectManifest): list of build assets to precache
-console.log("precacheAndRoute", self.__WB_MANIFEST);
-precacheAndRoute(self.__WB_MANIFEST);
+const manifest = self.__WB_MANIFEST;
+console.log("precacheAndRoute", manifest);
+precacheAndRoute(manifest);
 
 (() => {
   "use strict";
 
   // Bump VERSION when you want to drop old caches immediately.
   // (Later you can inject this automatically via Vite `define`.)
-  const VERSION = "v1756731035748";
+  const VERSION = "v1";
   const CACHE_PREFIX = "app-";
   const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
   const PAGES_CACHE = `${CACHE_PREFIX}pages-${VERSION}`;
