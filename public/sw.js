@@ -29,6 +29,7 @@ clientsClaim();
         // clear ALL caches before precaching
         const names = await caches.keys();
         for (const name of names) {
+          console.log("SW: deleting cache", name);
           await caches.delete(name);
         }
 
