@@ -1,16 +1,10 @@
 /* Service Worker – Offline shell + Online-updating navigations (plain JS) */
 /* eslint-disable no-restricted-globals */
 import { clientsClaim } from "workbox-core";
-import { precacheAndRoute } from "workbox-precaching";
 
-// Auto update: activate new SW immediately and take control
+// Auto update: activate new SW immediately
 self.skipWaiting();
 clientsClaim();
-
-// Injected by VitePWA (injectManifest): list of build assets to precache
-const manifest = self.__WB_MANIFEST;
-console.log("precacheAndRoute", manifest);
-precacheAndRoute(manifest);
 
 (() => {
   "use strict";
@@ -22,6 +16,9 @@ precacheAndRoute(manifest);
   const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
   const PAGES_CACHE = `${CACHE_PREFIX}pages-${VERSION}`;
 
+  // Boot log for quick visibility in DevTools
+  console.log("SW: boot", { version: VERSION, STATIC_CACHE, PAGES_CACHE });
+
   // We precache a minimal offline shell and core navigable pages for offline first-load.
 
   // Install: precache offline shell and initial HTML pages
@@ -29,6 +26,7 @@ precacheAndRoute(manifest);
     console.log("SW: install event");
     event.waitUntil(
       (async () => {
+        console.log("SW: opening static cache", STATIC_CACHE);
         const cache = await caches.open(STATIC_CACHE);
         // Precache the offline shell for navigation fallbacks
         try {
@@ -41,6 +39,14 @@ precacheAndRoute(manifest);
           );
           // Abort install so an existing SW (and its caches) keep serving
           throw e;
+        }
+
+        // Precache static assets listed by the injected Workbox manifest
+        try {
+          console.log("SW: precaching assets from __WB_MANIFEST (if present)");
+          await precacheManifestEntries();
+        } catch (e) {
+          console.warn("SW: failed to precache manifest assets", e);
         }
 
         // Precache primary navigable pages so first offline load works
@@ -72,11 +78,15 @@ precacheAndRoute(manifest);
       (async () => {
         const keepNames = new Set([STATIC_CACHE, PAGES_CACHE]);
         const names = await caches.keys();
-        await Promise.all(
-          names
-            .filter((n) => n.startsWith(CACHE_PREFIX) && !keepNames.has(n))
-            .map((n) => caches.delete(n))
+        const toDelete = names.filter(
+          (n) => n.startsWith(CACHE_PREFIX) && !keepNames.has(n)
         );
+        if (toDelete.length) {
+          console.log("SW: deleting old caches", toDelete);
+        } else {
+          console.log("SW: no old caches to delete");
+        }
+        await Promise.all(toDelete.map((n) => caches.delete(n)));
 
         // Speed up first navigation while SW is booting
         if (self.registration.navigationPreload) {
@@ -91,6 +101,10 @@ precacheAndRoute(manifest);
 
         // Notify clients that SW is ready and provide a version hint
         const allClients = await self.clients.matchAll({ type: "window" });
+        console.log("SW: activated, notifying clients", {
+          clients: allClients.length,
+          version: VERSION,
+        });
         for (const client of allClients) {
           client.postMessage({ type: "SW_READY" });
           client.postMessage({ type: "SW_VERSION", version: VERSION });
@@ -163,6 +177,11 @@ precacheAndRoute(manifest);
     if (!e || !e.data || typeof e.data !== "object") {
       return;
     }
+    try {
+      console.log("SW: message", e.data && e.data.type);
+    } catch (_) {
+      // noop
+    }
     if (e.data.type === "SKIP_WAITING") {
       self.skipWaiting();
       return;
@@ -209,6 +228,63 @@ precacheAndRoute(manifest);
   }
 
   // ---- Precache Helpers ----------------------------------------------------
+
+  async function precacheManifestEntries() {
+    const entries = self.__WB_MANIFEST || [];
+    if (!Array.isArray(entries) || entries.length === 0) {
+      console.debug("SW: __WB_MANIFEST empty or not injected");
+      return;
+    }
+
+    console.log("SW: manifest entries discovered", entries.length);
+    const staticCache = await caches.open(STATIC_CACHE);
+    const urls = new Set();
+    for (const item of entries) {
+      if (item && typeof item.url === "string" && item.url.length > 0) {
+        urls.add(item.url);
+      }
+    }
+
+    const requests = Array.from(urls).map((u) => {
+      // Paths are relative to the _build directory where sw.js is served
+      const abs = new URL(u, self.location.href);
+      return new Request(abs.pathname + abs.search, { method: "GET" });
+    });
+
+    console.log("SW: unique precache URLs", requests.length);
+    let added = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    await Promise.all(
+      requests.map(async (req) => {
+        const hit = await staticCache.match(req, { ignoreVary: true });
+        if (hit) {
+          skipped++;
+          return;
+        }
+        try {
+          const res = await fetch(req);
+          if (isCacheable(res)) {
+            await staticCache.put(req, res.clone());
+            console.log("📦 Precached manifest asset:", req.url);
+            added++;
+          }
+        } catch (_) {
+          // ignore individual asset failures
+          failed++;
+        }
+      })
+    );
+
+    console.log("SW: manifest precache summary", {
+      discovered: entries.length,
+      unique: requests.length,
+      added,
+      skipped,
+      failed,
+    });
+  }
 
   async function precachePageAndAssets(pathname) {
     const pages = await caches.open(PAGES_CACHE);
