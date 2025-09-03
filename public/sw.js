@@ -26,6 +26,12 @@ clientsClaim();
     console.log("SW: install event");
     event.waitUntil(
       (async () => {
+        // clear ALL caches before precaching
+        const names = await caches.keys();
+        for (const name of names) {
+          await caches.delete(name);
+        }
+
         // Precache static assets listed by the injected Workbox manifest
         try {
           console.log("SW: precaching assets from __WB_MANIFEST (if present)");
@@ -61,18 +67,6 @@ clientsClaim();
   self.addEventListener("activate", (event) => {
     event.waitUntil(
       (async () => {
-        const keepNames = new Set([STATIC_CACHE, PAGES_CACHE]);
-        const names = await caches.keys();
-        const toDelete = names.filter(
-          (n) => n.startsWith(CACHE_PREFIX) && !keepNames.has(n)
-        );
-        if (toDelete.length) {
-          console.log("SW: deleting old caches", toDelete);
-        } else {
-          console.log("SW: no old caches to delete");
-        }
-        await Promise.all(toDelete.map((n) => caches.delete(n)));
-
         // Speed up first navigation while SW is booting
         if (self.registration.navigationPreload) {
           try {
