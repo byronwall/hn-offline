@@ -1,13 +1,23 @@
 import { useNavigate } from "@solidjs/router";
-import { Match, onCleanup, onMount, Show, Switch } from "solid-js";
+import {
+  createRenderEffect,
+  Match,
+  onCleanup,
+  onMount,
+  Show,
+  Switch,
+} from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { PullToRefresh } from "~/components/PullToRefresh";
 import { createHasRendered } from "~/lib/createHasRendered";
+import { getColorsForStory } from "~/lib/getColorsForStory";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, timeSince } from "~/lib/utils";
 import { activeStoryData } from "~/stores/activeStorySignal";
+import { setColorMap } from "~/stores/colorMap";
+import { addMessage } from "~/stores/messages";
 import { setScrollToId } from "~/stores/scrollSignal";
 import { isOfflineMode } from "~/stores/serviceWorkerStatus";
 import {
@@ -37,6 +47,17 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   };
 
   const navigate = useNavigate();
+
+  createRenderEffect(() => {
+    if (!activeStoryData()) {
+      return;
+    }
+
+    addMessage("HnStoryPage", "update color map");
+
+    const colors = getColorsForStory(activeStoryData());
+    setColorMap(colors);
+  });
 
   onMount(() => {
     if (props.id === undefined) {

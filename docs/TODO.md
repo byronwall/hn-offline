@@ -3,7 +3,6 @@
 ## Conversion to SolidJS
 
 - [ ] Share icon on stories does not get proper meta data?
-- [ ] Recompute the color map when the story data updates
 
 ## For later
 

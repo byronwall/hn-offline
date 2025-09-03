@@ -11,12 +11,10 @@ import { isServer } from "solid-js/web";
 
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { ResourceSource } from "~/features/storyList/ServerStoryPage";
-import { getColorsForStory } from "~/lib/getColorsForStory";
 import { getDomain } from "~/lib/utils";
 import { HnItem } from "~/models/interfaces";
 import { getFullDataForIds } from "~/server/getFullDataForIds";
 import { setActiveStoryData } from "~/stores/activeStorySignal";
-import { setColorMap } from "~/stores/colorMap";
 import {
   getContent,
   persistStoryToStorage,
@@ -66,17 +64,6 @@ export default function Story() {
 
     setActiveStoryData(data()?.data as HnItem);
     setRefreshType({ type: "story", id: id() });
-  });
-
-  createRenderEffect(() => {
-    const storyData = data()?.data as HnItem;
-
-    if (!storyData) {
-      return;
-    }
-
-    const colors = getColorsForStory(storyData);
-    setColorMap(colors);
   });
 
   return (
