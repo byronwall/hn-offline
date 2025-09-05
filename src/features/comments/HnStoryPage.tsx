@@ -43,7 +43,11 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     e.preventDefault();
     e.stopPropagation();
 
-    navigator.share?.({ url: window.location.href });
+    try {
+      navigator.share?.({ url: window.location.href });
+    } catch {
+      // ignore
+    }
   };
 
   const navigate = useNavigate();

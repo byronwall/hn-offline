@@ -85,10 +85,14 @@ export function HnComment(props: HnCommentProps) {
       return;
     }
 
-    navigator.share?.({
-      title: `HN Comment by ${props.comment.by}`,
-      text: shareText,
-    });
+    try {
+      navigator.share?.({
+        title: `HN Comment by ${props.comment.by}`,
+        text: shareText,
+      });
+    } catch {
+      // ignore
+    }
   };
 
   function handleCardClick(e: MouseEvent) {
