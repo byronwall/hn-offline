@@ -25,6 +25,7 @@ export default function Offline() {
         <div class="mt-6 flex flex-wrap items-center justify-center gap-2">
           <A
             href="/"
+            end
             class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50 focus:ring-2 focus:ring-blue-500/20 focus:outline-none active:bg-slate-100"
           >
             Home

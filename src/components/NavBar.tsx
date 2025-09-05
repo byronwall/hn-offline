@@ -11,7 +11,7 @@ export function NavBar() {
   return (
     <nav class="fixed top-0 left-1/2 z-10 flex h-12 w-full max-w-[640px] -translate-x-1/2 items-center justify-between space-x-2 border border-slate-300 bg-white p-1">
       <div class="flex items-center">
-        <A href="/" class="flex items-center gap-1 hover:underline">
+        <A href="/" class="flex items-center gap-1 hover:underline" end>
           <img
             src="/favicon-32x32.png"
             alt="Hacker News Logo"
