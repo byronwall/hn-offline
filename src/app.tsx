@@ -1,7 +1,7 @@
 import { Meta, Title } from "@solidjs/meta";
 import { Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
-import { ErrorBoundary, Suspense } from "solid-js";
+import { ErrorBoundary, Show, Suspense } from "solid-js";
 
 import GlobalErrorOverlay from "./components/GlobalErrorOverlay";
 import { NavBar } from "./components/NavBar";
@@ -46,7 +46,9 @@ export default function App() {
             </ErrorBoundary>
           </div>
           <GlobalErrorOverlay />
-          <StatusBar />
+          <Show when={import.meta.env.DEV}>
+            <StatusBar />
+          </Show>
         </main>
       )}
     >
