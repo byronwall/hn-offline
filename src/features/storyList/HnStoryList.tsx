@@ -1,11 +1,17 @@
-import { createSignal, For, Show } from "solid-js";
+import { createMemo, createSignal, For, Show } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { createHasRendered } from "~/lib/createHasRendered";
+import { timeSince } from "~/lib/utils";
 import { HnStorySummary } from "~/models/interfaces";
 import { isOfflineMode } from "~/stores/serviceWorkerStatus";
-import { isLoadingData, refreshActive, StoryPage } from "~/stores/useDataStore";
+import {
+  isLoadingData,
+  refreshActive,
+  storyListStore,
+  StoryPage,
+} from "~/stores/useDataStore";
 import {
   readItems,
   setShouldHideReadItems,
@@ -29,6 +35,23 @@ export function HnStoryList(props: HnStoryListProps) {
 
   const hasRendered = createHasRendered();
 
+  const lastUpdatedTs = createMemo(() => {
+    const page = props.page;
+    const fromStore = page ? storyListStore[page]?.timestamp : undefined;
+    if (typeof fromStore === "number" && fromStore > 0) {
+      return fromStore;
+    }
+    const fromActive = Math.max(
+      0,
+      ...activeStoryList().map((s) => s.lastUpdated ?? 0)
+    );
+    return fromActive > 0 ? fromActive : undefined;
+  });
+
+  const pullMessage = createMemo(() =>
+    lastUpdatedTs() ? `Updated ${timeSince(lastUpdatedTs())} ago` : undefined
+  );
+
   const toggleHideReadItems = () => {
     setShouldHideReadItems(!shouldHideReadItems());
   };
@@ -47,7 +70,13 @@ export function HnStoryList(props: HnStoryListProps) {
         <PullToRefresh
           disabled={isLoadingData() || isOfflineMode()}
           onRefresh={refreshActive}
+          // message={pullMessage()}
         >
+          <Show when={pullMessage()}>
+            <div class="text-center text-[11px] text-slate-400">
+              {pullMessage()}
+            </div>
+          </Show>
           <div class="grid grid-cols-[1fr_1fr_1fr_3fr]">
             <For each={itemsToRender()}>
               {(item) => (

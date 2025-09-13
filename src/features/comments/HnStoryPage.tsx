@@ -1,5 +1,6 @@
 import { useNavigate } from "@solidjs/router";
 import {
+  createMemo,
   createRenderEffect,
   Match,
   onCleanup,
@@ -141,10 +142,16 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     }, 100);
   }
 
+  const pullMessage = createMemo(() => {
+    const ts = activeStoryData()?.lastUpdated;
+    return ts ? `Updated ${timeSince(ts)} ago` : undefined;
+  });
+
   return (
     <PullToRefresh
       disabled={isLoadingData() || isOfflineMode()}
       onRefresh={refreshActive}
+      message={pullMessage()}
     >
       <div class="relative pb-[70vh]">
         <h2
@@ -180,6 +187,13 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
             <span>{timeSince(activeStoryData()?.time)} ago</span>
             <span>{" | "}</span>
             <span>{getDomain(activeStoryData()?.url)}</span>
+
+            <Show when={pullMessage()}>
+              <span>
+                <span>{" | "}</span>
+                <span class="text-xs text-slate-400">{pullMessage()}</span>
+              </span>
+            </Show>
 
             <span>{" | "}</span>
             <button onClick={handleShareClick} class="hover:text-orange-500">

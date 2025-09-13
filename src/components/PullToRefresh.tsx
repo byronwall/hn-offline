@@ -6,6 +6,7 @@ type PullToRefreshProps = ParentProps<{
   onRefresh: () => Promise<void> | void;
   activationThreshold?: number;
   disabled?: boolean;
+  message?: string | undefined;
 }>;
 
 export function PullToRefresh(props: PullToRefreshProps) {
@@ -95,11 +96,16 @@ export function PullToRefresh(props: PullToRefreshProps) {
         style={{ height: `${pullDistance()}px` }}
       >
         <Show when={pullDistance() > 0}>
-          <span>
-            {pullDistance() >= activationThreshold()
-              ? "Release to refresh"
-              : "Pull to refresh"}
-          </span>
+          <div class="flex flex-col items-center gap-1">
+            <span>
+              {pullDistance() >= activationThreshold()
+                ? "Release to refresh"
+                : "Pull to refresh"}
+            </span>
+            <Show when={props.message}>
+              <span class="text-[11px] text-slate-400">{props.message}</span>
+            </Show>
+          </div>
         </Show>
       </div>
 
