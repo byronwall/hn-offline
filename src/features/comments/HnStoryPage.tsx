@@ -144,14 +144,16 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
   const pullMessage = createMemo(() => {
     const ts = activeStoryData()?.lastUpdated;
-    return ts ? `Updated ${timeSince(ts)} ago` : undefined;
+    // add a down arrow icon as emoji
+    const downArrow = "↓";
+    return ts ? `${downArrow} ${timeSince(ts)} ago` : undefined;
   });
 
   return (
     <PullToRefresh
       disabled={isLoadingData() || isOfflineMode()}
       onRefresh={refreshActive}
-      message={pullMessage()}
+      // message={pullMessage()}
     >
       <div class="relative pb-[70vh]">
         <h2
@@ -176,30 +178,42 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
           })}
           onClick={handleStoryTextClick}
         >
-          <h4 class="mb-2">
-            <span>{activeStoryData()?.by}</span>
-            <span>{" | "}</span>
+          <div class="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-slate-700">
+            <span class="font-medium">{activeStoryData()?.by}</span>
+            <span class="text-slate-300 select-none" aria-hidden="true">
+              |
+            </span>
             <span>
               {activeStoryData()?.score}
               {" points"}
             </span>
-            <span>{" | "}</span>
-            <span>{timeSince(activeStoryData()?.time)} ago</span>
-            <span>{" | "}</span>
-            <span>{getDomain(activeStoryData()?.url)}</span>
+            <span class="text-slate-300 select-none" aria-hidden="true">
+              |
+            </span>
+            <span>
+              {timeSince(activeStoryData()?.time)}
+              <Show when={pullMessage()}>
+                <span class="ml-2 text-slate-500">({pullMessage()})</span>
+              </Show>
+            </span>
+            <span class="text-slate-300 select-none" aria-hidden="true">
+              |
+            </span>
+            <span class="truncate font-mono text-[14px] text-slate-600">
+              {getDomain(activeStoryData()?.url)}
+            </span>
 
-            <Show when={pullMessage()}>
-              <span>
-                <span>{" | "}</span>
-                <span class="text-xs text-slate-400">{pullMessage()}</span>
-              </span>
-            </Show>
-
-            <span>{" | "}</span>
-            <button onClick={handleShareClick} class="hover:text-orange-500">
-              <ArrowUpRightFromSquare size={16} />
+            <span class="text-slate-300 select-none" aria-hidden="true">
+              |
+            </span>
+            <button
+              onClick={handleShareClick}
+              class="text-slate-400 hover:text-orange-500"
+              aria-label="Share"
+            >
+              <ArrowUpRightFromSquare width={16} height={16} />
             </button>
-          </h4>
+          </div>
 
           <Show when={activeStoryData()?.text !== undefined && isTextOpen()}>
             <div>
