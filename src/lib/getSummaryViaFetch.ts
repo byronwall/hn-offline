@@ -7,7 +7,7 @@ export async function fetchAllStoryDataForPage(
 ): Promise<HnItem[]> {
   addMessage("fetchPage", "init", { page });
 
-  const url = "/api/topstories/" + (page === "front" ? "topstories" : page);
+  const url = "/api/topstories/" + page;
 
   try {
     const response = await fetch(url);

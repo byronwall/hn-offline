@@ -14,14 +14,16 @@ import {
 } from "~/stores/useDataStore";
 import {
   readItems,
-  setShouldHideReadItems,
-  shouldHideReadItems,
+  readSettings,
+  recentlyReadId,
+  setReadSettings,
+  setRecentlyReadId,
 } from "~/stores/useReadItemsStore";
 
 import { HnListItem } from "./HnListItem";
 
 interface HnStoryListProps {
-  sortType?: "score" | "read-then-points";
+  sortType?: "score";
   page?: StoryPage;
 }
 
@@ -53,7 +55,7 @@ export function HnStoryList(props: HnStoryListProps) {
   );
 
   const toggleHideReadItems = () => {
-    setShouldHideReadItems(!shouldHideReadItems());
+    setReadSettings("shouldHideReadItems", !readSettings.shouldHideReadItems);
   };
 
   return (
@@ -79,19 +81,28 @@ export function HnStoryList(props: HnStoryListProps) {
           </Show>
           <div class="grid grid-cols-[1fr_1fr_1fr_3fr]">
             <For each={itemsToRender()}>
-              {(item) => (
-                <Show
-                  when={
-                    // this allows client state to vary from server state so need to guard
-                    // TODO: extract a common comp that handles this ShowIfRendered scenario
-                    !hasRendered() ||
-                    !shouldHideReadItems() ||
-                    readItems[item.id] === undefined
-                  }
-                >
-                  <HnListItem data={item} />
-                </Show>
-              )}
+              {(item) => {
+                const isRead = () => readItems[item.id] !== undefined;
+                const isRecentRead = () => recentlyReadId() === item.id;
+                const shouldRender = () =>
+                  // allow SSR hydration match, or if not hiding read items
+                  !hasRendered() ||
+                  !readSettings.shouldHideReadItems ||
+                  !isRead() ||
+                  isRecentRead();
+
+                return (
+                  <Show when={shouldRender()}>
+                    <HnListItem
+                      data={item}
+                      recentFadeOut={
+                        isRecentRead() && readSettings.shouldHideReadItems
+                      }
+                      onFadeComplete={() => setRecentlyReadId(undefined)}
+                    />
+                  </Show>
+                );
+              }}
             </For>
           </div>
         </PullToRefresh>
@@ -100,7 +111,7 @@ export function HnStoryList(props: HnStoryListProps) {
         <label class="inline-flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
-            checked={shouldHideReadItems()}
+            checked={readSettings.shouldHideReadItems}
             onChange={toggleHideReadItems}
             class="peer sr-only"
           />

@@ -1,7 +1,22 @@
 import localforage from "localforage";
+import { createSignal } from "solid-js";
 import { isServer } from "solid-js/web";
 
-if (!isServer) {
+import { addMessage } from "./messages";
+
+// this is meant to be the primary reference to localforage
+// goal is to ensure it's only configured in 1 file
+export const [LOCAL_FORAGE_TO_USE, setLOCAL_FORAGE_TO_USE] = createSignal<
+  LocalForage | undefined
+>(undefined);
+
+export function initializeLocalForage() {
+  addMessage("localforage", "initializeLocalForage init");
+
+  if (isServer) {
+    return;
+  }
+
   localforage.config({
     driver: localforage.INDEXEDDB, // Force WebSQL; same as using setDriver()
     name: "hn_next",
@@ -10,8 +25,8 @@ if (!isServer) {
     storeName: "keyvaluepairs", // Should be alphanumeric, with underscores.
     description: "some description",
   });
-}
 
-// this is meant to be the primary reference to localforage
-// goal is to ensure it's only configured in 1 file
-export const LOCAL_FORAGE_TO_USE = localforage;
+  setLOCAL_FORAGE_TO_USE(localforage);
+
+  addMessage("localforage", "initializeLocalForage done");
+}

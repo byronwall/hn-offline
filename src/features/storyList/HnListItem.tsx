@@ -8,16 +8,31 @@ import { readItems } from "~/stores/useReadItemsStore";
 
 export interface HnStoryProps {
   data: HnStorySummary;
+  recentFadeOut?: boolean;
+  onFadeComplete?: () => void;
 }
 
 export function HnListItem(props: HnStoryProps) {
   const isRead = trueIfRendered(() => readItems[props.data.id] !== undefined);
 
+  const handleAnimationEnd = (e: AnimationEvent) => {
+    console.warn("*** handleAnimationEnd", props.recentFadeOut);
+    if (props.recentFadeOut && props.onFadeComplete) {
+      console.log("*** handleAnimationEnd", props.recentFadeOut);
+      props.onFadeComplete();
+    }
+  };
+
   return (
     <div
-      class={cn("col-span-4 grid grid-cols-subgrid", {
-        "opacity-20": isRead(),
-      })}
+      class={cn(
+        "col-span-4 grid grid-cols-subgrid",
+        {
+          "opacity-20": isRead() && !props.recentFadeOut,
+        },
+        props.recentFadeOut ? "fade-out" : undefined
+      )}
+      onAnimationEnd={handleAnimationEnd}
     >
       <p class="col-span-4 mt-1.5 mb-1 font-medium hover:underline">
         {props.data.url === undefined ? (

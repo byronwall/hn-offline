@@ -1,7 +1,7 @@
 import { StoryPage } from "~/stores/useDataStore";
 
 export function isStoryPage(page: string): page is StoryPage {
-  return page === "front" || page === "day" || page === "week";
+  return page === "topstories" || page === "day" || page === "week";
 }
 
 export function convertPathToStoryPage(pathname: string): StoryPage {
@@ -16,7 +16,7 @@ export function convertPathToStoryPage(pathname: string): StoryPage {
 
   // TODO: reconcile these types
   if (pathname === "topstories") {
-    return "front";
+    return "topstories";
   }
 
   if (!isStoryPage(pathname)) {

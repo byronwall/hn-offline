@@ -3,6 +3,7 @@ import { MetaProvider } from "@solidjs/meta";
 import { mount, StartClient } from "@solidjs/start/client";
 
 import { attachGlobalErrorHandlers } from "./stores/errorOverlay";
+import { initializeLocalForage } from "./stores/localforage";
 import {
   setIsOfflineMode,
   setServiceWorkerStatus,
@@ -11,6 +12,8 @@ import {
 
 // Global client-side unhandled error logging + overlay
 attachGlobalErrorHandlers();
+
+initializeLocalForage();
 
 mount(
   () => (

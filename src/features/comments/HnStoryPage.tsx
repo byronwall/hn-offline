@@ -26,7 +26,10 @@ import {
   updateCollapsedState,
 } from "~/stores/useCommentStore";
 import { isLoadingData, refreshActive } from "~/stores/useDataStore";
-import { saveIdToReadList } from "~/stores/useReadItemsStore";
+import {
+  saveIdToReadList,
+  setRecentlyReadId,
+} from "~/stores/useReadItemsStore";
 
 import { HnCommentList } from "./HnCommentList";
 
@@ -68,6 +71,9 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     if (props.id === undefined) {
       return;
     }
+    // Track most recently read for list fade-out UX on back nav
+    console.warn("*** setting recently read id", props.id);
+    setRecentlyReadId(props.id);
     saveIdToReadList(props.id);
   });
 

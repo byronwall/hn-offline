@@ -1,43 +1,42 @@
-import { makePersisted } from "@solid-primitives/storage";
 import {
   createEffect,
   createMemo,
   createReaction,
   createSignal,
 } from "solid-js";
-import { createStore, reconcile, unwrap } from "solid-js/store";
+import { reconcile } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
-import { LOCAL_FORAGE_TO_USE } from "./localforage";
+import { createPersistedStore } from "./createPersistedStore";
 import { addMessage } from "./messages";
 
 export type TimestampHash = Record<number, number>;
 
-addMessage("readItems", "init read items store");
-
-export const [shouldHideReadItems, setShouldHideReadItems] = makePersisted(
-  createSignal(false),
+export const [readSettings, setReadSettings] = createPersistedStore(
+  "READ_SETTINGS",
   {
-    name: "SHOULD_HIDE_READ_ITEMS",
-    storage: isServer ? undefined : LOCAL_FORAGE_TO_USE,
+    shouldHideReadItems: true,
   }
 );
 
-// Persisted read-items timestamps map, similar to useCommentStore
-export const [readItems, setReadItems] = makePersisted(
-  createStore<TimestampHash>({}),
-  {
-    name: "READ_ITEMS",
-    storage: isServer ? undefined : LOCAL_FORAGE_TO_USE,
-    serialize: (value) => unwrap(value) as any,
-    deserialize: (value) => value as unknown as TimestampHash,
-  }
+export const [readItems, setReadItems, hasLength] = createPersistedStore(
+  "READ_ITEMS",
+  {} as TimestampHash
 );
 
-addMessage("readItems", "past makePersisted");
+// Client-only signal for the most recently read story ID
+// Not persisted; used to trigger fade-out on return to list
+export const [recentlyReadId, setRecentlyReadId] = createSignal<
+  number | undefined
+>(undefined);
+
+createEffect(() => {
+  // recent read id
+  console.warn("*** recentlyReadId", recentlyReadId());
+});
 
 // After first hydration/change, schedule a cleanup
-const hasLength = createMemo(() => Object.keys(readItems).length);
+
 const scheduleCleanup = createReaction(() => {
   addMessage("readItems", "scheduleCleanup init");
   if (!isServer) {
@@ -46,7 +45,7 @@ const scheduleCleanup = createReaction(() => {
     }, 1000);
   }
 });
-scheduleCleanup(hasLength);
+// scheduleCleanup(hasLength);
 
 const waitingToLoad = new Promise<boolean>((resolve) => {
   createEffect(() => {

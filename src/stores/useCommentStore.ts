@@ -1,11 +1,10 @@
-import { makePersisted } from "@solid-primitives/storage";
 import { createMemo, createReaction } from "solid-js";
-import { createStore, reconcile, unwrap } from "solid-js/store";
+import { reconcile } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
 import { activeStoryData } from "./activeStorySignal";
+import { createPersistedStore } from "./createPersistedStore";
 import { findNextSibling } from "./findNextSibling";
-import { LOCAL_FORAGE_TO_USE } from "./localforage";
 import { addMessage } from "./messages";
 import { setScrollToId } from "./scrollSignal";
 
@@ -13,15 +12,8 @@ export type CollapsedTimestampMap = Record<number, number>;
 
 addMessage("commentStore", "init");
 
-export const [collapsedTimestamps, setCollapsedTimestamps] = makePersisted(
-  createStore<CollapsedTimestampMap>({}),
-  {
-    name: "COLLAPSED_COMMENTS",
-    storage: isServer ? undefined : LOCAL_FORAGE_TO_USE,
-    serialize: (value) => unwrap(value) as any,
-    deserialize: (value) => value as unknown as CollapsedTimestampMap,
-  }
-);
+export const [collapsedTimestamps, setCollapsedTimestamps] =
+  createPersistedStore("COLLAPSED_COMMENTS", {} as CollapsedTimestampMap);
 
 // first time the length of the store is >0, call for cleanup 1s later
 // this will fire when the store loads
