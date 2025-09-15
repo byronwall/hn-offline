@@ -5,7 +5,7 @@ import { createEffect, createMemo, createSignal, Show } from "solid-js";
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { createHasRendered } from "~/lib/createHasRendered";
 import { isValidComment } from "~/lib/isValidComment";
-import { cn, isNavigator, timeSince } from "~/lib/utils";
+import { cn, shareSafely, timeSince } from "~/lib/utils";
 import { KidsObj3 } from "~/models/interfaces";
 import { activeStoryData } from "~/stores/activeStorySignal";
 import { colorMap } from "~/stores/colorMap";
@@ -64,7 +64,7 @@ export function HnComment(props: HnCommentProps) {
     });
   });
 
-  const handleShareClick = (e: MouseEvent) => {
+  const handleShareClick = async (e: MouseEvent) => {
     e.stopPropagation();
     if (props.comment === null) {
       return;
@@ -81,18 +81,10 @@ export function HnComment(props: HnCommentProps) {
 
     console.log("share text", shareText);
 
-    if (!isNavigator) {
-      return;
-    }
-
-    try {
-      navigator.share?.({
-        title: `HN Comment by ${props.comment.by}`,
-        text: shareText,
-      });
-    } catch {
-      // ignore
-    }
+    await shareSafely({
+      title: `HN Comment by ${props.comment.by}`,
+      text: shareText,
+    });
   };
 
   function handleCardClick(e: MouseEvent) {

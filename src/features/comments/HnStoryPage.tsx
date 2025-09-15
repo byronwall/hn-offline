@@ -15,7 +15,7 @@ import { createHasRendered } from "~/lib/createHasRendered";
 import { getColorsForStory } from "~/lib/getColorsForStory";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
-import { cn, getDomain, timeSince } from "~/lib/utils";
+import { cn, getDomain, shareSafely, timeSince } from "~/lib/utils";
 import { activeStoryData } from "~/stores/activeStorySignal";
 import { setColorMap } from "~/stores/colorMap";
 import { addMessage } from "~/stores/messages";
@@ -43,15 +43,11 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const textToRender = () =>
     processHtmlAndTruncateAnchorText(activeStoryData()?.text || "");
 
-  const handleShareClick = (e: MouseEvent) => {
+  const handleShareClick = async (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    try {
-      navigator.share?.({ url: window.location.href });
-    } catch {
-      // ignore
-    }
+    await shareSafely({ url: window.location.href });
   };
 
   const navigate = useNavigate();

@@ -44,3 +44,19 @@ export function _getUnixTimestamp() {
 }
 
 export const isNavigator = typeof navigator !== "undefined";
+
+export async function shareSafely(options: ShareData): Promise<void> {
+  if (!isNavigator || !navigator.share) {
+    return;
+  }
+
+  try {
+    await navigator.share(options);
+  } catch (err) {
+    const error = err as { name?: string; message?: string };
+    if (error?.name === "AbortError" || error?.message === "Share canceled") {
+      return;
+    }
+    // ignore other share errors
+  }
+}
