@@ -47,6 +47,12 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
   // then go through all items and save them to local forage
   addMessage("persist", "persistStoryList init", { page, count: data.length });
 
+  // Do not persist if provided list is empty
+  if (!data || data.length === 0) {
+    addMessage("persist", "persistStoryList skip empty list", { page });
+    return;
+  }
+
   // Map raw items to summaries for list storage
   const storySummaries = mapStoriesToSummaries(data);
 
