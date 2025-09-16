@@ -1,4 +1,4 @@
-import { StoryPage } from "~/stores/useDataStore";
+import type { StoryPage } from "~/models/interfaces";
 
 export function isStoryPage(page: string): page is StoryPage {
   return page === "topstories" || page === "day" || page === "week";
@@ -12,11 +12,6 @@ export function convertPathToStoryPage(pathname: string): StoryPage {
 
   if (pathname === "") {
     pathname = "topstories";
-  }
-
-  // TODO: reconcile these types
-  if (pathname === "topstories") {
-    return "topstories";
   }
 
   if (!isStoryPage(pathname)) {

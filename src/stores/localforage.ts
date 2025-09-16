@@ -6,7 +6,7 @@ import { addMessage } from "./messages";
 
 // this is meant to be the primary reference to localforage
 // goal is to ensure it's only configured in 1 file
-export const [LOCAL_FORAGE_TO_USE, setLOCAL_FORAGE_TO_USE] = createSignal<
+export const [LOCAL_FORAGE_TO_USE, setLocalForageToUse] = createSignal<
   LocalForage | undefined
 >(undefined);
 
@@ -26,7 +26,7 @@ export function initializeLocalForage() {
     description: "some description",
   });
 
-  setLOCAL_FORAGE_TO_USE(localforage);
+  setLocalForageToUse(localforage);
 
   addMessage("localforage", "initializeLocalForage done");
 }

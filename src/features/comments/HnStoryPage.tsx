@@ -1,6 +1,5 @@
 import { useNavigate } from "@solidjs/router";
 import {
-  createMemo,
   createRenderEffect,
   Match,
   onCleanup,
@@ -144,13 +143,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     }, 100);
   }
 
-  const pullMessage = createMemo(() => {
-    const ts = activeStoryData()?.lastUpdated;
-    // add a down arrow icon as emoji
-    const downArrow = "↓";
-    return ts ? `${downArrow} ${timeSince(ts)} ago` : undefined;
-  });
-
   return (
     <PullToRefresh
       disabled={isLoadingData() || isOfflineMode()}
@@ -192,12 +184,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
             <span class="text-slate-300 select-none" aria-hidden="true">
               |
             </span>
-            <span>
-              {timeSince(activeStoryData()?.time)}
-              <Show when={pullMessage()}>
-                <span class="ml-2 text-slate-500">({pullMessage()})</span>
-              </Show>
-            </span>
+            <span>{timeSince(activeStoryData()?.time)}</span>
             <span class="text-slate-300 select-none" aria-hidden="true">
               |
             </span>

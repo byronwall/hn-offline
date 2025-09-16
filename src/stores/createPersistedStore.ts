@@ -1,4 +1,4 @@
-import { createEffect, createResource, createSignal, untrack } from "solid-js";
+import { createEffect, createResource, createSignal } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
@@ -15,6 +15,8 @@ export function createPersistedStore<T extends object>(
     keyOrNewStore: K | T | ((currentStore: T) => T),
     value?: T[K]
   ) => {
+    console.log("*** setting store", name, keyOrNewStore, value);
+
     // handle setting the store via a function
     if (typeof keyOrNewStore === "function") {
       const newStore = unwrap(keyOrNewStore(store));
@@ -40,18 +42,12 @@ export function createPersistedStore<T extends object>(
     await LOCAL_FORAGE_TO_USE()?.setItem(name, unwrap(store));
   };
 
-  createEffect(() => {
-    console.log("local forage", LOCAL_FORAGE_TO_USE());
-    if (LOCAL_FORAGE_TO_USE()) {
-      setIsLoaded(true);
-    }
-  });
-
   if (!isServer) {
     // kind of a cop out but we know it's only client side
     const [initValueFromLocalForage] = createResource(
-      LOCAL_FORAGE_TO_USE(),
+      LOCAL_FORAGE_TO_USE,
       async (localForage) => {
+        console.log("*** resource running local forage", name, localForage);
         const initialValue = await localForage?.getItem(name);
         console.log(
           "*** initial value from local forage in resource",
@@ -63,12 +59,32 @@ export function createPersistedStore<T extends object>(
     );
 
     createEffect(() => {
-      console.log("*** creating effect to set data", name);
+      console.log(
+        "*** creating effect to set data",
+        name,
+        initValueFromLocalForage(),
+        initValueFromLocalForage.state
+      );
       if (initValueFromLocalForage()) {
         rawSetStore(initValueFromLocalForage() as T);
+      }
+      if (initValueFromLocalForage.state === "ready") {
+        console.log("*** setting is loaded to true", name);
+        setIsLoaded(true);
       }
     });
   }
 
-  return [store, setStore, isLoaded] as const;
+  // promise that resolves when the store is loaded
+  // this is used in async functions to pause until the store is loaded
+  const waitingToLoad = new Promise<boolean>((resolve) => {
+    createEffect(() => {
+      if (isLoaded()) {
+        console.log("*** waiting to load resolving", name);
+        resolve(true);
+      }
+    });
+  });
+
+  return [store, setStore, { isLoaded, waitingToLoad }] as const;
 }

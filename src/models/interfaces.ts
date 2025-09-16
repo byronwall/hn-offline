@@ -30,6 +30,8 @@ export const STORY_TYPE = [
 ] as const;
 export type TopStoriesType = (typeof STORY_TYPE)[number];
 
+export type StoryPage = "topstories" | "day" | "week";
+
 export interface ItemParams {
   id: number;
 }

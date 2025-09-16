@@ -1,9 +1,4 @@
-import {
-  createEffect,
-  createMemo,
-  createReaction,
-  createSignal,
-} from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 import { reconcile } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
@@ -19,10 +14,8 @@ export const [readSettings, setReadSettings] = createPersistedStore(
   }
 );
 
-export const [readItems, setReadItems, hasLength] = createPersistedStore(
-  "READ_ITEMS",
-  {} as TimestampHash
-);
+export const [readItems, setReadItems, { waitingToLoad, isLoaded }] =
+  createPersistedStore("READ_ITEMS", {} as TimestampHash);
 
 // Client-only signal for the most recently read story ID
 // Not persisted; used to trigger fade-out on return to list
@@ -32,28 +25,19 @@ export const [recentlyReadId, setRecentlyReadId] = createSignal<
 
 createEffect(() => {
   // recent read id
+  // TODO: remove this
   console.warn("*** recentlyReadId", recentlyReadId());
 });
 
-// After first hydration/change, schedule a cleanup
-
-const scheduleCleanup = createReaction(() => {
-  addMessage("readItems", "scheduleCleanup init");
-  if (!isServer) {
-    setTimeout(() => {
-      cleanUpOldReadEntries();
-    }, 1000);
-  }
-});
-// scheduleCleanup(hasLength);
-
-const waitingToLoad = new Promise<boolean>((resolve) => {
-  createEffect(() => {
-    if (hasLength()) {
-      resolve(true);
-      addMessage("readItems", "waitingToLoad done");
+createEffect(() => {
+  if (isLoaded()) {
+    addMessage("readItems", "scheduleCleanup init");
+    if (!isServer) {
+      setTimeout(() => {
+        cleanUpOldReadEntries();
+      }, 1000);
     }
-  });
+  }
 });
 
 export async function saveIdToReadList(id: number | undefined): Promise<void> {

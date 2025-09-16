@@ -10,10 +10,11 @@ import {
   getContentForPage,
   persistStoryList,
   setRefreshType,
-  StoryPage,
 } from "~/stores/useDataStore";
 
 import { HnStoryList, setActiveStoryList } from "./HnStoryList";
+
+import type { StoryPage } from "~/models/interfaces";
 
 export type ResourceSource = "client" | "server";
 
@@ -40,12 +41,11 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
   );
 
   createEffect(() => {
-    if (data()?.source === "server" && data()?.data.type === "fullData") {
-      console.log("*** persisting story list for server data", props.page);
-      void persistStoryList(
-        props.page as StoryPage,
-        data()?.data.data as HnItem[]
-      );
+    const d = data();
+    const p = props.page;
+    if (d?.source === "server" && d?.data.type === "fullData") {
+      console.log("*** persisting story list for server data", p, d);
+      void persistStoryList(p as StoryPage, d?.data.data as HnItem[]);
     }
   });
 
@@ -55,6 +55,11 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
   });
 
   createRenderEffect(() => {
+    if (data.state !== "ready") {
+      // only pass along the summaries if the data is ready
+      return;
+    }
+
     const summaries =
       data()?.data.type === "summaryOnly"
         ? data()?.data.data

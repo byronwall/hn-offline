@@ -1,4 +1,4 @@
-import { createEffect, createSignal } from "solid-js";
+import { createSignal } from "solid-js";
 
 import { setActiveStoryList } from "~/features/storyList/HnStoryList";
 import { convertPathToStoryPage } from "~/lib/convertPathToStoryPage";
@@ -15,32 +15,22 @@ import { createPersistedStore } from "./createPersistedStore";
 import { LOCAL_FORAGE_TO_USE } from "./localforage";
 import { addMessage } from "./messages";
 import { readItems } from "./useReadItemsStore";
+import { setRefreshTimestamp } from "./useRefreshStore";
 
-export type StoryPage = "topstories" | "day" | "week";
+import type { StoryPage } from "~/models/interfaces";
 
 export type StoryId = number;
 
 type PersistedStoryList = {
-  timestamp: number;
+  serverUpdateTimestamp: number;
   page: StoryPage;
   data: HnStorySummary[];
 };
 
 type StoryListStore = Record<StoryPage, PersistedStoryList>;
 
-export const [storyListStore, setStoryListStore, hasStoreLoaded] =
+export const [storyListStore, setStoryListStore, { waitingToLoad }] =
   createPersistedStore("STORY_LIST_STORE", {} as StoryListStore);
-
-const waitingToLoad = new Promise<boolean>((resolve) => {
-  createEffect(() => {
-    if (hasStoreLoaded()) {
-      resolve(true);
-      addMessage("persist", "makePersisted done");
-    }
-  });
-});
-
-addMessage("persist", "past waitingToLoad");
 
 export async function persistStoryList(page: StoryPage, data: HnItem[]) {
   // overall goals: update store -> saves list to local forage
@@ -67,24 +57,26 @@ export async function persistStoryList(page: StoryPage, data: HnItem[]) {
     0
   );
 
-  // await waitingToLoad;
+  // do not attempt to load from store until it's ready
+  await waitingToLoad;
 
   const current = storyListStore[page];
 
   console.log("*** current", current);
 
-  if (!current || incomingTimestamp > current.timestamp) {
+  if (!current || incomingTimestamp > (current.serverUpdateTimestamp ?? 0)) {
     // save if none or if the incoming timestamp is newer
     addMessage("persist", "persistStoryList over store", {
       page,
       incomingTimestamp,
-      currentTimestamp: current?.timestamp,
+      currentTimestamp: current?.serverUpdateTimestamp,
     });
     setStoryListStore(page, {
-      timestamp: incomingTimestamp,
+      serverUpdateTimestamp: incomingTimestamp,
       page,
       data: storySummaries,
     });
+    setRefreshTimestamp(page);
   }
 
   let skippedSaves = 0;
@@ -179,9 +171,11 @@ export const persistStoryToStorage = async (id: StoryId, content: HnItem) => {
 };
 
 export async function getContent(id: StoryId) {
-  console.log("*** getContent", id);
+  console.log("*** getContent", id, LOCAL_FORAGE_TO_USE());
 
   const item = await LOCAL_FORAGE_TO_USE()?.getItem<HnItem>("raw_" + id);
+
+  console.log("*** item", item);
 
   if (item) {
     addMessage("getContent", "found item in localforage", { id });
@@ -211,7 +205,11 @@ export async function getContentForPage(
 
   const page = convertPathToStoryPage(rawPage);
 
+  console.log("*** waiting to load", page);
+
   await waitingToLoad;
+
+  console.log("*** waiting to load done", page);
 
   const list = storyListStore[page as StoryPage];
 
@@ -255,6 +253,7 @@ export async function refreshActive() {
   if (type.type === "storyList") {
     const pageData = await fetchAllStoryDataForPage(type.page);
     setActiveStoryList(pageData);
+    setRefreshTimestamp(type.page);
   } else if (type.type === "story") {
     const storyData = await fetchObjById(type.id);
     setActiveStoryData(storyData);

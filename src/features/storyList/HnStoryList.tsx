@@ -1,4 +1,10 @@
-import { createMemo, createSignal, For, Show } from "solid-js";
+import {
+  createMemo,
+  createRenderEffect,
+  createSignal,
+  For,
+  Show,
+} from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
 import { useSortFunction } from "~/hooks/useSortFunction";
@@ -6,12 +12,7 @@ import { createHasRendered } from "~/lib/createHasRendered";
 import { timeSince } from "~/lib/utils";
 import { HnStorySummary } from "~/models/interfaces";
 import { isOfflineMode } from "~/stores/serviceWorkerStatus";
-import {
-  isLoadingData,
-  refreshActive,
-  storyListStore,
-  StoryPage,
-} from "~/stores/useDataStore";
+import { isLoadingData, refreshActive } from "~/stores/useDataStore";
 import {
   readItems,
   readSettings,
@@ -19,8 +20,11 @@ import {
   setReadSettings,
   setRecentlyReadId,
 } from "~/stores/useReadItemsStore";
+import { refreshTimestamps } from "~/stores/useRefreshStore";
 
 import { HnListItem } from "./HnListItem";
+
+import type { StoryPage } from "~/models/interfaces";
 
 interface HnStoryListProps {
   sortType?: "score";
@@ -32,27 +36,28 @@ export const [activeStoryList, setActiveStoryList] = createSignal<
 >([]);
 
 export function HnStoryList(props: HnStoryListProps) {
-  const itemsToRender = () =>
-    useSortFunction(activeStoryList(), props.sortType) ?? [];
-
   const hasRendered = createHasRendered();
+
+  // server will not have any stories to render since we rely on createEffect
+  // render 0 here to avoid hydration mismatch
+  const itemsToRender = () =>
+    hasRendered()
+      ? (useSortFunction(activeStoryList(), props.sortType) ?? [])
+      : [];
 
   const lastUpdatedTs = createMemo(() => {
     const page = props.page;
-    const fromStore = page ? storyListStore[page]?.timestamp : undefined;
-    if (typeof fromStore === "number" && fromStore > 0) {
-      return fromStore;
-    }
-    const fromActive = Math.max(
-      0,
-      ...activeStoryList().map((s) => s.lastUpdated ?? 0)
-    );
-    return fromActive > 0 ? fromActive : undefined;
+    const fromRefreshStore =
+      page && hasRendered() ? refreshTimestamps[page] : undefined;
+
+    return fromRefreshStore;
   });
 
-  const pullMessage = createMemo(() =>
-    lastUpdatedTs() ? `Updated ${timeSince(lastUpdatedTs())} ago` : undefined
-  );
+  const pullMessage = createMemo(() => {
+    return lastUpdatedTs()
+      ? `Updated ${timeSince(lastUpdatedTs())} ago`
+      : undefined;
+  });
 
   const toggleHideReadItems = () => {
     setReadSettings("shouldHideReadItems", !readSettings.shouldHideReadItems);

@@ -1,6 +1,8 @@
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 import { addMessage } from "~/stores/messages";
-import { persistStoryList, StoryPage } from "~/stores/useDataStore";
+import { persistStoryList } from "~/stores/useDataStore";
+
+import type { StoryPage } from "~/models/interfaces";
 
 export async function fetchAllStoryDataForPage(
   page: StoryPage
