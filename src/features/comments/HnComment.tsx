@@ -184,24 +184,28 @@ export function HnComment(props: HnCommentProps) {
             }px`,
           }}
           ref={setDivRef}
-          class={cn("flex items-center gap-1 font-sans")}
+          class={cn(
+            "mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px] text-slate-700"
+          )}
         >
           <span
-            class={cn({
+            class={cn("truncate", {
               "font-bold text-orange-700":
                 activeStoryData()?.by === props.comment.by,
-              truncate: true,
+              "font-medium": activeStoryData()?.by !== props.comment.by,
             })}
           >
             {props.comment.by}
           </span>
-          <span>{"|"}</span>
-          {timeSince(props.comment.time)}
-          {" ago"}
-
-          <span>{"|"}</span>
-          <button onClick={handleShareClick} class="ml-1 hover:text-orange-500">
-            <ArrowUpRightFromSquare size={16} />
+          <span class="text-slate-300 select-none">|</span>
+          <span>{timeSince(props.comment.time)}</span>
+          <span class="text-slate-300 select-none">|</span>
+          <button
+            onClick={handleShareClick}
+            class="text-slate-400 hover:text-orange-500"
+            aria-label="Share"
+          >
+            <ArrowUpRightFromSquare width={16} />
           </button>
         </p>
         <Show when={isOpen()}>
