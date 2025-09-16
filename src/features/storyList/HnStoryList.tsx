@@ -1,10 +1,4 @@
-import {
-  createMemo,
-  createRenderEffect,
-  createSignal,
-  For,
-  Show,
-} from "solid-js";
+import { createMemo, createSignal, For, Show } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
 import { useSortFunction } from "~/hooks/useSortFunction";
@@ -55,7 +49,7 @@ export function HnStoryList(props: HnStoryListProps) {
 
   const pullMessage = createMemo(() => {
     return lastUpdatedTs()
-      ? `Updated ${timeSince(lastUpdatedTs())} ago`
+      ? `Updated ${timeSince(lastUpdatedTs(), true)}`
       : undefined;
   });
 
