@@ -19,7 +19,7 @@ export function createPersistedStore<T extends object>(
 
     // handle setting the store via a function
     if (typeof keyOrNewStore === "function") {
-      const newStore = unwrap(keyOrNewStore(store));
+      const newStore = keyOrNewStore(unwrap(store));
       console.log("*** newStore", newStore);
       rawSetStore(newStore);
       await LOCAL_FORAGE_TO_USE()?.setItem(name, newStore);

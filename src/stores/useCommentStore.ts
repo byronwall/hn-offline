@@ -37,7 +37,7 @@ export function updateCollapsedState(
   } else {
     delete next[commentId];
   }
-  // Replace the whole store to properly delete keys
+
   setCollapsedTimestamps(reconcile(next, { merge: false }));
 }
 
