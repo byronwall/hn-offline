@@ -1,0 +1,13 @@
+import { KidsObj3 } from "~/models/interfaces";
+
+export function isValidComment(comment: KidsObj3 | null) {
+  // TODO: these items need to be removed somewhere else
+  if (comment === null || comment === undefined) {
+    return false;
+  }
+  const isBad =
+    comment.deleted &&
+    (comment.kidsObj === undefined || comment.kidsObj.length === 0);
+
+  return !isBad;
+}

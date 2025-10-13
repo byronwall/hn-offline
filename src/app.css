@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+  --background-rgb: 214, 219, 220;
+  --foreground-rgb: 0, 0, 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-rgb: 0, 0, 0;
+    --foreground-rgb: 255, 255, 255;
+  }
+}
+
+@layer components {
+  /* give some decent looking anchor tags */
+  .user-text {
+    @apply font-serif;
+  }
+}
+.user-text a {
+  @apply text-slate-700 hover:text-slate-600 hover:underline;
+}
+
+a.active {
+  @apply border-b border-b-orange-200 font-bold text-slate-700;
+}
+
+pre {
+  white-space: pre-wrap;
+}
+
+.headerLink {
+  margin-left: 10px;
+}
+
+/* indent on quotes */
+
+.comment p:first-of-type {
+  margin-top: 5px;
+}
+
+/* used by the comment */
+.bp3-card {
+  padding-left: 5px;
+  padding-top: 0px;
+  padding-right: 0px;
+  padding-bottom: 0px;
+  overflow-wrap: break-word;
+  margin-top: 15px;
+
+  border-left-width: 3px;
+  border-left-style: solid;
+
+  border-top: none;
+  border-bottom: none;
+
+  background-color: white;
+  box-shadow: none;
+
+  transition: border-left-color 0.3s ease-in-out;
+}
+
+.collapsed {
+  --flash-color: #ff6600;
+  animation: flash-background 200ms;
+}
+
+@keyframes flash-background {
+  0% {
+    background: white;
+  }
+  /* Adding a step in the middle */
+  50% {
+    background: var(--flash-color);
+  }
+  100% {
+    background: white;
+  }
+}
+
+/* Subtle fade-out for recently read story retained briefly in list */
+.fade-out {
+  animation: fade-out-keyframes 300ms ease-out forwards;
+}
+
+@keyframes fade-out-keyframes {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+button {
+  margin: 0;
+}

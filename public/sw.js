@@ -1,85 +1,554 @@
-// Names of the two caches used in this version of the service worker.
-// Change to v2, etc. when you update any of the local resources, which will
-// in turn trigger the install event again.
-const PRECACHE = "precache-v30";
-const RUNTIME = "runtime-v30";
+/* Service Worker – Offline shell + Online-updating navigations (plain JS) */
+/* eslint-disable no-restricted-globals */
+import { clientsClaim } from "workbox-core";
 
-// A list of local resources we always want to be cached.
-// need these available so the site can work offline on all major pages
-const PRECACHE_URLS = ["/", "/day", "/week", "/local"];
+// Auto update: activate new SW immediately
+self.skipWaiting();
+clientsClaim();
 
-self.addEventListener("visibilitychange", function () {
-  if (document.visibilityState === "visible") {
-    console.log("APP resumed");
-    window.location.reload();
-  }
-});
+(() => {
+  "use strict";
 
-// The install handler takes care of precaching the resources we always need.
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(PRECACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(self.skipWaiting())
-  );
-});
+  // Bump VERSION when you want to drop old caches immediately.
+  // (Later you can inject this automatically via Vite `define`.)
+  const VERSION = "v1";
+  const CACHE_PREFIX = "app-";
+  const STATIC_CACHE = `${CACHE_PREFIX}static-${VERSION}`;
+  const PAGES_CACHE = `${CACHE_PREFIX}pages-${VERSION}`;
 
-// The activate handler takes care of cleaning up old caches.
-self.addEventListener("activate", (event) => {
-  const currentCaches = [PRECACHE, RUNTIME];
-  event.waitUntil(
-    caches
-      .keys()
-      .then((cacheNames) => {
-        return cacheNames.filter(
-          (cacheName) => !currentCaches.includes(cacheName)
-        );
-      })
-      .then((cachesToDelete) => {
-        return Promise.all(
-          cachesToDelete.map((cacheToDelete) => {
-            return caches.delete(cacheToDelete);
-          })
-        );
-      })
-      .then(() => self.clients.claim())
-  );
-});
+  // Boot log for quick visibility in DevTools
+  console.log("SW: boot", { version: VERSION, STATIC_CACHE, PAGES_CACHE });
 
-// The fetch handler serves responses for same-origin resources from a cache.
-// If no response is found, it populates the runtime cache with the response
-// from the network before returning it to the page.
-self.addEventListener("fetch", (event) => {
-  // Skip cross-origin requests, like those for Google Analytics.
-  if (!event.request.url.startsWith(self.location.origin)) {
-    return;
-  }
+  // We precache a minimal offline shell and core navigable pages for offline first-load.
 
-  // kickout for local resources
-  if (event.request.url.includes("localhost")) {
-    return;
-  }
+  // Install: precache offline shell and initial HTML pages
+  self.addEventListener("install", (event) => {
+    console.log("SW: install event");
+    event.waitUntil(
+      (async () => {
+        // clear ALL caches before precaching
+        const names = await caches.keys();
+        for (const name of names) {
+          console.log("SW: deleting cache", name);
+          await caches.delete(name);
+        }
 
-  // Skip caching if the URL starts with "api"
-  if (event.request.url.startsWith(self.location.origin + "/api")) {
-    return;
-  }
+        // Precache static assets listed by the injected Workbox manifest
+        try {
+          console.log("SW: precaching assets from __WB_MANIFEST (if present)");
+          await precacheManifestEntries();
+        } catch (e) {
+          console.warn("SW: failed to precache manifest assets", e);
+        }
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+        // Precache primary navigable pages so first offline load works
+        try {
+          const primaryPaths = [
+            "/",
+            "/day",
+            "/week",
+            "/story/45018509",
+            "/offline",
+          ];
+          for (const path of primaryPaths) {
+            await precachePageAndAssets(path);
+          }
+          console.log(
+            "📦 Precached primary pages and assets: /, /day, /week, /story/45018509"
+          );
+        } catch (e) {
+          console.warn("SW: failed to precache some primary pages/assets", e);
+        }
+        await self.skipWaiting();
+      })()
+    );
+  });
 
-      return caches.open(RUNTIME).then((cache) => {
-        return fetch(event.request).then((response) => {
-          // Put a copy of the response in the runtime cache.
-          return cache.put(event.request, response.clone()).then(() => {
-            return response;
-          });
+  // Activate: clean up old cache buckets; enable navigation preload; take control
+  self.addEventListener("activate", (event) => {
+    event.waitUntil(
+      (async () => {
+        // Speed up first navigation while SW is booting
+        if (self.registration.navigationPreload) {
+          try {
+            await self.registration.navigationPreload.enable();
+          } catch (e) {
+            console.log("SW: navigationPreload enable failed", e);
+          }
+        }
+
+        await self.clients.claim();
+
+        // Notify clients that SW is ready and provide a version hint
+        const allClients = await self.clients.matchAll({ type: "window" });
+        console.log("SW: activated, notifying clients", {
+          clients: allClients.length,
+          version: VERSION,
         });
+        for (const client of allClients) {
+          client.postMessage({ type: "SW_READY" });
+          client.postMessage({ type: "SW_VERSION", version: VERSION });
+        }
+      })()
+    );
+  });
+
+  // Core fetch logic
+  self.addEventListener("fetch", (event) => {
+    const req = event.request;
+    try {
+      const u = new URL(req.url);
+      console.log("SW: fetch event", {
+        url: req.url,
+        mode: req.mode,
+        destination: req.destination,
+        method: req.method,
+        sameOrigin: u.origin === self.location.origin,
+        pathname: u.pathname,
       });
-    })
-  );
-});
+    } catch (e) {
+      console.log("SW: fetch event URL parse failed", e);
+    }
+    if (req.method !== "GET") {
+      try {
+        const { pathname } = new URL(req.url);
+        console.log("SW: skip non-GET", req.method, pathname);
+      } catch (e) {
+        console.log("SW: non-GET URL parse failed", e);
+      }
+      return;
+    }
+
+    // Skip cross-origin (let the browser handle), and skip your APIs explicitly.
+    const url = new URL(req.url);
+    const sameOrigin = url.origin === self.location.origin;
+    if (!sameOrigin) {
+      console.log("SW: skip cross-origin", {
+        origin: url.origin,
+        pathname: url.pathname,
+      });
+      return;
+    }
+    if (url.pathname.startsWith("/api/")) {
+      console.log("SW: skip /api request", url.pathname);
+      return;
+    }
+    // Do not bypass /story navigations; handle them so we can provide offline fallbacks
+
+    // Navigations: Network-First with a short timeout and offline fallbacks.
+    if (req.mode === "navigate") {
+      console.log("SW: handle navigation", url.pathname);
+      event.respondWith(handleNavigation(event));
+      return;
+    }
+
+    // Static assets: Cache-First (hashed assets will naturally update via new URLs)
+    if (["script", "style", "font", "image"].includes(req.destination)) {
+      console.log("SW: handle static asset", req.destination);
+      event.respondWith(cacheFirst(req, STATIC_CACHE));
+      return;
+    }
+
+    // Everything else → default (network)
+  });
+
+  // Allow the page to trigger an immediate activation (optional)
+  self.addEventListener("message", (e) => {
+    if (!e || !e.data || typeof e.data !== "object") {
+      return;
+    }
+    try {
+      console.log("SW: message", e.data && e.data.type);
+    } catch (_) {
+      // noop
+    }
+    if (e.data.type === "SKIP_WAITING") {
+      self.skipWaiting();
+      return;
+    }
+    if (e.data.type === "GET_VERSION") {
+      const source = e.source;
+      if (source && typeof source.postMessage === "function") {
+        try {
+          source.postMessage({ type: "SW_VERSION", version: VERSION });
+        } catch (_) {
+          // no-op
+        }
+      } else {
+        // Fallback: broadcast to all clients
+        self.clients
+          .matchAll({ type: "window" })
+          .then((all) =>
+            all.forEach((client) =>
+              client.postMessage({ type: "SW_VERSION", version: VERSION })
+            )
+          )
+          .catch(() => {});
+      }
+    }
+  });
+
+  // ---- Strategies ----------------------------------------------------------
+
+  async function cacheFirst(req, cacheName) {
+    const cache = await caches.open(cacheName);
+    const hit = await cache.match(req, { ignoreVary: true });
+    if (hit) {
+      console.log("📦 Asset cache HIT:", req.url);
+      return hit;
+    }
+
+    const resp = await fetch(req);
+    if (isCacheable(resp)) {
+      // Clone required: response bodies are one-shot
+      cache.put(req, resp.clone()).catch(() => {});
+      console.log("🛜 Asset fetched & cached:", req.url);
+    }
+    return resp;
+  }
+
+  // ---- Precache Helpers ----------------------------------------------------
+
+  async function precacheManifestEntries() {
+    const entries = self.__WB_MANIFEST || [];
+    if (!Array.isArray(entries) || entries.length === 0) {
+      console.log("SW: __WB_MANIFEST empty or not injected");
+      return;
+    }
+
+    console.log("SW: manifest entries discovered", entries.length);
+    const staticCache = await caches.open(STATIC_CACHE);
+    const urls = new Set();
+    for (const item of entries) {
+      if (item && typeof item.url === "string" && item.url.length > 0) {
+        urls.add(item.url);
+      }
+    }
+
+    const requests = Array.from(urls).map((u) => {
+      // Paths are relative to the _build directory where sw.js is served
+      const abs = new URL(u, self.location.href);
+      return new Request(abs.pathname + abs.search, { method: "GET" });
+    });
+
+    console.log("SW: unique precache URLs", requests.length);
+    let added = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    await Promise.all(
+      requests.map(async (req) => {
+        const hit = await staticCache.match(req, { ignoreVary: true });
+        if (hit) {
+          skipped++;
+          return;
+        }
+        try {
+          const res = await fetch(req);
+          if (isCacheable(res)) {
+            await staticCache.put(req, res.clone());
+            console.log("📦 Precached manifest asset:", req.url);
+            added++;
+          }
+        } catch (_) {
+          // ignore individual asset failures
+          failed++;
+        }
+      })
+    );
+
+    console.log("SW: manifest precache summary", {
+      discovered: entries.length,
+      unique: requests.length,
+      added,
+      skipped,
+      failed,
+    });
+  }
+
+  async function precachePageAndAssets(pathname) {
+    const pages = await caches.open(PAGES_CACHE);
+    let resp;
+    try {
+      // Bypass HTTP cache and old SW caches
+      resp = await fetch(new Request(pathname, { cache: "reload" }));
+    } catch (e) {
+      console.warn("SW: failed to fetch page for precache:", pathname, e);
+      return;
+    }
+    if (!isCacheable(resp)) {
+      console.log("SW: page not cacheable:", pathname, resp?.status);
+      return;
+    }
+    try {
+      await pages.put(new Request(pathname, { method: "GET" }), resp.clone());
+    } catch (e) {
+      console.log("SW: pages.put failed during precache", pathname, e);
+    }
+
+    // Attempt to parse HTML and precache its module/style assets
+    let html;
+    try {
+      html = await resp.clone().text();
+    } catch (_) {
+      html = undefined;
+    }
+    if (!html) {
+      return;
+    }
+
+    const assets = extractAssetUrls(html);
+
+    if (assets.length === 0) {
+      return;
+    }
+    const staticCache = await caches.open(STATIC_CACHE);
+    const requests = assets.map((u) => new Request(u, { method: "GET" }));
+    try {
+      await Promise.all(
+        requests.map(async (r) => {
+          const hit = await staticCache.match(r, { ignoreVary: true });
+          if (hit) {
+            return;
+          }
+          try {
+            const res = await fetch(r);
+            if (isCacheable(res)) {
+              await staticCache.put(r, res.clone());
+              console.log("📦 Precached asset:", r.url);
+            }
+          } catch (_) {
+            // ignore individual asset failures
+          }
+        })
+      );
+      console.log("📦 Precached assets for", pathname, assets);
+    } catch (e) {
+      console.log("SW: asset precache failed for", pathname, e);
+    }
+  }
+
+  function extractAssetUrls(html) {
+    const urls = new Set();
+    const origin = self.location.origin;
+    const add = (href) => {
+      if (!href) {
+        return;
+      }
+      try {
+        const abs = new URL(href, origin);
+        if (abs.origin === origin) {
+          urls.add(abs.pathname + abs.search);
+        }
+      } catch (_) {
+        // ignore invalid URLs
+      }
+    };
+
+    // <link rel="modulepreload" href="...">
+    for (const m of html.matchAll(
+      /<link[^>]+rel=["']modulepreload["'][^>]*href=["']([^"']+)["'][^>]*>/gi
+    )) {
+      add(m[1]);
+    }
+    // <link rel="stylesheet" href="...">
+    for (const m of html.matchAll(
+      /<link[^>]+rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi
+    )) {
+      add(m[1]);
+    }
+    // <link rel="preload" as="style" href="...">
+    for (const m of html.matchAll(
+      /<link[^>]+rel=["']preload["'][^>]*as=["']style["'][^>]*href=["']([^"']+)["'][^>]*>/gi
+    )) {
+      add(m[1]);
+    }
+    // <script type="module" src="...">
+    for (const m of html.matchAll(
+      /<script[^>]+type=["']module["'][^>]*src=["']([^"']+)["'][^>]*><\/script>/gi
+    )) {
+      add(m[1]);
+    }
+    return Array.from(urls);
+  }
+
+  function isCacheable(resp) {
+    return (
+      resp &&
+      resp.ok &&
+      (resp.type === "basic" ||
+        resp.type === "opaqueredirect" ||
+        resp.type === "cors")
+    );
+  }
+
+  async function handleNavigation(event) {
+    const req = event.request;
+    const pages = await caches.open(PAGES_CACHE);
+    const { pathname } = new URL(req.url);
+    const PRIMARY_PAGES = new Set(["/", "/day", "/day/", "/week", "/week/"]);
+    console.log("➡️ Navigate:", pathname);
+    console.time && console.time(`[NAV] ${pathname}`);
+    let resolution = undefined; // preload | network | page-cache | offline-shell | offline-shell-404 | timeout-504
+
+    // 1) Try navigation preload (if enabled) or network
+    const preload = event.preloadResponse
+      ? event.preloadResponse
+      : Promise.resolve(undefined);
+
+    const networkPromise = (async () => {
+      const fromPreload = await preload;
+      const usedPreload = Boolean(fromPreload);
+      let resp;
+      try {
+        resp = fromPreload || (await fetch(req));
+      } catch (e) {
+        console.warn("🛜 Network fetch failed:", pathname, e);
+        resp = undefined;
+      }
+      console.log(
+        usedPreload ? "🛰️ Using navigation preload:" : "🛜 Network response:",
+        pathname
+      );
+      if (resp) {
+        console.log("SW: nav response meta", {
+          status: resp.status,
+          ok: resp.ok,
+          type: resp.type,
+        });
+      }
+      resolution = usedPreload ? "preload" : "network";
+      if (isCacheable(resp) && !PRIMARY_PAGES.has(pathname)) {
+        // Keep a copy for offline for non-primary pages only
+        pages.put(req, resp.clone()).catch(() => {});
+        console.log("💾 Cached page:", pathname);
+      } else if (PRIMARY_PAGES.has(pathname)) {
+        console.log("🚫 Skipping cache for primary page:", pathname);
+      } else if (!resp) {
+        console.log("SW: nav response not available to cache", pathname);
+      }
+      return resp;
+    })();
+
+    // 2) Network-First with timeout → fallback to cached page → fallback to offline shell
+    const TIMEOUT_MS = 3000;
+    let response;
+
+    try {
+      response = await promiseWithTimeout(networkPromise, TIMEOUT_MS);
+    } catch (_) {
+      console.warn("⏱️ Network timeout, falling back:", pathname);
+      resolution = "timeout";
+    }
+
+    // Try cached page for any navigation if network failed or timed out.
+    if (!response) {
+      // For primary pages, match the canonical route (without trailing slash differences)
+      const canonicalPath =
+        pathname.endsWith("/") && pathname.length > 1
+          ? pathname.slice(0, -1)
+          : pathname;
+
+      console.log("canonicalPath", canonicalPath);
+
+      const matchReq = PRIMARY_PAGES.has(canonicalPath)
+        ? new Request(canonicalPath, { method: "GET" })
+        : req;
+      console.log("matchReq", matchReq);
+      response =
+        (await pages.match(matchReq, { ignoreVary: true })) ||
+        (PRIMARY_PAGES.has(canonicalPath)
+          ? await pages.match(canonicalPath, { ignoreVary: true })
+          : undefined);
+      console.log("response", response);
+      if (response) {
+        console.log("📦 Page cache HIT:", canonicalPath);
+        resolution = "page-cache";
+      } else {
+        console.log("📦 Page cache MISS:", canonicalPath);
+      }
+    }
+
+    // If the network returned a 404 for an unknown page, serve offline shell
+    if (response && response.status === 404) {
+      const offline = await caches.match("/offline", { ignoreVary: true });
+      if (offline) {
+        console.log("🚧 404 encountered, serving offline shell for:", pathname);
+        resolution = "offline-shell-404";
+        return offline;
+      } else {
+        console.log(
+          "SW: offline shell not found while handling 404:",
+          pathname
+        );
+      }
+    }
+
+    // Final fallback: serve offline shell
+    if (!response) {
+      response = await caches.match("/offline", { ignoreVary: true });
+      if (response) {
+        console.log("🧱 Serving offline shell for:", pathname);
+        resolution =
+          resolution === "timeout"
+            ? "offline-shell"
+            : resolution || "offline-shell";
+      } else {
+        console.warn(
+          "SW: offline shell not available in cache, serving inline fallback:",
+          pathname
+        );
+        const offlineHtml =
+          '<!doctype html><html><head><meta charset="utf-8">' +
+          '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+          "<title>Offline</title>" +
+          "<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#0b1324;color:#e6edf3}main{padding:24px;text-align:center;max-width:640px}h1{font-size:28px;margin:0 0 12px}p{opacity:.85;margin:8px 0}</style>" +
+          "</head><body><main>" +
+          "<h1>You're offline</h1>" +
+          "<p>We couldn't reach the network and no cached page was available.</p>" +
+          "<p>Try again once you're back online. The app will refresh automatically.</p>" +
+          "</main></body></html>";
+        response = new Response(offlineHtml, {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+          status: 200,
+          statusText: "Offline Fallback",
+        });
+        resolution = resolution || "inline-offline";
+      }
+    }
+
+    // Ensure we always return *something*
+    const finalResponse =
+      response ||
+      new Response("", {
+        status: 504,
+        statusText: "Offline and no fallback available",
+      });
+    if (!response) {
+      resolution = resolution || "timeout-504";
+    }
+    console.log("✅ Navigation resolved", {
+      path: pathname,
+      resolution,
+      status: finalResponse.status,
+    });
+    console.timeEnd && console.timeEnd(`[NAV] ${pathname}`);
+    return finalResponse;
+  }
+
+  function promiseWithTimeout(promise, ms) {
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error("timeout")), ms);
+      promise.then(
+        (v) => {
+          clearTimeout(t);
+          resolve(v);
+        },
+        (e) => {
+          clearTimeout(t);
+          reject(e);
+        }
+      );
+    });
+  }
+})();
