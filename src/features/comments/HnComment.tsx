@@ -76,8 +76,30 @@ export function HnComment(props: HnCommentProps) {
     cleanText = cleanText.replace(/<[^>]+>/g, "");
     cleanText = decode(cleanText);
 
-    const url = `https://hn.byroni.us/story/${props.comment.id}`;
-    const shareText = `Comment by ${props.comment.by} on HN: ${url}\n\n${cleanText}`;
+    const commentUrl = `https://hn.byroni.us/story/${props.comment.id}`;
+    const storyExternalUrl = activeStoryData()?.url;
+    // intentionally unused: story title not required in footer
+    const storyId = activeStoryData()?.id;
+    const storyHnUrl = storyId ? `https://hn.byroni.us/story/${storyId}` : "";
+    // storyUrl no longer used; keep only HN + external links
+
+    const shareTextLines = [
+      `Comment by ${props.comment.by} on HN: ${commentUrl}`,
+      "",
+      cleanText,
+    ];
+
+    if (storyHnUrl || storyExternalUrl) {
+      shareTextLines.push("");
+      if (storyHnUrl) {
+        shareTextLines.push(`HN story: ${storyHnUrl}`);
+      }
+      if (storyExternalUrl) {
+        shareTextLines.push(`Content: ${storyExternalUrl}`);
+      }
+    }
+
+    const shareText = shareTextLines.join("\n");
 
     console.log("share text", shareText);
 
