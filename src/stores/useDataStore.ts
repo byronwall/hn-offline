@@ -248,6 +248,15 @@ export async function refreshActive() {
     return;
   }
 
+  // Ensure we scroll to the top when a refresh is initiated from any trigger
+  try {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  } catch (_err) {
+    // noop
+  }
+
   setIsLoadingData(true);
 
   if (type.type === "storyList") {
