@@ -185,28 +185,36 @@ export function HnComment(props: HnCommentProps) {
           }}
           ref={setDivRef}
           class={cn(
-            "mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px] text-slate-700"
+            "mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px]",
+            isOpen() ? "text-slate-700" : "text-slate-500"
           )}
         >
           <span
-            class={cn("truncate", {
-              "font-bold text-orange-700":
-                activeStoryData()?.by === props.comment.by,
-              "font-medium": activeStoryData()?.by !== props.comment.by,
-            })}
+            class={cn(
+              "truncate",
+              isOpen()
+                ? {
+                    "font-bold text-orange-700":
+                      activeStoryData()?.by === props.comment.by,
+                    "font-medium": activeStoryData()?.by !== props.comment.by,
+                  }
+                : "font-normal"
+            )}
           >
             {props.comment.by}
           </span>
-          <span class="text-slate-300 select-none">|</span>
-          <span>{timeSince(props.comment.time)}</span>
-          <span class="text-slate-300 select-none">|</span>
-          <button
-            onClick={handleShareClick}
-            class="text-slate-400 hover:text-orange-500"
-            aria-label="Share"
-          >
-            <ArrowUpRightFromSquare width={16} />
-          </button>
+          <Show when={isOpen()}>
+            <span class="text-slate-300 select-none">|</span>
+            <span>{timeSince(props.comment.time)}</span>
+            <span class="text-slate-300 select-none">|</span>
+            <button
+              onClick={handleShareClick}
+              class="text-slate-400 hover:text-orange-500"
+              aria-label="Share"
+            >
+              <ArrowUpRightFromSquare width={16} />
+            </button>
+          </Show>
         </p>
         <Show when={isOpen()}>
           {/* eslint-disable-next-line solid/no-innerhtml */}
