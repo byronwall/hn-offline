@@ -11,7 +11,11 @@ export function NavBar() {
   return (
     <nav class="fixed top-0 left-1/2 z-10 flex h-12 w-full max-w-[640px] -translate-x-1/2 items-center justify-between space-x-2 border border-slate-300 bg-white p-1">
       <div class="flex items-center">
-        <A href="/" class="flex items-center gap-1 hover:underline" end>
+        <A
+          href="/"
+          class="flex items-center gap-1 hover:underline focus-visible:underline active:underline"
+          end
+        >
           <img
             src="/favicon-32x32.png"
             alt="Hacker News Logo"
@@ -23,10 +27,16 @@ export function NavBar() {
         </A>
       </div>
       <div class="flex items-center gap-2 text-xl">
-        <A href="/day" class="hover:underline">
+        <A
+          href="/day"
+          class="hover:underline focus-visible:underline active:underline"
+        >
           day
         </A>
-        <A href="/week" class="hover:underline">
+        <A
+          href="/week"
+          class="hover:underline focus-visible:underline active:underline"
+        >
           week
         </A>
         <Show when={!isOfflineMode()}>
@@ -37,6 +47,8 @@ export function NavBar() {
               }
               refreshActive();
             }}
+            // increase hit area
+            class="-my-3 px-2 py-3"
           >
             <div
               class={cn(

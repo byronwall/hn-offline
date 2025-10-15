@@ -34,7 +34,7 @@ export function HnListItem(props: HnStoryProps) {
       )}
       onAnimationEnd={handleAnimationEnd}
     >
-      <p class="col-span-4 mt-1.5 mb-1 font-medium hover:underline">
+      <p class="col-span-4 mt-1.5 mb-1 font-medium hover:underline focus-visible:underline active:underline">
         {props.data.url === undefined ? (
           <A href={"/story/" + props.data.id}>{props.data.title}</A>
         ) : (
@@ -51,7 +51,7 @@ export function HnListItem(props: HnStoryProps) {
       {props.data.descendants !== undefined && (
         <A
           href={"/story/" + props.data.id}
-          class="flex gap-1 text-gray-700 hover:underline"
+          class="flex gap-1 text-gray-700 hover:underline focus-visible:underline active:underline"
         >
           <MessageSquareQuote class="stroke-gray-500" />
           {props.data.descendants}

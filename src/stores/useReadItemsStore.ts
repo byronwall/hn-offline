@@ -10,7 +10,7 @@ export type TimestampHash = Record<number, number>;
 export const [readSettings, setReadSettings] = createPersistedStore(
   "READ_SETTINGS",
   {
-    shouldHideReadItems: true,
+    shouldHideReadItems: false,
   }
 );
 

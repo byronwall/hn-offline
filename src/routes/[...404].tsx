@@ -8,16 +8,29 @@ export default function NotFound() {
       </h1>
       <p class="mt-8">The page you requested doesn't exist.</p>
       <p class="my-4 flex items-center justify-center gap-4 text-lg">
-        <A href="/" class="text-sky-600 hover:underline" end>
+        <A
+          href="/"
+          class="text-sky-600 hover:underline focus-visible:underline active:underline"
+          end
+        >
           Home
         </A>
-        <A href="/day" class="text-sky-600 hover:underline">
+        <A
+          href="/day"
+          class="text-sky-600 hover:underline focus-visible:underline active:underline"
+        >
           Day
         </A>
-        <A href="/week" class="text-sky-600 hover:underline">
+        <A
+          href="/week"
+          class="text-sky-600 hover:underline focus-visible:underline active:underline"
+        >
           Week
         </A>
-        <A href="/offline" class="text-sky-600 hover:underline">
+        <A
+          href="/offline"
+          class="text-sky-600 hover:underline focus-visible:underline active:underline"
+        >
           Offline
         </A>
       </p>

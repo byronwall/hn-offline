@@ -76,8 +76,30 @@ export function HnComment(props: HnCommentProps) {
     cleanText = cleanText.replace(/<[^>]+>/g, "");
     cleanText = decode(cleanText);
 
-    const url = `https://hn.byroni.us/story/${props.comment.id}`;
-    const shareText = `Comment by ${props.comment.by} on HN: ${url}\n\n${cleanText}`;
+    const commentUrl = `https://hn.byroni.us/story/${props.comment.id}`;
+    const storyExternalUrl = activeStoryData()?.url;
+    // intentionally unused: story title not required in footer
+    const storyId = activeStoryData()?.id;
+    const storyHnUrl = storyId ? `https://hn.byroni.us/story/${storyId}` : "";
+    // storyUrl no longer used; keep only HN + external links
+
+    const shareTextLines = [
+      `Comment by ${props.comment.by} on HN: ${commentUrl}`,
+      "",
+      cleanText,
+    ];
+
+    if (storyHnUrl || storyExternalUrl) {
+      shareTextLines.push("");
+      if (storyHnUrl) {
+        shareTextLines.push(`HN story: ${storyHnUrl}`);
+      }
+      if (storyExternalUrl) {
+        shareTextLines.push(`Content: ${storyExternalUrl}`);
+      }
+    }
+
+    const shareText = shareTextLines.join("\n");
 
     console.log("share text", shareText);
 
@@ -185,28 +207,36 @@ export function HnComment(props: HnCommentProps) {
           }}
           ref={setDivRef}
           class={cn(
-            "mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px] text-slate-700"
+            "mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px]",
+            isOpen() ? "text-slate-700" : "text-slate-500"
           )}
         >
           <span
-            class={cn("truncate", {
-              "font-bold text-orange-700":
-                activeStoryData()?.by === props.comment.by,
-              "font-medium": activeStoryData()?.by !== props.comment.by,
-            })}
+            class={cn(
+              "truncate",
+              isOpen()
+                ? {
+                    "font-bold text-orange-700":
+                      activeStoryData()?.by === props.comment.by,
+                    "font-medium": activeStoryData()?.by !== props.comment.by,
+                  }
+                : "font-normal"
+            )}
           >
             {props.comment.by}
           </span>
-          <span class="text-slate-300 select-none">|</span>
-          <span>{timeSince(props.comment.time)}</span>
-          <span class="text-slate-300 select-none">|</span>
-          <button
-            onClick={handleShareClick}
-            class="text-slate-400 hover:text-orange-500"
-            aria-label="Share"
-          >
-            <ArrowUpRightFromSquare width={16} />
-          </button>
+          <Show when={isOpen()}>
+            <span class="text-slate-300 select-none">|</span>
+            <span>{timeSince(props.comment.time)}</span>
+            <span class="text-slate-300 select-none">|</span>
+            <button
+              onClick={handleShareClick}
+              class="text-slate-400 hover:text-orange-500"
+              aria-label="Share"
+            >
+              <ArrowUpRightFromSquare width={16} />
+            </button>
+          </Show>
         </p>
         <Show when={isOpen()}>
           {/* eslint-disable-next-line solid/no-innerhtml */}
