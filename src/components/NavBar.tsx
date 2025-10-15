@@ -37,6 +37,8 @@ export function NavBar() {
               }
               refreshActive();
             }}
+            // increase hit area
+            class="-my-3 px-2 py-3"
           >
             <div
               class={cn(
