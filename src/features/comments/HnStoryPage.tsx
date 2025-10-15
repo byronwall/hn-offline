@@ -151,7 +151,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     >
       <div class="relative pb-[70vh]">
         <h2
-          class="mb-2 text-2xl font-bold hover:underline"
+          class="mb-2 text-2xl font-bold hover:underline focus-visible:underline active:underline"
           style={{ "overflow-wrap": "break-word" }}
         >
           <Switch>

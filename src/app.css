@@ -19,7 +19,7 @@
   }
 }
 .user-text a {
-  @apply text-slate-700 hover:text-slate-600 hover:underline;
+  @apply text-slate-700 hover:text-slate-600 hover:underline focus-visible:underline active:underline;
 }
 
 a.active {
