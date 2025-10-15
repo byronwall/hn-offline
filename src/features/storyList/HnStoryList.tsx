@@ -1,5 +1,6 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 
+import { Shell } from "~/components/Icon";
 import { PullToRefresh } from "~/components/PullToRefresh";
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { createHasRendered } from "~/lib/createHasRendered";
@@ -75,7 +76,27 @@ export function HnStoryList(props: HnStoryListProps) {
         >
           <Show when={pullMessage()}>
             <div class="text-center text-[11px] text-slate-400">
-              {pullMessage()}
+              <button
+                type="button"
+                title="Refresh now"
+                onClick={() => {
+                  if (isOfflineMode() || isLoadingData()) {
+                    return;
+                  }
+                  refreshActive();
+                }}
+                class="inline-flex items-center gap-1 hover:text-orange-500 focus:outline-none active:text-orange-500"
+                aria-label="Refresh list"
+              >
+                <span
+                  class={
+                    isLoadingData() ? "inline-flex animate-spin" : "inline-flex"
+                  }
+                >
+                  <Shell width="12" height="12" />
+                </span>
+                <span>{pullMessage()}</span>
+              </button>
             </div>
           </Show>
           <div class="grid grid-cols-[1fr_1fr_1fr_3fr]">
