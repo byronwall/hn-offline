@@ -40,6 +40,9 @@ pre {
   margin-top: 5px;
 }
 
+.track-visited a:visited {
+  color: var(--color-orange-500);
+}
 /* used by the comment */
 .bp3-card {
   padding-left: 5px;

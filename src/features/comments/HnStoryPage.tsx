@@ -182,7 +182,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
           </div>
         </Show>
         <h2
-          class="mb-2 text-2xl font-bold hover:underline focus-visible:underline active:underline"
+          class="track-visited mb-2 text-2xl font-bold hover:underline focus-visible:underline active:underline"
           style={{ "overflow-wrap": "break-word" }}
         >
           <Switch>
