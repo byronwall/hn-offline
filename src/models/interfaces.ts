@@ -74,7 +74,12 @@ export interface Item {
   /**
    * The comment's parent: either another comment or the relevant story.
    */
-  parent?: string;
+  parent?: number;
+
+  /**
+   * The root story or top-level comment id (walked via parents).
+   */
+  root?: number;
 
   /**
    * The pollopt's associated poll.
@@ -124,6 +129,8 @@ export interface HnItem extends HasAuthorAndTime {
   text?: string; // this is for Ask HN and others that are internal
   by: string; // override to make required
   time: number; // override to make required
+  parent?: number; // present when the item is a comment
+  root?: number; // root story or top-level comment id
 }
 export interface KidsObj3 {
   by?: string;

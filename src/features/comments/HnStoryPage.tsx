@@ -125,6 +125,10 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const comments = () =>
     (activeStoryData()?.kidsObj || []).filter(isValidComment);
 
+  const isComment = () => activeStoryData()?.type === "comment";
+  const parentId = () => activeStoryData()?.parent;
+  const rootId = () => activeStoryData()?.root;
+
   function handleStoryTextClick() {
     if (!activeStoryData()?.text) {
       return;
@@ -150,8 +154,35 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       // message={pullMessage()}
     >
       <div class="relative pb-[70vh]">
+        <Show when={isComment() && parentId()}>
+          <div class="mb-3 rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700">
+            <span class="mr-2 rounded bg-slate-200 px-1.5 py-0.5 font-semibold tracking-wide text-slate-700 uppercase">
+              Comment
+            </span>
+            <span>
+              <span class="mr-1">
+                {rootId() && rootId() === parentId() ? "root" : "parent"}:
+              </span>
+              <a
+                class="text-orange-600 underline hover:text-orange-500 focus-visible:text-orange-500"
+                href={`/story/${parentId()}`}
+              >
+                {parentId()}
+              </a>
+              <Show when={rootId() && rootId() !== parentId()}>
+                <span class="mr-1 ml-3">root:</span>
+                <a
+                  class="text-orange-600 underline hover:text-orange-500 focus-visible:text-orange-500"
+                  href={`/story/${rootId()}`}
+                >
+                  {rootId()}
+                </a>
+              </Show>
+            </span>
+          </div>
+        </Show>
         <h2
-          class="mb-2 text-2xl font-bold hover:underline focus-visible:underline active:underline"
+          class="track-visited mb-2 text-2xl font-bold hover:underline focus-visible:underline active:underline"
           style={{ "overflow-wrap": "break-word" }}
         >
           <Switch>

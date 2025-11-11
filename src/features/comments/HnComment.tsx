@@ -180,6 +180,7 @@ export function HnComment(props: HnCommentProps) {
               position: "sticky",
               top: `${stickyInfo().stickyTop}px`,
               height: `${stickyInfo().stickyHeight}px`,
+              "pointer-events": "none",
             }}
           >
             <div

@@ -34,7 +34,7 @@ export function HnListItem(props: HnStoryProps) {
       )}
       onAnimationEnd={handleAnimationEnd}
     >
-      <p class="col-span-4 mt-1.5 mb-1 font-medium hover:underline focus-visible:underline active:underline">
+      <p class="track-visited col-span-4 mt-1.5 mb-1 font-medium hover:underline focus-visible:underline active:underline">
         {props.data.url === undefined ? (
           <A href={"/story/" + props.data.id}>{props.data.title}</A>
         ) : (

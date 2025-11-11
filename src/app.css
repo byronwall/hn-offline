@@ -40,6 +40,9 @@ pre {
   margin-top: 5px;
 }
 
+.track-visited a:visited {
+  color: var(--color-orange-500);
+}
 /* used by the comment */
 .bp3-card {
   padding-left: 5px;
@@ -72,7 +75,7 @@ pre {
   }
   /* Adding a step in the middle */
   50% {
-    background: var(--flash-color);
+    background: rgb(from var(--flash-color) r g b / 20%);
   }
   100% {
     background: white;
