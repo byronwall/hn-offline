@@ -124,6 +124,7 @@ export interface HnItem extends HasAuthorAndTime {
   text?: string; // this is for Ask HN and others that are internal
   by: string; // override to make required
   time: number; // override to make required
+  parent?: number; // present when the item is a comment
 }
 export interface KidsObj3 {
   by?: string;
