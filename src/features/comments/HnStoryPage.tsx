@@ -1,6 +1,5 @@
 import { useNavigate } from "@solidjs/router";
 import {
-  createEffect,
   createRenderEffect,
   Match,
   onCleanup,
@@ -127,8 +126,8 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     (activeStoryData()?.kidsObj || []).filter(isValidComment);
 
   const isComment = () => activeStoryData()?.type === "comment";
-  const parentId = () =>
-    (activeStoryData() as unknown as { parent?: number } | undefined)?.parent;
+  const parentId = () => activeStoryData()?.parent;
+  const rootId = () => activeStoryData()?.root;
 
   function handleStoryTextClick() {
     if (!activeStoryData()?.text) {
@@ -161,13 +160,24 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
               Comment
             </span>
             <span>
-              View parent:{" "}
+              <span class="mr-1">
+                {rootId() && rootId() === parentId() ? "root" : "parent"}:
+              </span>
               <a
                 class="text-orange-600 underline hover:text-orange-500 focus-visible:text-orange-500"
                 href={`/story/${parentId()}`}
               >
                 {parentId()}
               </a>
+              <Show when={rootId() && rootId() !== parentId()}>
+                <span class="mr-1 ml-3">root:</span>
+                <a
+                  class="text-orange-600 underline hover:text-orange-500 focus-visible:text-orange-500"
+                  href={`/story/${rootId()}`}
+                >
+                  {rootId()}
+                </a>
+              </Show>
             </span>
           </div>
         </Show>
