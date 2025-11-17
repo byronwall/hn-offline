@@ -127,10 +127,8 @@ async function addChildrenToItem(item: Item | null): Promise<Item[]> {
   return [];
 }
 
-export function addItemToDb(item: Item) {
-  const itemExt: ItemExt = { ...item, lastUpdated: _getUnixTimestamp() };
-
-  db[item.id] = itemExt;
+export function addItemToDb(item: ItemExt) {
+  db[item.id] = item;
 
   return true;
 }

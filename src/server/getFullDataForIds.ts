@@ -19,27 +19,23 @@ export async function getFullDataForIds(itemIDs: number[]) {
   for (let i = 0; i < itemObjects.length; i++) {
     const obj = itemObjects[i];
 
-    /// TODO: add a check to the data updated
     if (obj === null) {
+      // item is null if it is not in the database -- need to fetch
       const item = await HackerNewsApi.get().fetchItem(itemIDs[i]);
       if (item === null) {
         continue;
       }
       await addChildrenToItemRecurse(item);
-      await addItemToDb(item);
+      item.lastUpdated = _getUnixTimestamp();
+      await addItemToDb(item); // initial add ensures available for root check
 
+      // set these properties here to ensure DB has them
       const root = await resolveRootId(item.id);
-      itemObjects[i] = { ...item, root, lastUpdated: _getUnixTimestamp() };
-    } else {
-      const root = await resolveRootId(obj.id);
-      // update both the returned object and DB for consistency
-      const updated: ItemExt = {
-        ...obj,
-        root,
-        lastUpdated: _getUnixTimestamp(),
-      };
-      addItemToDb(updated);
-      itemObjects[i] = updated;
+      item.root = root;
+
+      // add to db again to update lastUpdated and root
+      await addItemToDb(item);
+      itemObjects[i] = item;
     }
   }
 
