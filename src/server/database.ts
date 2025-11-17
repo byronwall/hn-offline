@@ -29,6 +29,12 @@ export function saveDatabase() {
   fs.writeFileSync(dbPath, dataStr);
 }
 
+export function clearDatabase() {
+  db = {};
+  saveDatabase();
+  return { success: true };
+}
+
 export function reloadDatabase() {
   // create database if it's missing
   if (!fs.existsSync(dbPath)) {
@@ -127,10 +133,8 @@ async function addChildrenToItem(item: Item | null): Promise<Item[]> {
   return [];
 }
 
-export function addItemToDb(item: Item) {
-  const itemExt: ItemExt = { ...item, lastUpdated: _getUnixTimestamp() };
-
-  db[item.id] = itemExt;
+export function addItemToDb(item: ItemExt) {
+  db[item.id] = item;
 
   return true;
 }
