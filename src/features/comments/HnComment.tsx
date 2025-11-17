@@ -143,8 +143,8 @@ export function HnComment(props: HnCommentProps) {
         .reduce((acc, val) => acc - val, 0);
     }
 
-    const stickyTop = 32 + depthMatchInAuthorChain * 8;
-    const stickyHeight = Math.max(48 - depthMatchInAuthorChain * 8, 16);
+    const stickyTop = 40 + depthMatchInAuthorChain * 8;
+    const stickyHeight = Math.max(24 - depthMatchInAuthorChain * 8, 16);
 
     return {
       shouldShowBar,

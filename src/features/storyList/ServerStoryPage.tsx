@@ -41,7 +41,8 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
   );
 
   createEffect(() => {
-    const d = data();
+    const d = data.latest;
+
     const p = props.page;
     if (d?.source === "server" && d?.data.type === "fullData") {
       console.log("*** persisting story list for server data", p, d);
@@ -61,9 +62,9 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
     }
 
     const summaries =
-      data()?.data.type === "summaryOnly"
-        ? data()?.data.data
-        : mapStoriesToSummaries(data()?.data.data ?? []);
+      data.latest?.data.type === "summaryOnly"
+        ? data.latest?.data.data
+        : mapStoriesToSummaries(data.latest?.data.data ?? []);
 
     if (summaries === undefined) {
       return;
