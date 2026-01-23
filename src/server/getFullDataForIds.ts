@@ -1,5 +1,3 @@
-"use server";
-
 import { _getUnixTimestamp } from "~/lib/utils";
 
 import { HackerNewsApi } from "./api";
@@ -12,8 +10,6 @@ import {
 import type { Item, ItemExt } from "~/models/interfaces";
 
 export async function getFullDataForIds(itemIDs: number[]) {
-  "use server";
-
   const itemObjects = await Promise.all(itemIDs.map(getItemFromDb));
 
   for (let i = 0; i < itemObjects.length; i++) {
