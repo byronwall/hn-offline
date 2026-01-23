@@ -1,20 +1,20 @@
 import { Meta, Title } from "@solidjs/meta";
-import { useParams } from "@solidjs/router";
+import { createAsync, useParams } from "@solidjs/router";
 import {
   createEffect,
   createMemo,
   createRenderEffect,
-  createResource,
   Show,
+  Suspense,
 } from "solid-js";
 import { isServer } from "solid-js/web";
 
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
-import { ResourceSource } from "~/features/storyList/ServerStoryPage";
 import { getDomain } from "~/lib/utils";
 import { HnItem } from "~/models/interfaces";
-import { getFullDataForIds } from "~/server/getFullDataForIds";
+import { getStoryById } from "~/server/queries";
 import { setActiveStoryData } from "~/stores/activeStorySignal";
+import { isOfflineMode } from "~/stores/serviceWorkerStatus";
 import {
   getContent,
   persistStoryToStorage,
@@ -29,73 +29,69 @@ export default function Story() {
     console.log("*** Story", id());
   });
 
-  const [data] = createResource(id, async (idParam) => {
-    // this thing evaluates when the data is requested...
-    console.log("*** createUniversalResource", idParam);
-    console.log("*** isServer", isServer);
-
-    if (isServer) {
-      const storyData = await getFullDataForIds([idParam]);
-      if (storyData.length > 0 && storyData[0]) {
-        return {
-          source: "server" as ResourceSource,
-          data: storyData[0] as HnItem & { kids?: number[] },
-        };
-      }
-      throw new Error("Story not found");
-    } else {
-      return {
-        source: "client" as ResourceSource,
-        data: await getContent(idParam),
-      };
+  const data = createAsync(async () => {
+    const idParam = id();
+    console.log("*** createStoryAsync", idParam);
+    if (!idParam || Number.isNaN(idParam)) {
+      return undefined;
     }
+    if (!isServer || isOfflineMode()) {
+      return await getContent(idParam, { allowNetwork: false });
+    }
+    const storyData = await getStoryById(idParam);
+    return storyData ?? undefined;
   });
 
   createEffect(() => {
-    if (data()?.source === "server") {
-      void persistStoryToStorage(id(), data()?.data as HnItem);
+    const story = data();
+    if (!story) {
+      return;
     }
+    void persistStoryToStorage(id(), story as HnItem);
   });
 
   createRenderEffect(() => {
-    if (!data()) {
+    const story = data();
+    if (!story) {
       return;
     }
 
-    setActiveStoryData(data()?.data as HnItem);
+    setActiveStoryData(story as HnItem);
     setRefreshType({ type: "story", id: id() });
   });
 
   return (
-    <Show when={data()} fallback={<div>Loading...</div>}>
-      {(data) => {
-        const storyData = data().data as HnItem | undefined;
-        return (
-          <Show when={storyData} fallback={<HnStoryPage id={id()} />}>
-            {(_) => {
-              const titlePrefix =
-                storyData!.type === "comment"
-                  ? "HN Offline Comment by " + storyData!.by
-                  : "HN Offline: " + storyData!.title;
-              const description =
-                storyData!.type === "comment"
-                  ? `${storyData!.text ?? "Comment"}`
-                  : `${storyData!.score} points at ${getDomain(
-                      storyData!.url
-                    )} by ${storyData!.by} - ${
-                      storyData!.descendants
-                    } comments`;
-              return (
-                <>
-                  <Title>{titlePrefix}</Title>
-                  <Meta name="description" content={description} />
-                  <HnStoryPage id={id()} />
-                </>
-              );
-            }}
-          </Show>
-        );
-      }}
-    </Show>
+    <Suspense fallback={<div>Loading...</div>}>
+      <Show when={data()} fallback={<HnStoryPage id={id()} />}>
+        {(data) => {
+          const storyData = data() as HnItem | undefined;
+          return (
+            <Show when={storyData} fallback={<HnStoryPage id={id()} />}>
+              {(_) => {
+                const titlePrefix =
+                  storyData!.type === "comment"
+                    ? "HN Offline Comment by " + storyData!.by
+                    : "HN Offline: " + storyData!.title;
+                const description =
+                  storyData!.type === "comment"
+                    ? `${storyData!.text ?? "Comment"}`
+                    : `${storyData!.score} points at ${getDomain(
+                        storyData!.url
+                      )} by ${storyData!.by} - ${
+                        storyData!.descendants
+                      } comments`;
+                return (
+                  <>
+                    <Title>{titlePrefix}</Title>
+                    <Meta name="description" content={description} />
+                    <HnStoryPage id={id()} />
+                  </>
+                );
+              }}
+            </Show>
+          );
+        }}
+      </Show>
+    </Suspense>
   );
 }
