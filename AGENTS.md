@@ -333,10 +333,10 @@ export const saveThing = action(
 
 ### Testing and verification
 
-- Run pnpm type-check to verify TypeScript types without building.
-- Run pnpm build to verify the build passes after making changes.
-- There are no unit tests currently; verification is done via successful
-  type check, build, and manual testing.
+- Run `pnpm typecheck` to verify TypeScript types without building.
+- Run `pnpm build` to verify the build passes after making changes.
+- Run `pnpm test` to execute unit tests via Vitest.
+- Verification is done via successful type check, build, tests, and manual testing.
 
 ### Quick checklist (before you finish)
 

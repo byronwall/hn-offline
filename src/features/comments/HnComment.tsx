@@ -3,6 +3,7 @@ import sanitizeHtml from "sanitize-html";
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
+import { formatCommentText } from "~/lib/commentUtils";
 import { createHasRendered } from "~/lib/createHasRendered";
 import { isValidComment } from "~/lib/isValidComment";
 import { cn, shareSafely, timeSince } from "~/lib/utils";
@@ -241,7 +242,10 @@ export function HnComment(props: HnCommentProps) {
         </p>
         <Show when={isOpen()}>
           {/* eslint-disable-next-line solid/no-innerhtml */}
-          <p class="comment" innerHTML={props.comment.text || ""} />
+          <div
+            class="comment"
+            innerHTML={formatCommentText(props.comment.text || "")}
+          />
 
           <Show when={childComments().length > 0}>
             <HnCommentList
