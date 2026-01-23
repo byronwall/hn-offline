@@ -1,4 +1,5 @@
 import { HnItem, HnStorySummary } from "~/models/interfaces";
+import { getStoryListByType } from "~/server/queries";
 import { addMessage } from "~/stores/messages";
 import { persistStoryList } from "~/stores/useDataStore";
 
@@ -9,18 +10,8 @@ export async function fetchAllStoryDataForPage(
 ): Promise<HnItem[]> {
   addMessage("fetchPage", "init", { page });
 
-  const url = "/api/topstories/" + page;
-
   try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      console.error("Failed to fetch", { url });
-      console.error(response);
-      return [];
-    }
-
-    const rawData = (await response.json()) as HnItem[];
+    const rawData = (await getStoryListByType(page)) as HnItem[];
 
     // remove any nulls or undefineds
     const data = rawData.filter(Boolean);
@@ -32,7 +23,7 @@ export async function fetchAllStoryDataForPage(
 
     return data;
   } catch (e) {
-    console.error("Failed to fetch", { url, env: process.env });
+    console.error("Failed to fetch", { page, env: process.env });
     console.error(e);
     return [];
   }
