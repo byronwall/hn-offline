@@ -3,6 +3,7 @@
 ## Conversion to SolidJS
 
 - [ ] Share icon on stories does not get proper meta data?
+- [ ] Resolve the refetch that takes place when refocusing the page
 
 ## For later
 

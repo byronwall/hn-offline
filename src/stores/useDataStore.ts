@@ -1,6 +1,5 @@
 import { createSignal } from "solid-js";
 
-import { setActiveStoryList } from "~/features/storyList/HnStoryList";
 import { convertPathToStoryPage } from "~/lib/convertPathToStoryPage";
 import { fetchObjById } from "~/lib/getContentViaFetch";
 import {
@@ -15,7 +14,10 @@ import { createPersistedStore } from "./createPersistedStore";
 import { LOCAL_FORAGE_TO_USE } from "./localforage";
 import { addMessage } from "./messages";
 import { readItems } from "./useReadItemsStore";
-import { setRefreshTimestamp } from "./useRefreshStore";
+import {
+  setRefreshRequestedTimestamp,
+  setRefreshTimestamp,
+} from "./useRefreshStore";
 
 import type { StoryPage } from "~/models/interfaces";
 
@@ -170,7 +172,10 @@ export const persistStoryToStorage = async (id: StoryId, content: HnItem) => {
   return true;
 };
 
-export async function getContent(id: StoryId) {
+export async function getContent(
+  id: StoryId,
+  options?: { allowNetwork?: boolean }
+) {
   console.log("*** getContent", id, LOCAL_FORAGE_TO_USE());
 
   const item = await LOCAL_FORAGE_TO_USE()?.getItem<HnItem>("raw_" + id);
@@ -181,6 +186,10 @@ export async function getContent(id: StoryId) {
     addMessage("getContent", "found item in localforage", { id });
     console.log("found item in localforage", item);
     return item;
+  }
+
+  if (options?.allowNetwork === false) {
+    return undefined;
   }
 
   return await fetchObjById(id);
@@ -259,14 +268,24 @@ export async function refreshActive() {
 
   setIsLoadingData(true);
 
-  if (type.type === "storyList") {
-    const pageData = await fetchAllStoryDataForPage(type.page);
-    setActiveStoryList(pageData);
-    setRefreshTimestamp(type.page);
-  } else if (type.type === "story") {
-    const storyData = await fetchObjById(type.id);
-    setActiveStoryData(storyData);
+  try {
+    if (type.type === "storyList") {
+      addMessage("refresh", "refreshRequested init", { page: type.page });
+      setRefreshRequestedTimestamp(type.page);
+      addMessage("refresh", "refreshRequested", { page: type.page });
+      const pageData = await fetchAllStoryDataForPage(type.page, {
+        force: true,
+      });
+      const summaries = mapStoriesToSummaries(pageData) ?? [];
+      addMessage("refresh", "refreshFetched", {
+        page: type.page,
+        count: summaries.length,
+      });
+    } else if (type.type === "story") {
+      const storyData = await fetchObjById(type.id, { force: true });
+      setActiveStoryData(storyData);
+    }
+  } finally {
+    setIsLoadingData(false);
   }
-
-  setIsLoadingData(false);
 }

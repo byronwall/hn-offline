@@ -1,4 +1,4 @@
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, For, Show } from "solid-js";
 
 import { Shell } from "~/components/Icon";
 import { PullToRefresh } from "~/components/PullToRefresh";
@@ -6,8 +6,7 @@ import { useSortFunction } from "~/hooks/useSortFunction";
 import { createHasRendered } from "~/lib/createHasRendered";
 import { timeSince } from "~/lib/utils";
 import { HnStorySummary } from "~/models/interfaces";
-import { isOfflineMode } from "~/stores/serviceWorkerStatus";
-import { isLoadingData, refreshActive } from "~/stores/useDataStore";
+import { addMessage } from "~/stores/messages";
 import {
   readItems,
   readSettings,
@@ -15,43 +14,65 @@ import {
   setReadSettings,
   setRecentlyReadId,
 } from "~/stores/useReadItemsStore";
-import { refreshTimestamps } from "~/stores/useRefreshStore";
 
 import { HnListItem } from "./HnListItem";
 
-import type { StoryPage } from "~/models/interfaces";
 
 interface HnStoryListProps {
+  items?: HnStorySummary[];
   sortType?: "score";
-  page?: StoryPage;
+  isLoading: boolean;
+  isOffline: boolean;
+  lastUpdatedTs?: number;
+  lastRequestedTs?: number;
+  onRefresh: () => Promise<void> | void;
 }
-
-export const [activeStoryList, setActiveStoryList] = createSignal<
-  HnStorySummary[]
->([]);
 
 export function HnStoryList(props: HnStoryListProps) {
   const hasRendered = createHasRendered();
 
   // server will not have any stories to render since we rely on createEffect
   // render 0 here to avoid hydration mismatch
-  const itemsToRender = () =>
-    hasRendered()
-      ? (useSortFunction(activeStoryList(), props.sortType) ?? [])
-      : [];
+  const itemsToRender = () => {
+    if (!hasRendered()) {
+      return [];
+    }
+    const items = props.items;
+    if (!items) {
+      return undefined;
+    }
+    return useSortFunction(items, props.sortType) ?? [];
+  };
 
   const lastUpdatedTs = createMemo(() => {
-    const page = props.page;
-    const fromRefreshStore =
-      page && hasRendered() ? refreshTimestamps[page] : undefined;
-
-    return fromRefreshStore;
+    return props.lastUpdatedTs;
   });
 
   const pullMessage = createMemo(() => {
     return lastUpdatedTs()
       ? `Updated ${timeSince(lastUpdatedTs(), true)}`
       : undefined;
+  });
+
+  const requestMessage = createMemo(() => {
+    return props.lastRequestedTs
+      ? `Requested ${timeSince(props.lastRequestedTs, true)}`
+      : undefined;
+  });
+
+  createEffect(() => {
+    if (!hasRendered()) {
+      return;
+    }
+    addMessage("storyList", "props updated", {
+      count: props.items?.length ?? 0,
+      lastUpdatedTs: props.lastUpdatedTs,
+      lastRequestedTs: props.lastRequestedTs,
+      isLoading: props.isLoading,
+      isOffline: props.isOffline,
+      pullMessage: pullMessage(),
+      requestMessage: requestMessage(),
+    });
   });
 
   const toggleHideReadItems = () => {
@@ -61,7 +82,7 @@ export function HnStoryList(props: HnStoryListProps) {
   return (
     <Show when={itemsToRender()} fallback={<div>Loading...</div>}>
       <Show
-        when={itemsToRender().length > 0}
+        when={(itemsToRender() ?? []).length > 0}
         fallback={
           <div class="text-center text-lg text-gray-500">
             No items to show. Most likely, you are filtering to hide read items.
@@ -70,37 +91,53 @@ export function HnStoryList(props: HnStoryListProps) {
         }
       >
         <PullToRefresh
-          disabled={isLoadingData() || isOfflineMode()}
-          onRefresh={refreshActive}
+          disabled={props.isLoading || props.isOffline}
+          onRefresh={props.onRefresh}
           // message={pullMessage()}
         >
-          <Show when={pullMessage()}>
-            <div class="text-center text-[11px] text-slate-400">
+          <Show when={pullMessage() || requestMessage()}>
+            <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-[11px] text-slate-400">
               <button
                 type="button"
                 title="Refresh now"
                 onClick={() => {
-                  if (isOfflineMode() || isLoadingData()) {
+                  if (props.isOffline || props.isLoading) {
                     return;
                   }
-                  refreshActive();
+                  props.onRefresh();
                 }}
                 class="inline-flex items-center gap-1 hover:text-orange-500 focus:outline-none active:text-orange-500"
                 aria-label="Refresh list"
               >
                 <span
                   class={
-                    isLoadingData() ? "inline-flex animate-spin" : "inline-flex"
+                    props.isLoading ? "inline-flex animate-spin" : "inline-flex"
                   }
                 >
                   <Shell width="12" height="12" />
                 </span>
-                <span>{pullMessage()}</span>
+                <span>{pullMessage() ?? "Refresh"}</span>
               </button>
+              <Show when={requestMessage()}>
+                <button
+                  type="button"
+                  title="Refresh now"
+                  onClick={() => {
+                    if (props.isOffline || props.isLoading) {
+                      return;
+                    }
+                    props.onRefresh();
+                  }}
+                  class="text-[10px] text-slate-400 hover:text-orange-500 focus:outline-none active:text-orange-500"
+                  aria-label="Refresh list"
+                >
+                  {requestMessage()}
+                </button>
+              </Show>
             </div>
           </Show>
           <div class="grid grid-cols-[1fr_1fr_1fr_3fr]">
-            <For each={itemsToRender()}>
+            <For each={itemsToRender() ?? []}>
               {(item) => {
                 const isRead = () => readItems[item.id] !== undefined;
                 const isRecentRead = () => recentlyReadId() === item.id;

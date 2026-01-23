@@ -1,3 +1,5 @@
+import { revalidate } from "@solidjs/router";
+
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 import { getStoryListByType } from "~/server/queries";
 import { addMessage } from "~/stores/messages";
@@ -6,11 +8,15 @@ import { persistStoryList } from "~/stores/useDataStore";
 import type { StoryPage } from "~/models/interfaces";
 
 export async function fetchAllStoryDataForPage(
-  page: StoryPage
+  page: StoryPage,
+  options?: { force?: boolean }
 ): Promise<HnItem[]> {
   addMessage("fetchPage", "init", { page });
 
   try {
+    if (options?.force) {
+      await revalidate(getStoryListByType.keyFor(page));
+    }
     const rawData = (await getStoryListByType(page)) as HnItem[];
 
     // remove any nulls or undefineds

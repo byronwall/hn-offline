@@ -1,53 +1,60 @@
-import { createEffect, createRenderEffect, createResource } from "solid-js";
+import { createAsync } from "@solidjs/router";
+import { createEffect, createMemo, createRenderEffect } from "solid-js";
 import { isServer } from "solid-js/web";
 
-import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
 import { HnItem, TopStoriesType } from "~/models/interfaces";
-import { getTopStories } from "~/server/getTopStories";
+import { getStoryListByType } from "~/server/queries";
 import { addMessage } from "~/stores/messages";
+import { isOfflineMode } from "~/stores/serviceWorkerStatus";
 import {
-  ContentForPage,
-  getContentForPage,
+  isLoadingData,
   persistStoryList,
+  refreshActive,
   setRefreshType,
+  storyListStore,
 } from "~/stores/useDataStore";
+import {
+  refreshRequestedTimestamps,
+  refreshTimestamps,
+  setRefreshRequestedTimestamp,
+} from "~/stores/useRefreshStore";
 
-import { HnStoryList, setActiveStoryList } from "./HnStoryList";
+import { HnStoryList } from "./HnStoryList";
 
 import type { StoryPage } from "~/models/interfaces";
 
-export type ResourceSource = "client" | "server";
-
 export function ServerStoryPage(props: { page: TopStoriesType }) {
-  const [data] = createResource(
-    () => props.page,
-    async (page) => {
-      if (isServer) {
-        const fullData = (await getTopStories(page)) as HnItem[];
-        return {
-          source: "server" as ResourceSource,
-          data: {
-            type: "fullData",
-            data: fullData,
-          } as ContentForPage,
-        };
-      } else {
-        return {
-          source: "client" as ResourceSource,
-          data: await getContentForPage(page),
-        };
-      }
+  const data = createAsync(() => {
+    if (!isServer || isOfflineMode()) {
+      return Promise.resolve([] as HnItem[]);
     }
-  );
+    return getStoryListByType(props.page);
+  });
+
+  const summaries = createMemo(() => {
+    const page = props.page as StoryPage;
+    return storyListStore[page]?.data;
+  });
+
+  const lastUpdatedTs = createMemo(() => {
+    const page = props.page as StoryPage;
+    return refreshTimestamps[page];
+  });
+
+  const lastRequestedTs = createMemo(() => {
+    const page = props.page as StoryPage;
+    return refreshRequestedTimestamps[page];
+  });
 
   createEffect(() => {
-    const d = data.latest;
-
     const p = props.page;
-    if (d?.source === "server" && d?.data.type === "fullData") {
-      console.log("*** persisting story list for server data", p, d);
-      void persistStoryList(p as StoryPage, d?.data.data as HnItem[]);
+    const d = data.latest;
+    if (!d || !Array.isArray(d) || isOfflineMode()) {
+      return;
     }
+
+    console.log("*** persisting story list", p, d.length);
+    void persistStoryList(p as StoryPage, d as HnItem[]);
   });
 
   createRenderEffect(() => {
@@ -56,30 +63,39 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
   });
 
   createRenderEffect(() => {
-    if (data.state !== "ready") {
-      // only pass along the summaries if the data is ready
+    const page = props.page as StoryPage;
+    if (refreshRequestedTimestamps[page] === undefined) {
+      setRefreshRequestedTimestamp(page);
+    }
+  });
+
+  createEffect(() => {
+    if (!summaries()) {
       return;
     }
-
-    const summaries =
-      data.latest?.data.type === "summaryOnly"
-        ? data.latest?.data.data
-        : mapStoriesToSummaries(data.latest?.data.data ?? []);
-
-    if (summaries === undefined) {
-      return;
-    }
-
-    setActiveStoryList(summaries);
     addMessage("render", "set summaries", {
-      count: summaries.length,
+      count: summaries()?.length ?? 0,
+    });
+  });
+
+  createEffect(() => {
+    const page = props.page as StoryPage;
+    addMessage("refresh", "timestamps", {
+      page,
+      updated: lastUpdatedTs(),
+      requested: lastRequestedTs(),
     });
   });
 
   return (
     <HnStoryList
-      page={props.page as StoryPage}
+      items={summaries()}
       sortType={props.page === "topstories" ? undefined : "score"}
+      isLoading={isLoadingData()}
+      isOffline={isOfflineMode()}
+      lastUpdatedTs={lastUpdatedTs()}
+      lastRequestedTs={lastRequestedTs()}
+      onRefresh={refreshActive}
     />
   );
 }
