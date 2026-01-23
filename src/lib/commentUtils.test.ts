@@ -80,4 +80,19 @@ describe("formatCommentText", () => {
     expect(output).not.toContain("border-l-4");
     expect(output).toBe(input);
   });
+
+  it("removes common indentation from code blocks", () => {
+    const input = `<pre><code>    line 1
+    line 2
+      indented line 3</code></pre>`;
+
+    // We expect the 4 spaces to be removed from line 1 and 2, and 4 spaces from line 3 (leaving 2)
+    const expected = `<pre><code>line 1
+line 2
+  indented line 3</code></pre>`;
+
+    const output = formatCommentText(input);
+    // Normalize newlines for comparison just in case
+    expect(output.replace(/\n/g, "")).toBe(expected.replace(/\n/g, ""));
+  });
 });

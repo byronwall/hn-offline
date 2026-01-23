@@ -23,7 +23,57 @@ export function formatCommentText(html: string): string {
     }
 
     // Check if it starts with <pre><code> which is code blocks in HN
-    // Code blocks shouldn't be touched usually, but good to know.
+    if (segment.includes("<pre><code>")) {
+      // Regex to extract content within <pre><code>...</code></pre>
+      // We do a simple replacer to handle the content
+      return segment.replace(
+        /<pre><code>([\s\S]*?)<\/code><\/pre>/g,
+        (match: string, codeContent: string) => {
+          // 1. Split into lines
+          const lines = codeContent.split("\n");
+
+          // 2. Determine common indent (longest common prefix of leading whitespace)
+          const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
+
+          if (nonEmptyLines.length === 0) {
+            return `<pre><code>${lines.join("\n")}</code></pre>`;
+          }
+
+          // Get leading whitespace of first line as candidate
+          let commonPrefix = nonEmptyLines[0].match(/^[ \t]*/)?.[0] || "";
+
+          for (let i = 1; i < nonEmptyLines.length; i++) {
+            const line = nonEmptyLines[i];
+            const currentWhitespace = line.match(/^[ \t]*/)?.[0] || "";
+
+            // Reduce commonPrefix to match current line's whitespace
+            let j = 0;
+            while (
+              j < commonPrefix.length &&
+              j < currentWhitespace.length &&
+              commonPrefix[j] === currentWhitespace[j]
+            ) {
+              j++;
+            }
+            commonPrefix = commonPrefix.slice(0, j);
+
+            if (commonPrefix.length === 0) break;
+          }
+
+          // 3. Strip indent
+          const strippedLines = lines.map((line) => {
+            // Only strip if line starts with the common prefix (it should if non-empty, but check)
+            if (line.startsWith(commonPrefix)) {
+              return line.slice(commonPrefix.length);
+            }
+            return line;
+          });
+
+          const newContent = strippedLines.join("\n");
+          return `<pre><code>${newContent}</code></pre>`;
+        }
+      );
+    }
 
     return segment;
   });

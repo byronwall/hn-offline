@@ -40,6 +40,22 @@ pre {
   margin-top: 5px;
 }
 
+.comment pre {
+  background-color: #f6f6f6;
+  padding: 8px 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.9em;
+}
+
+.comment code {
+  font-size: 0.9em;
+}
+
+.comment pre code {
+  font-size: 1em;
+}
+
 .track-visited a:visited {
   color: var(--color-orange-500);
 }
