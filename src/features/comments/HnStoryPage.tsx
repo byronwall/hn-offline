@@ -16,7 +16,7 @@ import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, shareSafely, timeSince } from "~/lib/utils";
 import { activeStoryData } from "~/stores/activeStorySignal";
-import { setColorMap } from "~/stores/colorMap";
+import { colorMap, setColorMap } from "~/stores/colorMap";
 import { addMessage } from "~/stores/messages";
 import { setScrollToId } from "~/stores/scrollSignal";
 import { isOfflineMode } from "~/stores/serviceWorkerStatus";
@@ -196,12 +196,19 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
         </h2>
 
         <div
-          class={cn({
-            "rounded-tl rounded-bl border-l-4 border-orange-500 px-2":
-              activeStoryData()?.text,
-            collapsed: !isTextOpen(),
-          })}
+          class={cn(
+            {
+              "rounded-tl pr-2 pl-4": activeStoryData()?.text,
+              collapsed: !isTextOpen(),
+            },
+            "bp3-card"
+          )}
           onClick={handleStoryTextClick}
+          style={{
+            "--flash-color":
+              colorMap()[activeStoryData()?.by ?? ""] ?? "hsl(30, 80%, 65%)",
+            "padding-left": "16px",
+          }}
         >
           <div class="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-slate-700">
             <span class="font-medium">{activeStoryData()?.by}</span>

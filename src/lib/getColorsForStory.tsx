@@ -35,7 +35,7 @@ export function getColorsForStory(
   for (const user in hueMap) {
     const hue = hueMap[user];
     colorMap[user] =
-      user === story.by ? "hsl(30, 100%, 50%)" : getRandHslForHue(hue);
+      user === story.by ? "hsl(30, 80%, 65%)" : getRandHslForHue(hue);
   }
 
   return colorMap;
@@ -114,10 +114,10 @@ function getRandHslForHue(hue: number): string {
   // clipping at 95 to avoid repeating reds
   const h = (hue * 95) / 360;
 
-  // v between 3.5 and 4.5
-  // c between 20 and 30
-  const v = 3.5 + Math.random();
-  const c = 20 + Math.random() * 10;
+  // v between 6 and 7
+  // c between 6 and 10
+  const v = 6 + Math.random();
+  const c = 6 + Math.random() * 4;
 
   const hex = mhvcToHex(h, v, c);
 

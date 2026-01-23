@@ -167,12 +167,10 @@ export function HnComment(props: HnCommentProps) {
         onClick={handleCardClick}
         style={{
           "--flash-color": borderColor(),
-          "padding-left": `${12 + Math.max(4 - props.depth, 0)}px`,
+          "padding-left": `${16 + Math.max(4 - props.depth, 0)}px`,
           "margin-left": 0,
-          "border-left-color": borderColor(),
-          "border-left-width": "4px",
           "border-top-left-radius": "4px",
-          "border-bottom-left-radius": "4px",
+          "border-bottom-left-radius": "0",
         }}
       >
         {stickyInfo().shouldShowBar && isOpen() && (
@@ -187,13 +185,14 @@ export function HnComment(props: HnCommentProps) {
             <div
               style={{
                 position: "absolute",
-                top: "10px",
+                top: "7px",
                 left: `${stickyInfo().leftPos - paddingByDepth[props.depth]}px`,
                 width: `${Math.abs(stickyInfo().leftPos + 4)}px`,
-                "background-color": borderColor(),
-                height: "7px",
-                "border-top": "2px solid white",
-                "border-bottom": "2px solid white",
+                "background-color": "white",
+                "box-shadow": `inset 0 4px 6px -2px ${borderColor()}`,
+                height: "13px",
+                "border-top": "3px solid white",
+                "border-bottom": "3px solid white",
               }}
             />
           </div>

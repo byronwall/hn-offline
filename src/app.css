@@ -19,7 +19,7 @@
   }
 }
 .user-text a {
-  @apply text-slate-700 hover:text-slate-600 hover:underline focus-visible:underline active:underline;
+  @apply rounded-sm bg-slate-100 px-0.5 text-slate-700 hover:bg-slate-200 hover:text-slate-600 hover:underline focus-visible:underline active:underline;
 }
 
 a.active {
@@ -62,22 +62,21 @@ pre {
 /* used by the comment */
 .bp3-card {
   padding-left: 5px;
-  padding-top: 0px;
+  padding-top: 4px;
   padding-right: 0px;
   padding-bottom: 0px;
   overflow-wrap: break-word;
   margin-top: 15px;
 
-  border-left-width: 3px;
-  border-left-style: solid;
+  box-shadow: inset 3px 0px 4px -1px var(--flash-color);
+  border-top-width: 0.5px;
+  border-top-color: var(--flash-color);
 
-  border-top: none;
   border-bottom: none;
 
   background-color: white;
-  box-shadow: none;
 
-  transition: border-left-color 0.3s ease-in-out;
+  transition: box-shadow 0.3s ease-in-out;
 }
 
 .collapsed {
