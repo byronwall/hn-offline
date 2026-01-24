@@ -2,6 +2,7 @@ import { createAsync } from "@solidjs/router";
 import { createEffect, createMemo, createRenderEffect } from "solid-js";
 import { isServer } from "solid-js/web";
 
+import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
 import { HnItem, TopStoriesType } from "~/models/interfaces";
 import { getStoryListByType } from "~/server/queries";
 import { addMessage } from "~/stores/messages";
@@ -24,14 +25,23 @@ import { HnStoryList } from "./HnStoryList";
 import type { StoryPage } from "~/models/interfaces";
 
 export function ServerStoryPage(props: { page: TopStoriesType }) {
-  const data = createAsync(() => {
-    if (!isServer || isOfflineMode()) {
-      return Promise.resolve([] as HnItem[]);
+  const data = createAsync((currentValue) => {
+    if (!isServer) {
+      if (currentValue && Array.isArray(currentValue)) {
+        return currentValue as HnItem[];
+      }
+      if (isOfflineMode()) {
+        return [] as HnItem[];
+      }
     }
     return getStoryListByType(props.page);
   });
 
   const summaries = createMemo(() => {
+    const fromServer = data.latest;
+    if (fromServer && Array.isArray(fromServer) && fromServer.length > 0) {
+      return mapStoriesToSummaries(fromServer);
+    }
     const page = props.page as StoryPage;
     return storyListStore[page]?.data;
   });

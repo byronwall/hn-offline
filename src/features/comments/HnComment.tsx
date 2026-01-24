@@ -31,9 +31,15 @@ export function HnComment(props: HnCommentProps) {
 
   // this needs to get one good render so that the DOM matches SSR
   // then it needs to know that the comment store is OK
-  const isOpen = () =>
-    !hasRendered() ||
-    (props.comment?.id && collapsedTimestamps[props.comment.id] === undefined);
+  const isOpen = () => {
+    if (!hasRendered()) {
+      return true;
+    }
+    if (!props.comment?.id) {
+      return true;
+    }
+    return collapsedTimestamps[props.comment.id] === undefined;
+  };
 
   const onCollapse = handleCollapseEvent;
 
@@ -169,8 +175,6 @@ export function HnComment(props: HnCommentProps) {
           "--flash-color": borderColor(),
           "padding-left": `${16 + Math.max(4 - props.depth, 0)}px`,
           "margin-left": 0,
-          "border-top-left-radius": "4px",
-          "border-bottom-left-radius": "0",
         }}
       >
         {stickyInfo().shouldShowBar && isOpen() && (

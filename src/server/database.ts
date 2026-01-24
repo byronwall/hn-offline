@@ -140,10 +140,15 @@ export function addItemToDb(item: ItemExt) {
 async function _getTopStories(type: TopStoriesType): Promise<number[]> {
   switch (type) {
     case "topstories":
-      return (await HackerNewsApi.get().fetchItemIds("topstories")).slice(
-        0,
-        HITS_PER_PAGE
-      );
+      try {
+        return (await HackerNewsApi.get().fetchItemIds("topstories")).slice(
+          0,
+          HITS_PER_PAGE
+        );
+      } catch (err) {
+        console.warn("HN API topstories failed, falling back to Algolia", err);
+        return await AlgoliaApi.getFrontPage();
+      }
     case "day":
       return await AlgoliaApi.getDay();
     case "month":

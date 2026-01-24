@@ -61,22 +61,53 @@ pre {
 }
 /* used by the comment */
 .bp3-card {
-  padding-left: 5px;
-  padding-top: 4px;
-  padding-right: 0px;
-  padding-bottom: 0px;
   overflow-wrap: break-word;
-  margin-top: 15px;
+  /* margin-top: 15px; */
 
-  box-shadow: inset 3px 0px 4px -1px var(--flash-color);
-  border-top-width: 0.5px;
-  border-top-color: var(--flash-color);
-
-  border-bottom: none;
+  position: relative;
+  border-radius: 10px;
+  padding: 6px;
 
   background-color: white;
 
   transition: box-shadow 0.3s ease-in-out;
+}
+
+/* the vertical rail */
+.bp3-card::before {
+  content: "";
+  position: absolute;
+  left: 8px; /* rail x-position */
+  top: 8px; /* start of rail */
+  bottom: 8px; /* end of rail */
+  width: 2px;
+
+  /* soft edge rail */
+  /* soft edge rail */
+  background: linear-gradient(
+    to right,
+    rgb(from var(--flash-color) r g b / 0.45),
+    rgb(from var(--flash-color) r g b / 0.15) 60%,
+    rgb(from var(--flash-color) r g b / 0)
+  );
+
+  /* top/bottom fade without horizontal lines */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 10px,
+    black calc(100% - 10px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 10px,
+    black calc(100% - 10px),
+    transparent
+  );
+
+  pointer-events: none;
 }
 
 .collapsed {

@@ -1,16 +1,16 @@
-import { Meta, Title } from "@solidjs/meta";
 import { createAsync, useParams } from "@solidjs/router";
 import {
   createEffect,
   createMemo,
-  createRenderEffect,
-  Show,
+  createSignal,
+  Match,
+  onMount,
   Suspense,
+  Switch,
 } from "solid-js";
 import { isServer } from "solid-js/web";
 
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
-import { getDomain } from "~/lib/utils";
 import { HnItem } from "~/models/interfaces";
 import { getStoryById } from "~/server/queries";
 import { setActiveStoryData } from "~/stores/activeStorySignal";
@@ -22,36 +22,73 @@ import {
 } from "~/stores/useDataStore";
 
 export default function Story() {
+  const hideRoute = false;
   const params = useParams();
   const id = createMemo(() => +params.id);
+  const [hydrated, setHydrated] = createSignal(false);
 
-  createEffect(() => {
-    console.log("*** Story", id());
+  onMount(() => {
+    // Let hydration complete before switching to the interactive view.
+    setTimeout(() => setHydrated(true), 0);
+  });
+  console.log("[HYDRATE_TRACE] route render", {
+    isServer,
+    paramsId: params.id,
+    id: id(),
   });
 
-  const data = createAsync(async () => {
+  const [offlineStory, setOfflineStory] = createSignal<HnItem | undefined>(
+    undefined
+  );
+
+  const data = createAsync(() => {
     const idParam = id();
-    console.log("*** createStoryAsync", idParam);
     if (!idParam || Number.isNaN(idParam)) {
-      return undefined;
+      return Promise.resolve(undefined);
     }
-    if (!isServer || isOfflineMode()) {
-      return await getContent(idParam, { allowNetwork: false });
-    }
-    const storyData = await getStoryById(idParam);
-    return storyData ?? undefined;
+    return getStoryById(idParam);
   });
 
   createEffect(() => {
-    const story = data();
+    if (isServer) {
+      return;
+    }
+    if (!isOfflineMode()) {
+      if (offlineStory()) {
+        setOfflineStory(undefined);
+      }
+      return;
+    }
+    if (data.latest || offlineStory()) {
+      return;
+    }
+    void (async () => {
+      const idParam = id();
+      if (!idParam || Number.isNaN(idParam)) {
+        return;
+      }
+      const cached = await getContent(idParam, { allowNetwork: false });
+      if (cached) {
+        setOfflineStory(cached as HnItem);
+      }
+    })();
+  });
+
+  const storyValue = () =>
+    (data.latest as HnItem | undefined) ??
+    (data() as HnItem | undefined) ??
+    offlineStory();
+
+  createEffect(() => {
+    const story = storyValue();
     if (!story) {
       return;
     }
     void persistStoryToStorage(id(), story as HnItem);
   });
 
-  createRenderEffect(() => {
-    const story = data();
+  createEffect(() => {
+    const story = storyValue();
     if (!story) {
       return;
     }
@@ -60,38 +97,24 @@ export default function Story() {
     setRefreshType({ type: "story", id: id() });
   });
 
+  if (hideRoute) {
+    return <div class="relative pb-[70vh]" />;
+  }
+
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <Show when={data()} fallback={<HnStoryPage id={id()} />}>
-        {(data) => {
-          const storyData = data() as HnItem | undefined;
-          return (
-            <Show when={storyData} fallback={<HnStoryPage id={id()} />}>
-              {(_) => {
-                const titlePrefix =
-                  storyData!.type === "comment"
-                    ? "HN Offline Comment by " + storyData!.by
-                    : "HN Offline: " + storyData!.title;
-                const description =
-                  storyData!.type === "comment"
-                    ? `${storyData!.text ?? "Comment"}`
-                    : `${storyData!.score} points at ${getDomain(
-                        storyData!.url
-                      )} by ${storyData!.by} - ${
-                        storyData!.descendants
-                      } comments`;
-                return (
-                  <>
-                    <Title>{titlePrefix}</Title>
-                    <Meta name="description" content={description} />
-                    <HnStoryPage id={id()} />
-                  </>
-                );
-              }}
-            </Show>
-          );
-        }}
-      </Show>
+    <Suspense fallback={<div class="relative pb-[70vh]" />}>
+      <Switch>
+        <Match when={!storyValue()}>
+          <div class="relative pb-[70vh]" />
+        </Match>
+        <Match when={storyValue()}>
+          <HnStoryPage
+            id={id()}
+            story={storyValue()}
+            interactive={hydrated()}
+          />
+        </Match>
+      </Switch>
     </Suspense>
   );
 }
