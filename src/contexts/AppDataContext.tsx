@@ -51,11 +51,7 @@ type AppDataContextValue = {
 
 const AppDataContext = createContext<AppDataContextValue>();
 
-let atom = 1;
-
 export function AppDataProvider(props: ParentProps) {
-  console.log("*** AppDataProvider", { atom });
-  atom++;
   const messages = createMessagesStore();
   const errorOverlay = createErrorOverlayStore();
   const localForage = createLocalForageStore(messages.addMessage);
@@ -66,8 +62,6 @@ export function AppDataProvider(props: ParentProps) {
 
   console.log("*** AppDataProvider", { localForage });
 
-  // non-reactive flag to track if the client has been mounted
-  // consumers can check this but it's not reactive ON PURPOSE
   const [isClientMounted, setIsClientMounted] = createSignal(false);
   onMount(() => {
     setIsClientMounted(true);
