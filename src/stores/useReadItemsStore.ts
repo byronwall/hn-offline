@@ -37,8 +37,11 @@ export function createReadItemsStore(
     localForage
   );
 
-  const [readItems, setReadItems, { waitingToLoad, isLoaded }] =
-    createPersistedStore("READ_ITEMS", {} as TimestampHash, localForage);
+  const [readItems, setReadItems, { isLoaded }] = createPersistedStore(
+    "READ_ITEMS",
+    {} as TimestampHash,
+    localForage
+  );
 
   const [recentlyReadId, setRecentlyReadId] = createSignal<number | undefined>(
     undefined
@@ -74,9 +77,6 @@ export function createReadItemsStore(
     if (!id) {
       return;
     }
-
-    // prevent the store from being accessed before it's ready
-    await waitingToLoad;
 
     addMessage("readItems", "saveIdToReadList", { id });
 

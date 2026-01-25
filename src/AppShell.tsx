@@ -1,5 +1,6 @@
 import { Meta, Title } from "@solidjs/meta";
 
+import GlobalErrorOverlay from "./components/GlobalErrorOverlay";
 import { NavBar } from "./components/NavBar";
 
 import type { ParentProps } from "solid-js";
@@ -15,6 +16,7 @@ export function AppShell(props: ParentProps) {
       <div class="w-full flex-1 border-x border-b border-slate-300 p-1">
         {props.children}
       </div>
+      <GlobalErrorOverlay />
     </main>
   );
 }

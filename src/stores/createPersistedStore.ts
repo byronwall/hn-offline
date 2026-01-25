@@ -75,16 +75,5 @@ export function createPersistedStore<T extends object>(
     }
   });
 
-  // promise that resolves when the store is loaded
-  // this is used in async functions to pause until the store is loaded
-  const waitingToLoad = new Promise<boolean>((resolve) => {
-    createEffect(() => {
-      if (isLoaded()) {
-        console.log("*** waiting to load resolving", name);
-        resolve(true);
-      }
-    });
-  });
-
-  return [store, setStore, { isLoaded, waitingToLoad }] as const;
+  return [store, setStore, { isLoaded }] as const;
 }

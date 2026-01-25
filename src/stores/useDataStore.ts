@@ -10,11 +10,11 @@ import { validateHnItemWithComments } from "~/lib/validation";
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 
 import { createPersistedStore } from "./createPersistedStore";
+
 import type { ActiveStoryStore } from "./activeStorySignal";
 import type { AddMessage } from "./messages";
 import type { ReadItemsStore } from "./useReadItemsStore";
 import type { RefreshStore } from "./useRefreshStore";
-
 import type { StoryPage } from "~/models/interfaces";
 
 export type StoryId = number;
@@ -70,12 +70,11 @@ export function createDataStore(params: {
   refreshStore: RefreshStore;
   activeStoryStore: ActiveStoryStore;
 }): DataStore {
-  const [storyListStore, setStoryListStore, { waitingToLoad }] =
-    createPersistedStore(
-      "STORY_LIST_STORE",
-      {} as StoryListStore,
-      params.localForage
-    );
+  const [storyListStore, setStoryListStore] = createPersistedStore(
+    "STORY_LIST_STORE",
+    {} as StoryListStore,
+    params.localForage
+  );
 
   const persistStoryList = async (page: StoryPage, data: HnItem[]) => {
     // overall goals: update store -> saves list to local forage
@@ -106,9 +105,6 @@ export function createDataStore(params: {
       ...storySummaries.map((item) => item.lastUpdated ?? 0),
       0
     );
-
-    // do not attempt to load from store until it's ready
-    await waitingToLoad;
 
     const current = storyListStore[page];
 
@@ -250,16 +246,12 @@ export function createDataStore(params: {
 
   const [isLoadingData, setIsLoadingData] = createSignal(false);
 
-  const getContentForPage = async (rawPage: string): Promise<ContentForPage> => {
+  const getContentForPage = async (
+    rawPage: string
+  ): Promise<ContentForPage> => {
     params.addMessage("getContentForPage", "init", { rawPage });
 
     const page = convertPathToStoryPage(rawPage);
-
-    console.log("*** waiting to load", page);
-
-    await waitingToLoad;
-
-    console.log("*** waiting to load done", page);
 
     const list = storyListStore[page as StoryPage];
 
@@ -278,9 +270,9 @@ export function createDataStore(params: {
     return { type: "fullData", data };
   };
 
-  const [refreshType, setRefreshType] = createSignal<
-    RefreshType | undefined
-  >(undefined);
+  const [refreshType, setRefreshType] = createSignal<RefreshType | undefined>(
+    undefined
+  );
 
   const refreshActive = async () => {
     console.log("*** refreshActive", refreshType());
