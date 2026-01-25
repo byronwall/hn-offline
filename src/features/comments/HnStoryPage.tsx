@@ -1,4 +1,4 @@
-import { createEffect, onMount } from "solid-js";
+import { createEffect, Match, onMount, Switch } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
 import {
@@ -13,6 +13,7 @@ import { getColorsForStory } from "~/lib/getColorsForStory";
 import { isValidComment } from "~/lib/isValidComment";
 
 import { HnCommentList } from "./HnCommentList";
+import { HnCommentSkeletonList } from "./HnCommentSkeletonList";
 import { HnStoryCommentBanner } from "./HnStoryCommentBanner";
 import { HnStoryContentCard } from "./HnStoryContentCard";
 import { HnStoryTitle } from "./HnStoryTitle";
@@ -62,6 +63,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   });
 
   const comments = () => (story()?.kidsObj || []).filter(isValidComment);
+  const showSkeleton = () => props.startedFromServer && !isClientMounted();
 
   return (
     <PullToRefresh
@@ -76,12 +78,18 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
           firstCommentId={comments()[0]?.id}
         />
 
-        <HnCommentList
-          childComments={comments()}
-          depth={0}
-          authorChain={[]}
-          skeletonOnly={props.startedFromServer && !isClientMounted()}
-        />
+        <Switch>
+          <Match when={showSkeleton()}>
+            <HnCommentSkeletonList />
+          </Match>
+          <Match when={!showSkeleton()}>
+            <HnCommentList
+              childComments={comments()}
+              depth={0}
+              authorChain={[]}
+            />
+          </Match>
+        </Switch>
       </div>
     </PullToRefresh>
   );
