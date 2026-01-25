@@ -3,18 +3,17 @@ import sanitizeHtml from "sanitize-html";
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
+import {
+  useActiveStoryStore,
+  useColorMapStore,
+  useCommentStore,
+  useScrollStore,
+} from "~/contexts/AppDataContext";
 import { formatCommentText } from "~/lib/commentUtils";
 import { createHasRendered } from "~/lib/createHasRendered";
 import { isValidComment } from "~/lib/isValidComment";
 import { cn, shareSafely, timeSince } from "~/lib/utils";
 import { KidsObj3 } from "~/models/interfaces";
-import { activeStoryData } from "~/stores/activeStorySignal";
-import { colorMap } from "~/stores/colorMap";
-import { clearScrollToId, scrollToIdSignal } from "~/stores/scrollSignal";
-import {
-  collapsedTimestamps,
-  handleCollapseEvent,
-} from "~/stores/useCommentStore";
 
 import { HnCommentList } from "./HnCommentList";
 
@@ -25,6 +24,10 @@ export interface HnCommentProps {
 }
 
 export function HnComment(props: HnCommentProps) {
+  const activeStoryStore = useActiveStoryStore();
+  const colorMapStore = useColorMapStore();
+  const scrollStore = useScrollStore();
+  const commentStore = useCommentStore();
   const [divRef, setDivRef] = createSignal<HTMLDivElement | null>(null);
 
   const hasRendered = createHasRendered();
@@ -38,16 +41,16 @@ export function HnComment(props: HnCommentProps) {
     if (!props.comment?.id) {
       return true;
     }
-    return collapsedTimestamps[props.comment.id] === undefined;
+    return commentStore.collapsedTimestamps[props.comment.id] === undefined;
   };
 
-  const onCollapse = handleCollapseEvent;
+  const onCollapse = commentStore.handleCollapseEvent;
 
   // derive from store; no extra effects needed
 
   // TODO: review this one
   createEffect(() => {
-    if (scrollToIdSignal() !== props.comment?.id) {
+    if (scrollStore.scrollToId() !== props.comment?.id) {
       return;
     }
 
@@ -67,7 +70,7 @@ export function HnComment(props: HnCommentProps) {
         behavior: "smooth",
       });
 
-      clearScrollToId();
+      scrollStore.clearScrollToId();
     });
   });
 
@@ -84,9 +87,9 @@ export function HnComment(props: HnCommentProps) {
     cleanText = decode(cleanText);
 
     const commentUrl = `https://hn.byroni.us/story/${props.comment.id}`;
-    const storyExternalUrl = activeStoryData()?.url;
+    const storyExternalUrl = activeStoryStore.activeStoryData()?.url;
     // intentionally unused: story title not required in footer
-    const storyId = activeStoryData()?.id;
+    const storyId = activeStoryStore.activeStoryData()?.id;
     const storyHnUrl = storyId ? `https://hn.byroni.us/story/${storyId}` : "";
     // storyUrl no longer used; keep only HN + external links
 
@@ -162,7 +165,7 @@ export function HnComment(props: HnCommentProps) {
   });
 
   const borderColor = () =>
-    colorMap()[props.comment?.by ?? ""] ?? "transparent";
+    colorMapStore.colorMap()[props.comment?.by ?? ""] ?? "transparent";
   const childComments = () =>
     (props.comment.kidsObj || []).filter(isValidComment);
 
@@ -222,8 +225,9 @@ export function HnComment(props: HnCommentProps) {
               isOpen()
                 ? {
                     "font-bold text-orange-700":
-                      activeStoryData()?.by === props.comment.by,
-                    "font-medium": activeStoryData()?.by !== props.comment.by,
+                      activeStoryStore.activeStoryData()?.by === props.comment.by,
+                    "font-medium":
+                      activeStoryStore.activeStoryData()?.by !== props.comment.by,
                   }
                 : "font-normal"
             )}

@@ -3,25 +3,21 @@ import { createEffect, Match, onCleanup, onMount, Show, Switch } from "solid-js"
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { PullToRefresh } from "~/components/PullToRefresh";
+import {
+  useColorMapStore,
+  useCommentStore,
+  useDataStore,
+  useMessagesStore,
+  useReadItemsStore,
+  useScrollStore,
+  useServiceWorkerStore,
+} from "~/contexts/AppDataContext";
 import { createHasRendered } from "~/lib/createHasRendered";
 import { getColorsForStory } from "~/lib/getColorsForStory";
 import { isValidComment } from "~/lib/isValidComment";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, shareSafely, timeSince } from "~/lib/utils";
 import type { HnItem } from "~/models/interfaces";
-import { colorMap, setColorMap } from "~/stores/colorMap";
-import { addMessage } from "~/stores/messages";
-import { setScrollToId } from "~/stores/scrollSignal";
-import { isOfflineMode } from "~/stores/serviceWorkerStatus";
-import {
-  collapsedTimestamps,
-  updateCollapsedState,
-} from "~/stores/useCommentStore";
-import { isLoadingData, refreshActive } from "~/stores/useDataStore";
-import {
-  saveIdToReadList,
-  setRecentlyReadId,
-} from "~/stores/useReadItemsStore";
 
 import { HnCommentList } from "./HnCommentList";
 
@@ -32,6 +28,14 @@ interface HnStoryPageProps {
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
+  const colorMapStore = useColorMapStore();
+  const messagesStore = useMessagesStore();
+  const scrollStore = useScrollStore();
+  const serviceWorker = useServiceWorkerStore();
+  const commentStore = useCommentStore();
+  const dataStore = useDataStore();
+  const readItemsStore = useReadItemsStore();
+
   const isInteractive = () => props.interactive !== false;
   const hasRendered = createHasRendered();
   const story = () => props.story;
@@ -59,10 +63,10 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       return;
     }
 
-    addMessage("HnStoryPage", "update color map");
+    messagesStore.addMessage("HnStoryPage", "update color map");
 
     const colors = getColorsForStory(story());
-    setColorMap(colors);
+    colorMapStore.setColorMap(colors);
   });
 
   onMount(() => {
@@ -74,8 +78,8 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     }
     // Track most recently read for list fade-out UX on back nav
     console.warn("*** setting recently read id", props.id);
-    setRecentlyReadId(props.id);
-    saveIdToReadList(props.id);
+    readItemsStore.setRecentlyReadId(props.id);
+    readItemsStore.saveIdToReadList(props.id);
   });
 
   onMount(() => {
@@ -136,7 +140,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     if (storyId() === undefined) {
       return true;
     }
-    return collapsedTimestamps[storyId()!] === undefined;
+    return commentStore.collapsedTimestamps[storyId()!] === undefined;
   };
 
   const comments = () => (story()?.kidsObj || []).filter(isValidComment);
@@ -144,7 +148,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const isComment = () => story()?.type === "comment";
   const parentId = () => story()?.parent;
   const rootId = () => story()?.root;
-
 
   function handleStoryTextClick() {
     if (!isInteractive()) {
@@ -155,14 +158,14 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     }
 
     const newIsCollapsed = !!isTextOpen();
-    updateCollapsedState(storyId()!, newIsCollapsed);
+    commentStore.updateCollapsedState(storyId()!, newIsCollapsed);
 
     // scroll to first comment if it exists
     // schedule out 200ms to allow the collapse animation to finish
     setTimeout(() => {
       const firstCommentId = comments()[0]?.id;
       if (newIsCollapsed && firstCommentId) {
-        setScrollToId(firstCommentId);
+        scrollStore.setScrollToId(firstCommentId);
       }
     }, 100);
   }
@@ -262,7 +265,8 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
         onClick={handleStoryTextClick}
         style={{
           "--flash-color":
-            colorMap()[story()?.by ?? ""] ?? "hsl(30, 80%, 65%)",
+            colorMapStore.colorMap()[story()?.by ?? ""] ??
+            "hsl(30, 80%, 65%)",
           "padding-left": "16px",
         }}
       >
@@ -315,8 +319,8 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   return (
     <Show when={isInteractive()} fallback={staticContent()}>
       <PullToRefresh
-        disabled={isLoadingData() || isOfflineMode()}
-        onRefresh={refreshActive}
+        disabled={dataStore.isLoadingData() || serviceWorker.isOfflineMode()}
+        onRefresh={dataStore.refreshActive}
         // message={pullMessage()}
       >
         {storyContent()}

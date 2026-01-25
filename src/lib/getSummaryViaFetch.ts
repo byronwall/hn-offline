@@ -2,16 +2,23 @@ import { revalidate } from "@solidjs/router";
 
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 import { getStoryListByType } from "~/server/queries";
-import { addMessage } from "~/stores/messages";
-import { persistStoryList } from "~/stores/useDataStore";
 
 import type { StoryPage } from "~/models/interfaces";
 
+export type FetchPageDependencies = {
+  addMessage?: (key: string, message: string, ...args: unknown[]) => void;
+  persistStoryList?: (page: StoryPage, data: HnItem[]) => Promise<void> | void;
+};
+
 export async function fetchAllStoryDataForPage(
   page: StoryPage,
-  options?: { force?: boolean }
+  options?: {
+    force?: boolean;
+    addMessage?: FetchPageDependencies["addMessage"];
+    persistStoryList?: FetchPageDependencies["persistStoryList"];
+  }
 ): Promise<HnItem[]> {
-  addMessage("fetchPage", "init", { page });
+  options?.addMessage?.("fetchPage", "init", { page });
 
   try {
     if (options?.force) {
@@ -23,9 +30,11 @@ export async function fetchAllStoryDataForPage(
     const data = rawData.filter(Boolean);
 
     // save to localforage after fetching
-    void persistStoryList(page, data);
+    if (options?.persistStoryList) {
+      void options.persistStoryList(page, data);
+    }
 
-    addMessage("fetchPage", "done", { page, data: data.length });
+    options?.addMessage?.("fetchPage", "done", { page, data: data.length });
 
     return data;
   } catch (e) {

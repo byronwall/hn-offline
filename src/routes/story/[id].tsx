@@ -10,18 +10,20 @@ import {
 } from "solid-js";
 import { isServer } from "solid-js/web";
 
+import {
+  useActiveStoryStore,
+  useDataStore,
+  useServiceWorkerStore,
+} from "~/contexts/AppDataContext";
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { HnItem } from "~/models/interfaces";
 import { getStoryById } from "~/server/queries";
-import { setActiveStoryData } from "~/stores/activeStorySignal";
-import { isOfflineMode } from "~/stores/serviceWorkerStatus";
-import {
-  getContent,
-  persistStoryToStorage,
-  setRefreshType,
-} from "~/stores/useDataStore";
 
 export default function Story() {
+  const dataStore = useDataStore();
+  const serviceWorker = useServiceWorkerStore();
+  const activeStoryStore = useActiveStoryStore();
+
   const hideRoute = false;
   const params = useParams();
   const id = createMemo(() => +params.id);
@@ -53,7 +55,7 @@ export default function Story() {
     if (isServer) {
       return;
     }
-    if (!isOfflineMode()) {
+    if (!serviceWorker.isOfflineMode()) {
       if (offlineStory()) {
         setOfflineStory(undefined);
       }
@@ -67,7 +69,7 @@ export default function Story() {
       if (!idParam || Number.isNaN(idParam)) {
         return;
       }
-      const cached = await getContent(idParam, { allowNetwork: false });
+      const cached = await dataStore.getContent(idParam, { allowNetwork: false });
       if (cached) {
         setOfflineStory(cached as HnItem);
       }
@@ -84,7 +86,7 @@ export default function Story() {
     if (!story) {
       return;
     }
-    void persistStoryToStorage(id(), story as HnItem);
+    void dataStore.persistStoryToStorage(id(), story as HnItem);
   });
 
   createEffect(() => {
@@ -93,8 +95,8 @@ export default function Story() {
       return;
     }
 
-    setActiveStoryData(story as HnItem);
-    setRefreshType({ type: "story", id: id() });
+    activeStoryStore.setActiveStoryData(story as HnItem);
+    dataStore.setRefreshType({ type: "story", id: id() });
   });
 
   if (hideRoute) {

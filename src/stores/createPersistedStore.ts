@@ -1,12 +1,11 @@
-import { createEffect, createResource, createSignal } from "solid-js";
+import { type Accessor, createEffect, createResource, createSignal } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
-import { LOCAL_FORAGE_TO_USE } from "./localforage";
-
 export function createPersistedStore<T extends object>(
   name: string,
-  initialValue: T
+  initialValue: T,
+  localForage: Accessor<LocalForage | undefined>
 ) {
   const [store, rawSetStore] = createStore(initialValue);
   const [isLoaded, setIsLoaded] = createSignal(false);
@@ -22,7 +21,7 @@ export function createPersistedStore<T extends object>(
       const newStore = keyOrNewStore(unwrap(store));
       console.log("*** newStore", newStore);
       rawSetStore(newStore);
-      await LOCAL_FORAGE_TO_USE()?.setItem(name, newStore);
+      await localForage()?.setItem(name, newStore);
       return;
     }
 
@@ -31,7 +30,7 @@ export function createPersistedStore<T extends object>(
       const newStore = unwrap(keyOrNewStore);
       console.log("*** keyOrNewStore", newStore);
       rawSetStore(newStore);
-      await LOCAL_FORAGE_TO_USE()?.setItem(name, newStore);
+      await localForage()?.setItem(name, newStore);
 
       return;
     }
@@ -39,13 +38,13 @@ export function createPersistedStore<T extends object>(
     // handle setting a single key
     console.log("setting store", name, keyOrNewStore, value);
     rawSetStore(keyOrNewStore as any, value);
-    await LOCAL_FORAGE_TO_USE()?.setItem(name, unwrap(store));
+    await localForage()?.setItem(name, unwrap(store));
   };
 
   if (!isServer) {
     // kind of a cop out but we know it's only client side
     const [initValueFromLocalForage] = createResource(
-      LOCAL_FORAGE_TO_USE,
+      localForage,
       async (localForage) => {
         console.log("*** resource running local forage", name, localForage);
         const initialValue = await localForage?.getItem(name);

@@ -1,7 +1,9 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 
-import { getMessages } from "~/stores/messages";
-import { serviceWorkerVersion } from "~/stores/serviceWorkerStatus";
+import {
+  useMessagesStore,
+  useServiceWorkerStore,
+} from "~/contexts/AppDataContext";
 
 function formatDelta(deltaMs: number): string {
   if (deltaMs >= 3600000) {
@@ -30,10 +32,12 @@ function hashStringToHue(input: string): number {
 }
 
 export function StatusBar() {
+  const messagesStore = useMessagesStore();
+  const serviceWorker = useServiceWorkerStore();
   const [expanded, setExpanded] = createSignal(false);
 
   const messagesWithMeta = createMemo(() => {
-    const list = getMessages();
+    const list = messagesStore.messages();
     const lastTimestampByKey = new Map<string, number>();
     const result = list.map((m) => ({
       m,
@@ -64,11 +68,11 @@ export function StatusBar() {
       >
         <span class="inline-flex items-center gap-2">
           <span class="text-blue-600" title="Service Worker Version">
-            {serviceWorkerVersion() ?? "v-"}
+            {serviceWorker.serviceWorkerVersion() ?? "v-"}
           </span>
         </span>
         <span class="ml-2 text-slate-500">
-          {expanded() ? "▲" : "▼"} {getMessages().length}
+          {expanded() ? "▲" : "▼"} {messagesStore.messages().length}
         </span>
       </div>
 
@@ -76,7 +80,7 @@ export function StatusBar() {
         <div class="h-[1px] w-full bg-slate-200" />
         <div class="h-[calc(300px-36px-1px)] overflow-auto p-2">
           <div class="mb-1 text-xs text-slate-500">
-            Messages ({getMessages().length})
+            Messages ({messagesStore.messages().length})
           </div>
           <div class="space-y-2">
             <For each={messagesWithMeta()}>

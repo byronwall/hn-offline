@@ -1,6 +1,6 @@
 import { For, Show } from "solid-js";
 
-import { useErrorOverlay } from "~/stores/errorOverlay";
+import { useErrorOverlay } from "~/contexts/AppDataContext";
 
 function copyToClipboard(text: string): void {
   try {
@@ -11,7 +11,10 @@ function copyToClipboard(text: string): void {
 }
 
 export default function GlobalErrorOverlay() {
-  const { isVisible, error, hide } = useErrorOverlay();
+  const errorOverlay = useErrorOverlay();
+  const isVisible = errorOverlay.isVisible;
+  const error = errorOverlay.error;
+  const hide = errorOverlay.hideErrorOverlay;
 
   const stackLines = () => (error()?.stack ? error()!.stack!.split("\n") : []);
   const fullText = () => {
@@ -66,7 +69,7 @@ export default function GlobalErrorOverlay() {
           <div class="mb-3 rounded border border-zinc-700 bg-zinc-950 p-3">
             <div class="mb-1 text-sm text-zinc-400">{error()?.time}</div>
             <div class="break-words whitespace-pre-wrap">
-              <span class="font-semibold">{error()?.name}</span>:{" "}
+              <span class="font-semibold">{error()?.name}</span>: {" "}
               {error()?.message}
             </div>
           </div>

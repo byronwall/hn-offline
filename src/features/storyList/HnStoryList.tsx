@@ -2,21 +2,16 @@ import { createEffect, createMemo, For, Show } from "solid-js";
 
 import { Shell } from "~/components/Icon";
 import { PullToRefresh } from "~/components/PullToRefresh";
+import {
+  useMessagesStore,
+  useReadItemsStore,
+} from "~/contexts/AppDataContext";
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { createHasRendered } from "~/lib/createHasRendered";
 import { timeSince } from "~/lib/utils";
 import { HnStorySummary } from "~/models/interfaces";
-import { addMessage } from "~/stores/messages";
-import {
-  readItems,
-  readSettings,
-  recentlyReadId,
-  setReadSettings,
-  setRecentlyReadId,
-} from "~/stores/useReadItemsStore";
 
 import { HnListItem } from "./HnListItem";
-
 
 interface HnStoryListProps {
   items?: HnStorySummary[];
@@ -29,6 +24,8 @@ interface HnStoryListProps {
 }
 
 export function HnStoryList(props: HnStoryListProps) {
+  const messagesStore = useMessagesStore();
+  const readItemsStore = useReadItemsStore();
   const hasRendered = createHasRendered();
 
   // server will not have any stories to render since we rely on createEffect
@@ -64,7 +61,7 @@ export function HnStoryList(props: HnStoryListProps) {
     if (!hasRendered()) {
       return;
     }
-    addMessage("storyList", "props updated", {
+    messagesStore.addMessage("storyList", "props updated", {
       count: props.items?.length ?? 0,
       lastUpdatedTs: props.lastUpdatedTs,
       lastRequestedTs: props.lastRequestedTs,
@@ -76,7 +73,10 @@ export function HnStoryList(props: HnStoryListProps) {
   });
 
   const toggleHideReadItems = () => {
-    setReadSettings("shouldHideReadItems", !readSettings.shouldHideReadItems);
+    readItemsStore.setReadSettings(
+      "shouldHideReadItems",
+      !readItemsStore.readSettings.shouldHideReadItems
+    );
   };
 
   return (
@@ -139,12 +139,12 @@ export function HnStoryList(props: HnStoryListProps) {
           <div class="grid grid-cols-[1fr_1fr_1fr_3fr]">
             <For each={itemsToRender() ?? []}>
               {(item) => {
-                const isRead = () => readItems[item.id] !== undefined;
-                const isRecentRead = () => recentlyReadId() === item.id;
+                const isRead = () => readItemsStore.readItems[item.id] !== undefined;
+                const isRecentRead = () => readItemsStore.recentlyReadId() === item.id;
                 const shouldRender = () =>
                   // allow SSR hydration match, or if not hiding read items
                   !hasRendered() ||
-                  !readSettings.shouldHideReadItems ||
+                  !readItemsStore.readSettings.shouldHideReadItems ||
                   !isRead() ||
                   isRecentRead();
 
@@ -153,9 +153,9 @@ export function HnStoryList(props: HnStoryListProps) {
                     <HnListItem
                       data={item}
                       recentFadeOut={
-                        isRecentRead() && readSettings.shouldHideReadItems
+                        isRecentRead() && readItemsStore.readSettings.shouldHideReadItems
                       }
-                      onFadeComplete={() => setRecentlyReadId(undefined)}
+                      onFadeComplete={() => readItemsStore.setRecentlyReadId(undefined)}
                     />
                   </Show>
                 );
@@ -168,7 +168,7 @@ export function HnStoryList(props: HnStoryListProps) {
         <label class="inline-flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
-            checked={readSettings.shouldHideReadItems}
+            checked={readItemsStore.readSettings.shouldHideReadItems}
             onChange={toggleHideReadItems}
             class="peer sr-only"
           />
@@ -176,7 +176,7 @@ export function HnStoryList(props: HnStoryListProps) {
           <div class="peer relative h-6 w-11 rounded-full bg-gray-200 peer-checked:bg-orange-600 peer-focus:ring-4 peer-focus:ring-orange-300 peer-focus:outline-none after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white rtl:peer-checked:after:-translate-x-full dark:border-gray-600 dark:bg-gray-700 dark:peer-focus:ring-orange-800" />
 
           <span>
-            {readSettings.shouldHideReadItems
+            {readItemsStore.readSettings.shouldHideReadItems
               ? "Hiding read items (click to show)"
               : "Showing read items (click to hide)"}
           </span>

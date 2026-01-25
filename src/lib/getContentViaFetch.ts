@@ -1,14 +1,27 @@
 import { revalidate } from "@solidjs/router";
 
 import { getStoryById } from "~/server/queries";
-import { addMessage } from "~/stores/messages";
-import { persistStoryToStorage, StoryId } from "~/stores/useDataStore";
+
+import type { HnItem } from "~/models/interfaces";
+import type { StoryId } from "~/stores/useDataStore";
+
+export type FetchObjDependencies = {
+  addMessage?: (key: string, message: string, ...args: unknown[]) => void;
+  persistStoryToStorage?: (
+    id: StoryId,
+    content: HnItem
+  ) => Promise<boolean> | boolean | void;
+};
 
 export async function fetchObjById(
   id: StoryId,
-  options?: { force?: boolean }
+  options?: {
+    force?: boolean;
+    addMessage?: FetchObjDependencies["addMessage"];
+    persistStoryToStorage?: FetchObjDependencies["persistStoryToStorage"];
+  }
 ) {
-  addMessage("fetchObjById", "fetching", { id });
+  options?.addMessage?.("fetchObjById", "fetching", { id });
   if (options?.force) {
     await revalidate(getStoryById.keyFor(id));
   }
@@ -21,9 +34,11 @@ export async function fetchObjById(
   }
 
   // save to localforage after fetching
-  void persistStoryToStorage(id, data); // fire and forget
+  if (options?.persistStoryToStorage) {
+    void options.persistStoryToStorage(id, data); // fire and forget
+  }
 
-  addMessage("fetchObjById", "response", { id, source: "query" });
+  options?.addMessage?.("fetchObjById", "response", { id, source: "query" });
 
   return data;
 }
