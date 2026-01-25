@@ -9,7 +9,6 @@ import {
 } from "~/contexts/AppDataContext";
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { getStoryById } from "~/server/queries";
-import { createLocalForageStore } from "~/stores/localforage";
 
 export default function Story() {
   const dataStore = useDataStore();

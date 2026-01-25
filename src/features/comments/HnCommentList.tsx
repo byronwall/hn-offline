@@ -12,6 +12,7 @@ import {
 import { KidsObj3 } from "~/models/interfaces";
 
 import { HnComment } from "./HnComment";
+import { HnCommentSkeleton } from "./HnCommentSkeleton";
 
 interface HnCommentListProps {
   childComments: Array<KidsObj3 | null>;
@@ -139,9 +140,10 @@ export function HnCommentList(props: HnCommentListProps) {
   return (
     <Switch>
       <Match when={props.skeletonOnly}>
-        <div> skeleton</div>
+        <For each={[0, 1, 2, 3]}>{() => <HnCommentSkeleton />}</For>
       </Match>
       <Match when={!props.skeletonOnly}>
+        {/* TODO: extract this into a component with all its stuff above */}
         <For each={visible()}>
           {(child) => (
             <HnComment
