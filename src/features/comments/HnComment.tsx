@@ -32,7 +32,6 @@ export function HnComment(props: HnCommentProps) {
   // this needs to get one good render so that the DOM matches SSR
   // then it needs to know that the comment store is OK
   const isOpen = () => {
-    console.log("*** isOpen", { comment: props.comment });
     if (!props.comment?.id) {
       return true;
     }
