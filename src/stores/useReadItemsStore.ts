@@ -3,6 +3,7 @@ import { reconcile } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
 import { createPersistedStore } from "./createPersistedStore";
+
 import type { AddMessage } from "./messages";
 
 export type TimestampHash = Record<number, number>;
@@ -19,7 +20,7 @@ export type ReadItemsStore = {
   setRecentlyReadId: (id: number | undefined) => void;
   saveIdToReadList: (id: number | undefined) => Promise<void>;
   cleanUpOldReadEntries: () => void;
-  waitingToLoad: Promise<boolean>;
+
   isLoaded: Accessor<boolean>;
 };
 
@@ -27,6 +28,7 @@ export function createReadItemsStore(
   addMessage: AddMessage,
   localForage: Accessor<LocalForage | undefined>
 ): ReadItemsStore {
+  console.log("*** createReadItemsStore", { addMessage, localForage });
   const [readSettings, setReadSettings] = createPersistedStore(
     "READ_SETTINGS",
     {
@@ -38,15 +40,9 @@ export function createReadItemsStore(
   const [readItems, setReadItems, { waitingToLoad, isLoaded }] =
     createPersistedStore("READ_ITEMS", {} as TimestampHash, localForage);
 
-  const [recentlyReadId, setRecentlyReadId] = createSignal<
-    number | undefined
-  >(undefined);
-
-  createEffect(() => {
-    // recent read id
-    // TODO: remove this
-    console.warn("*** recentlyReadId", recentlyReadId());
-  });
+  const [recentlyReadId, setRecentlyReadId] = createSignal<number | undefined>(
+    undefined
+  );
 
   const cleanUpOldReadEntries = (): void => {
     // Keep only the 7 most recent days of read entries
@@ -87,6 +83,8 @@ export function createReadItemsStore(
     setReadItems(id, Date.now());
   };
 
+  console.log("*** createReadItemsStore returning");
+
   return {
     readSettings,
     setReadSettings,
@@ -96,7 +94,6 @@ export function createReadItemsStore(
     setRecentlyReadId,
     saveIdToReadList,
     cleanUpOldReadEntries,
-    waitingToLoad,
     isLoaded,
   };
 }

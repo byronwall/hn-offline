@@ -10,7 +10,6 @@ import {
   useScrollStore,
 } from "~/contexts/AppDataContext";
 import { formatCommentText } from "~/lib/commentUtils";
-import { createHasRendered } from "~/lib/createHasRendered";
 import { isValidComment } from "~/lib/isValidComment";
 import { cn, shareSafely, timeSince } from "~/lib/utils";
 import { KidsObj3 } from "~/models/interfaces";
@@ -30,14 +29,10 @@ export function HnComment(props: HnCommentProps) {
   const commentStore = useCommentStore();
   const [divRef, setDivRef] = createSignal<HTMLDivElement | null>(null);
 
-  const hasRendered = createHasRendered();
-
   // this needs to get one good render so that the DOM matches SSR
   // then it needs to know that the comment store is OK
   const isOpen = () => {
-    if (!hasRendered()) {
-      return true;
-    }
+    console.log("*** isOpen", { comment: props.comment });
     if (!props.comment?.id) {
       return true;
     }
@@ -225,9 +220,11 @@ export function HnComment(props: HnCommentProps) {
               isOpen()
                 ? {
                     "font-bold text-orange-700":
-                      activeStoryStore.activeStoryData()?.by === props.comment.by,
+                      activeStoryStore.activeStoryData()?.by ===
+                      props.comment.by,
                     "font-medium":
-                      activeStoryStore.activeStoryData()?.by !== props.comment.by,
+                      activeStoryStore.activeStoryData()?.by !==
+                      props.comment.by,
                   }
                 : "font-normal"
             )}
@@ -248,9 +245,9 @@ export function HnComment(props: HnCommentProps) {
           </Show>
         </p>
         <Show when={isOpen()}>
-          {/* eslint-disable-next-line solid/no-innerhtml */}
           <div
             class="comment"
+            // eslint-disable-next-line solid/no-innerhtml
             innerHTML={formatCommentText(props.comment.text || "")}
           />
 

@@ -1,10 +1,13 @@
 import { Meta, Title } from "@solidjs/meta";
+import { isServer } from "solid-js/web";
 
 import { TopStoriesType } from "~/models/interfaces";
 
 import { ServerStoryPage } from "./ServerStoryPage";
 
 export function StoryListRoute(props: { page: TopStoriesType }) {
+  console.log("*** StoryListRoute", { isServer, page: props.page });
+
   const title = () =>
     props.page === "topstories"
       ? "Top"

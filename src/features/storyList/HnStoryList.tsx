@@ -1,13 +1,9 @@
-import { createEffect, createMemo, For, Show } from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 
 import { Shell } from "~/components/Icon";
 import { PullToRefresh } from "~/components/PullToRefresh";
-import {
-  useMessagesStore,
-  useReadItemsStore,
-} from "~/contexts/AppDataContext";
+import { useReadItemsStore } from "~/contexts/AppDataContext";
 import { useSortFunction } from "~/hooks/useSortFunction";
-import { createHasRendered } from "~/lib/createHasRendered";
 import { timeSince } from "~/lib/utils";
 import { HnStorySummary } from "~/models/interfaces";
 
@@ -24,16 +20,11 @@ interface HnStoryListProps {
 }
 
 export function HnStoryList(props: HnStoryListProps) {
-  const messagesStore = useMessagesStore();
   const readItemsStore = useReadItemsStore();
-  const hasRendered = createHasRendered();
 
   // server will not have any stories to render since we rely on createEffect
   // render 0 here to avoid hydration mismatch
   const itemsToRender = () => {
-    if (!hasRendered()) {
-      return [];
-    }
     const items = props.items;
     if (!items) {
       return undefined;
@@ -57,21 +48,6 @@ export function HnStoryList(props: HnStoryListProps) {
       : undefined;
   });
 
-  createEffect(() => {
-    if (!hasRendered()) {
-      return;
-    }
-    messagesStore.addMessage("storyList", "props updated", {
-      count: props.items?.length ?? 0,
-      lastUpdatedTs: props.lastUpdatedTs,
-      lastRequestedTs: props.lastRequestedTs,
-      isLoading: props.isLoading,
-      isOffline: props.isOffline,
-      pullMessage: pullMessage(),
-      requestMessage: requestMessage(),
-    });
-  });
-
   const toggleHideReadItems = () => {
     readItemsStore.setReadSettings(
       "shouldHideReadItems",
@@ -80,7 +56,7 @@ export function HnStoryList(props: HnStoryListProps) {
   };
 
   return (
-    <Show when={itemsToRender()} fallback={<div>Loading...</div>}>
+    <>
       <Show
         when={(itemsToRender() ?? []).length > 0}
         fallback={
@@ -139,11 +115,12 @@ export function HnStoryList(props: HnStoryListProps) {
           <div class="grid grid-cols-[1fr_1fr_1fr_3fr]">
             <For each={itemsToRender() ?? []}>
               {(item) => {
-                const isRead = () => readItemsStore.readItems[item.id] !== undefined;
-                const isRecentRead = () => readItemsStore.recentlyReadId() === item.id;
+                const isRead = () =>
+                  readItemsStore.readItems[item.id] !== undefined;
+                const isRecentRead = () =>
+                  readItemsStore.recentlyReadId() === item.id;
                 const shouldRender = () =>
                   // allow SSR hydration match, or if not hiding read items
-                  !hasRendered() ||
                   !readItemsStore.readSettings.shouldHideReadItems ||
                   !isRead() ||
                   isRecentRead();
@@ -153,9 +130,12 @@ export function HnStoryList(props: HnStoryListProps) {
                     <HnListItem
                       data={item}
                       recentFadeOut={
-                        isRecentRead() && readItemsStore.readSettings.shouldHideReadItems
+                        isRecentRead() &&
+                        readItemsStore.readSettings.shouldHideReadItems
                       }
-                      onFadeComplete={() => readItemsStore.setRecentlyReadId(undefined)}
+                      onFadeComplete={() =>
+                        readItemsStore.setRecentlyReadId(undefined)
+                      }
                     />
                   </Show>
                 );
@@ -182,6 +162,6 @@ export function HnStoryList(props: HnStoryListProps) {
           </span>
         </label>
       </div>
-    </Show>
+    </>
   );
 }

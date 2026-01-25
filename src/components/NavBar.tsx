@@ -1,5 +1,4 @@
 import { A } from "@solidjs/router";
-import { Show } from "solid-js";
 
 import { useDataStore, useServiceWorkerStore } from "~/contexts/AppDataContext";
 import { cn } from "~/lib/utils";
@@ -41,27 +40,26 @@ export function NavBar() {
         >
           week
         </A>
-        <Show when={!serviceWorker.isOfflineMode()}>
+        <div
+          onClick={() => {
+            if (serviceWorker.isOfflineMode()) {
+              return;
+            }
+            dataStore.refreshActive();
+          }}
+          // increase hit area
+          class="-my-3 px-2 py-3"
+          hidden={serviceWorker.isOfflineMode()}
+        >
           <div
-            onClick={() => {
-              if (serviceWorker.isOfflineMode()) {
-                return;
-              }
-              dataStore.refreshActive();
-            }}
-            // increase hit area
-            class="-my-3 px-2 py-3"
+            class={cn(
+              "transition-colors duration-300 ease-in-out hover:cursor-pointer hover:text-blue-500",
+              { "animate-spin text-orange-500": dataStore.isLoadingData() }
+            )}
           >
-            <div
-              class={cn(
-                "transition-colors duration-300 ease-in-out hover:cursor-pointer hover:text-blue-500",
-                { "animate-spin text-orange-500": dataStore.isLoadingData() }
-              )}
-            >
-              <Shell size="32" color="black" />
-            </div>
+            <Shell size="32" color="black" />
           </div>
-        </Show>
+        </div>
       </div>
     </nav>
   );

@@ -1,12 +1,12 @@
-import { type Accessor, createEffect, createResource, createSignal } from "solid-js";
+import { type Accessor, createEffect, createSignal } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
-import { isServer } from "solid-js/web";
 
 export function createPersistedStore<T extends object>(
   name: string,
   initialValue: T,
   localForage: Accessor<LocalForage | undefined>
 ) {
+  console.log("*** createPersistedStore", { name, initialValue, localForage });
   const [store, rawSetStore] = createStore(initialValue);
   const [isLoaded, setIsLoaded] = createSignal(false);
 
@@ -41,38 +41,39 @@ export function createPersistedStore<T extends object>(
     await localForage()?.setItem(name, unwrap(store));
   };
 
-  if (!isServer) {
-    // kind of a cop out but we know it's only client side
-    const [initValueFromLocalForage] = createResource(
-      localForage,
-      async (localForage) => {
-        console.log("*** resource running local forage", name, localForage);
-        const initialValue = await localForage?.getItem(name);
-        console.log(
-          "*** initial value from local forage in resource",
-          name,
-          initialValue
-        );
-        return initialValue as T;
-      }
-    );
+  const [initValueFromLocalForage, setInitValueFromLocalForage] = createSignal<
+    T | undefined
+  >(undefined);
 
-    createEffect(() => {
-      console.log(
-        "*** creating effect to set data",
-        name,
-        initValueFromLocalForage(),
-        initValueFromLocalForage.state
-      );
-      if (initValueFromLocalForage()) {
-        rawSetStore(initValueFromLocalForage() as T);
-      }
-      if (initValueFromLocalForage.state === "ready") {
-        console.log("*** setting is loaded to true", name);
-        setIsLoaded(true);
-      }
-    });
+  async function getInitialValueFromLocalForage() {
+    const initialValue = (await localForage()?.getItem(name)) as T;
+    console.log(
+      "*** initial value from local forage in resource",
+      name,
+      initialValue
+    );
+    setInitValueFromLocalForage(() => initialValue);
   }
+
+  createEffect(() => {
+    void localForage();
+    void getInitialValueFromLocalForage();
+  });
+
+  createEffect(() => {
+    console.log(
+      "*** creating effect to set data",
+      name,
+      initValueFromLocalForage()
+    );
+    if (initValueFromLocalForage()) {
+      rawSetStore(initValueFromLocalForage() as T);
+    }
+    if (initValueFromLocalForage()) {
+      console.log("*** setting is loaded to true", name);
+      setIsLoaded(true);
+    }
+  });
 
   // promise that resolves when the store is loaded
   // this is used in async functions to pause until the store is loaded

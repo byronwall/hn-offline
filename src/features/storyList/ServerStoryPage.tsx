@@ -17,6 +17,7 @@ import { HnStoryList } from "./HnStoryList";
 import type { StoryPage } from "~/models/interfaces";
 
 export function ServerStoryPage(props: { page: TopStoriesType }) {
+  console.log("*** ServerStoryPage", { isServer, page: props.page });
   const dataStore = useDataStore();
   const refreshStore = useRefreshStore();
   const messagesStore = useMessagesStore();
@@ -65,7 +66,10 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
   });
 
   createRenderEffect(() => {
-    dataStore.setRefreshType({ type: "storyList", page: props.page as StoryPage });
+    dataStore.setRefreshType({
+      type: "storyList",
+      page: props.page as StoryPage,
+    });
     messagesStore.addMessage("refresh", "setRefreshType", { page: props.page });
   });
 

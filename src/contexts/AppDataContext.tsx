@@ -1,32 +1,34 @@
+// @refresh reload
 import {
   createContext,
   onCleanup,
   onMount,
-  useContext,
   type ParentProps,
+  useContext,
 } from "solid-js";
+import { isServer } from "solid-js/web";
 
 import { createActiveStoryStore } from "~/stores/activeStorySignal";
 import { createColorMapStore } from "~/stores/colorMap";
-import { createCommentStore } from "~/stores/useCommentStore";
-import { createDataStore } from "~/stores/useDataStore";
 import { createErrorOverlayStore } from "~/stores/errorOverlay";
 import { createLocalForageStore } from "~/stores/localforage";
 import { createMessagesStore } from "~/stores/messages";
 import { createScrollStore } from "~/stores/scrollSignal";
 import { createServiceWorkerStatusStore } from "~/stores/serviceWorkerStatus";
+import { createCommentStore } from "~/stores/useCommentStore";
+import { createDataStore } from "~/stores/useDataStore";
 import { createReadItemsStore } from "~/stores/useReadItemsStore";
 import { createRefreshStore } from "~/stores/useRefreshStore";
 
 import type { ActiveStoryStore } from "~/stores/activeStorySignal";
 import type { ColorMapStore } from "~/stores/colorMap";
-import type { CommentStore } from "~/stores/useCommentStore";
-import type { DataStore } from "~/stores/useDataStore";
 import type { ErrorOverlayStore } from "~/stores/errorOverlay";
 import type { LocalForageStore } from "~/stores/localforage";
 import type { MessagesStore } from "~/stores/messages";
 import type { ScrollStore } from "~/stores/scrollSignal";
 import type { ServiceWorkerStore } from "~/stores/serviceWorkerStatus";
+import type { CommentStore } from "~/stores/useCommentStore";
+import type { DataStore } from "~/stores/useDataStore";
 import type { ReadItemsStore } from "~/stores/useReadItemsStore";
 import type { RefreshStore } from "~/stores/useRefreshStore";
 
@@ -46,7 +48,11 @@ type AppDataContextValue = {
 
 const AppDataContext = createContext<AppDataContextValue>();
 
+let atom = 1;
+
 export function AppDataProvider(props: ParentProps) {
+  console.log("*** AppDataProvider", { atom });
+  atom++;
   const messages = createMessagesStore();
   const errorOverlay = createErrorOverlayStore();
   const localForage = createLocalForageStore(messages.addMessage);
@@ -54,11 +60,18 @@ export function AppDataProvider(props: ParentProps) {
   const scroll = createScrollStore();
   const activeStory = createActiveStoryStore();
   const colorMap = createColorMapStore();
+
+  console.log("*** AppDataProvider", { localForage });
+
   const readItems = createReadItemsStore(
     messages.addMessage,
     localForage.localForage
   );
-  const refresh = createRefreshStore(messages.addMessage, localForage.localForage);
+
+  const refresh = createRefreshStore(
+    messages.addMessage,
+    localForage.localForage
+  );
   const data = createDataStore({
     addMessage: messages.addMessage,
     localForage: localForage.localForage,
@@ -74,6 +87,7 @@ export function AppDataProvider(props: ParentProps) {
   });
 
   onMount(() => {
+    console.log("*** AppDataProvider onMount");
     errorOverlay.attachGlobalErrorHandlers();
     localForage.initializeLocalForage();
 
@@ -93,7 +107,10 @@ export function AppDataProvider(props: ParentProps) {
           );
         }
         if (messageHandler) {
-          navigator.serviceWorker.removeEventListener("message", messageHandler);
+          navigator.serviceWorker.removeEventListener(
+            "message",
+            messageHandler
+          );
         }
       };
 
@@ -194,7 +211,6 @@ export function AppDataProvider(props: ParentProps) {
             requestVersion();
           }
           navigator.serviceWorker.ready.then(requestVersion).catch(() => {});
-
         } catch (e) {
           serviceWorker.setServiceWorkerStatus("error");
           // eslint-disable-next-line no-console
@@ -229,6 +245,11 @@ export function AppDataProvider(props: ParentProps) {
       cleanupServiceWorkerListeners?.();
       cleanupOnlineListeners?.();
     });
+  });
+
+  console.log("*** AppDataProvider returning", {
+    isServer,
+    localForage: localForage.localForage(),
   });
 
   return (

@@ -4,8 +4,6 @@ import {
   createMemo,
   createSignal,
   Match,
-  onMount,
-  Suspense,
   Switch,
 } from "solid-js";
 import { isServer } from "solid-js/web";
@@ -20,19 +18,14 @@ import { HnItem } from "~/models/interfaces";
 import { getStoryById } from "~/server/queries";
 
 export default function Story() {
+  console.log("*** Story");
   const dataStore = useDataStore();
   const serviceWorker = useServiceWorkerStore();
   const activeStoryStore = useActiveStoryStore();
 
-  const hideRoute = false;
   const params = useParams();
   const id = createMemo(() => +params.id);
-  const [hydrated, setHydrated] = createSignal(false);
 
-  onMount(() => {
-    // Let hydration complete before switching to the interactive view.
-    setTimeout(() => setHydrated(true), 0);
-  });
   console.log("[HYDRATE_TRACE] route render", {
     isServer,
     paramsId: params.id,
@@ -69,7 +62,9 @@ export default function Story() {
       if (!idParam || Number.isNaN(idParam)) {
         return;
       }
-      const cached = await dataStore.getContent(idParam, { allowNetwork: false });
+      const cached = await dataStore.getContent(idParam, {
+        allowNetwork: false,
+      });
       if (cached) {
         setOfflineStory(cached as HnItem);
       }
@@ -99,24 +94,5 @@ export default function Story() {
     dataStore.setRefreshType({ type: "story", id: id() });
   });
 
-  if (hideRoute) {
-    return <div class="relative pb-[70vh]" />;
-  }
-
-  return (
-    <Suspense fallback={<div class="relative pb-[70vh]" />}>
-      <Switch>
-        <Match when={!storyValue()}>
-          <div class="relative pb-[70vh]" />
-        </Match>
-        <Match when={storyValue()}>
-          <HnStoryPage
-            id={id()}
-            story={storyValue()}
-            interactive={hydrated()}
-          />
-        </Match>
-      </Switch>
-    </Suspense>
-  );
+  return <HnStoryPage id={id()} story={storyValue()} />;
 }
