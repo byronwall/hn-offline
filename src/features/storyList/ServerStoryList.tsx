@@ -1,12 +1,18 @@
 import { createAsync } from "@solidjs/router";
-import { createEffect, createMemo, createRenderEffect } from "solid-js";
+import { fromArray } from "happy-dom/lib/PropertySymbol";
+import {
+  createEffect,
+  createMemo,
+  createRenderEffect,
+  untrack,
+} from "solid-js";
 import { isServer } from "solid-js/web";
 
 import {
+  useAppData,
   useDataStore,
   useMessagesStore,
   useRefreshStore,
-  useServiceWorkerStore,
 } from "~/contexts/AppDataContext";
 import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
 import { HnItem, TopStoriesType } from "~/models/interfaces";
@@ -16,32 +22,38 @@ import { HnStoryList } from "./HnStoryList";
 
 import type { StoryPage } from "~/models/interfaces";
 
-export function ServerStoryPage(props: { page: TopStoriesType }) {
+export function ServerStoryList(props: { page: TopStoriesType }) {
   console.log("*** ServerStoryPage", { isServer, page: props.page });
+  const isClientMounted = useAppData().isClientMounted;
   const dataStore = useDataStore();
   const refreshStore = useRefreshStore();
   const messagesStore = useMessagesStore();
-  const serviceWorker = useServiceWorkerStore();
 
-  const data = createAsync(async (currentValue) => {
-    if (!isServer) {
-      if (currentValue && Array.isArray(currentValue)) {
-        return currentValue as HnItem[];
-      }
-      if (serviceWorker.isOfflineMode()) {
-        return [] as HnItem[];
-      }
+  const data = createAsync(async () => {
+    const isClient = untrack(() => isClientMounted());
+
+    console.log("*** getStoryListByType query", {
+      isServer,
+      isClient,
+      page: props.page,
+    });
+
+    if (isClient) {
+      const list = await dataStore.getContentForPage(props.page);
+
+      return { result: list, startedFromServer: false };
     }
+
     return getStoryListByType(props.page);
   });
 
   const summaries = createMemo(() => {
-    const fromServer = data.latest;
-    if (fromServer && Array.isArray(fromServer) && fromServer.length > 0) {
-      return mapStoriesToSummaries(fromServer);
+    const fromQuery = data.latest?.result;
+    if (fromQuery && fromQuery.type === "fullData") {
+      // we need to map the full data to summaries
+      return mapStoriesToSummaries(fromQuery.data);
     }
-    const page = props.page as StoryPage;
-    return dataStore.storyListStore[page]?.data;
+    return fromQuery?.data;
   });
 
   const lastUpdatedTs = createMemo(() => {
@@ -55,14 +67,15 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
   });
 
   createEffect(() => {
-    const p = props.page;
-    const d = data.latest;
-    if (!d || !Array.isArray(d) || serviceWorker.isOfflineMode()) {
+    const p = props.page as StoryPage;
+    const latest = data.latest;
+    const d = latest?.result;
+    if (!latest?.startedFromServer || !d || !Array.isArray(d)) {
       return;
     }
 
     console.log("*** persisting story list", p, d.length);
-    void dataStore.persistStoryList(p as StoryPage, d as HnItem[]);
+    void dataStore.persistStoryList(p, d);
   });
 
   createRenderEffect(() => {
@@ -89,21 +102,11 @@ export function ServerStoryPage(props: { page: TopStoriesType }) {
     });
   });
 
-  createEffect(() => {
-    const page = props.page as StoryPage;
-    messagesStore.addMessage("refresh", "timestamps", {
-      page,
-      updated: lastUpdatedTs(),
-      requested: lastRequestedTs(),
-    });
-  });
-
   return (
     <HnStoryList
       items={summaries()}
       sortType={props.page === "topstories" ? undefined : "score"}
       isLoading={dataStore.isLoadingData()}
-      isOffline={serviceWorker.isOfflineMode()}
       lastUpdatedTs={lastUpdatedTs()}
       lastRequestedTs={lastRequestedTs()}
       onRefresh={dataStore.refreshActive}

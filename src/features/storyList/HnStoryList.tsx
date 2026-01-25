@@ -2,7 +2,10 @@ import { createMemo, For, Show } from "solid-js";
 
 import { Shell } from "~/components/Icon";
 import { PullToRefresh } from "~/components/PullToRefresh";
-import { useReadItemsStore } from "~/contexts/AppDataContext";
+import {
+  useReadItemsStore,
+  useServiceWorkerStore,
+} from "~/contexts/AppDataContext";
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { timeSince } from "~/lib/utils";
 import { HnStorySummary } from "~/models/interfaces";
@@ -13,7 +16,7 @@ interface HnStoryListProps {
   items?: HnStorySummary[];
   sortType?: "score";
   isLoading: boolean;
-  isOffline: boolean;
+
   lastUpdatedTs?: number;
   lastRequestedTs?: number;
   onRefresh: () => Promise<void> | void;
@@ -21,6 +24,9 @@ interface HnStoryListProps {
 
 export function HnStoryList(props: HnStoryListProps) {
   const readItemsStore = useReadItemsStore();
+
+  const serviceWorker = useServiceWorkerStore();
+  const isOffline = serviceWorker.isOfflineMode;
 
   // server will not have any stories to render since we rely on createEffect
   // render 0 here to avoid hydration mismatch
@@ -67,7 +73,7 @@ export function HnStoryList(props: HnStoryListProps) {
         }
       >
         <PullToRefresh
-          disabled={props.isLoading || props.isOffline}
+          disabled={props.isLoading}
           onRefresh={props.onRefresh}
           // message={pullMessage()}
         >
@@ -77,7 +83,7 @@ export function HnStoryList(props: HnStoryListProps) {
                 type="button"
                 title="Refresh now"
                 onClick={() => {
-                  if (props.isOffline || props.isLoading) {
+                  if (isOffline() || props.isLoading) {
                     return;
                   }
                   props.onRefresh();
@@ -99,7 +105,7 @@ export function HnStoryList(props: HnStoryListProps) {
                   type="button"
                   title="Refresh now"
                   onClick={() => {
-                    if (props.isOffline || props.isLoading) {
+                    if (isOffline() || props.isLoading) {
                       return;
                     }
                     props.onRefresh();

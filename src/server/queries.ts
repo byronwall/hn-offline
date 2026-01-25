@@ -2,6 +2,7 @@ import { query } from "@solidjs/router";
 import { isServer } from "solid-js/web";
 
 import { HnItem, TopStoriesType } from "~/models/interfaces";
+import { ContentForPage } from "~/stores/useDataStore";
 
 import { getFullDataForIds } from "./getFullDataForIds";
 import { getTopStories } from "./getTopStories";
@@ -31,8 +32,16 @@ export const getStoryById = queryWithServerInfo(async (id: number) => {
   return story;
 }, "story-by-id");
 
-export const getStoryListByType = query(async (type: TopStoriesType) => {
-  "use server";
+export const getStoryListByType = queryWithServerInfo(
+  async (type: TopStoriesType) => {
+    "use server";
 
-  return (await getTopStories(type)) as HnItem[];
-}, "story-list-by-type");
+    const contentObj: ContentForPage = {
+      type: "fullData",
+      data: (await getTopStories(type)) as HnItem[],
+    };
+
+    return contentObj;
+  },
+  "story-list-by-type"
+);

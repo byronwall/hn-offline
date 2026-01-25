@@ -24,7 +24,8 @@ export async function fetchAllStoryDataForPage(
     if (options?.force) {
       await revalidate(getStoryListByType.keyFor(page));
     }
-    const rawData = (await getStoryListByType(page)) as HnItem[];
+    const response = await getStoryListByType(page);
+    const rawData = response?.result?.data ?? [];
 
     // remove any nulls or undefineds
     const data = rawData.filter(Boolean);
