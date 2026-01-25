@@ -1,4 +1,4 @@
-import { createEffect, onMount, Show } from "solid-js";
+import { createEffect, onMount } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
 import {
@@ -68,10 +68,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
   const comments = () => (story()?.kidsObj || []).filter(isValidComment);
 
-  const isComment = () => story()?.type === "comment";
-  const parentId = () => story()?.parent;
-  const rootId = () => story()?.root;
-
   function handleStoryTextClick() {
     if (!story()?.text || storyId() === undefined) {
       return;
@@ -96,11 +92,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       onRefresh={dataStore.refreshActive}
     >
       <div class="relative pb-[70vh]">
-        <Show when={isComment() && parentId()} keyed>
-          {(parent) => (
-            <HnStoryCommentBanner parentId={parent} rootId={rootId()} />
-          )}
-        </Show>
+        <HnStoryCommentBanner story={story()} />
         <HnStoryTitle story={story()} />
         <HnStoryContentCard
           story={story()}
