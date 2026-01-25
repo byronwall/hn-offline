@@ -12,7 +12,6 @@ import {
 } from "~/contexts/AppDataContext";
 import { getColorsForStory } from "~/lib/getColorsForStory";
 import { isValidComment } from "~/lib/isValidComment";
-import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 
 import { HnCommentList } from "./HnCommentList";
 import { HnStoryCommentBanner } from "./HnStoryCommentBanner";
@@ -38,18 +37,13 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const story = () => props.story;
   const storyId = () => story()?.id;
 
-  const textToRender = () =>
-    processHtmlAndTruncateAnchorText(story()?.text || "");
-
   createEffect(() => {
     if (!story()) {
       return;
     }
 
     messagesStore.addMessage("HnStoryPage", "update color map");
-
-    const colors = getColorsForStory(story());
-    colorMapStore.setColorMap(colors);
+    colorMapStore.setColorMap(getColorsForStory(story()));
   });
 
   onMount(() => {
@@ -107,21 +101,14 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
             <HnStoryCommentBanner parentId={parent} rootId={rootId()} />
           )}
         </Show>
-        <HnStoryTitle title={story()?.title} url={story()?.url} />
+        <HnStoryTitle story={story()} />
         <HnStoryContentCard
-          author={story()?.by}
-          score={story()?.score}
-          time={story()?.time}
-          url={story()?.url}
-          textHtml={textToRender()}
-          hasText={story()?.text !== undefined}
+          story={story()}
           isTextOpen={isTextOpen()}
-          flashColor={
-            colorMapStore.colorMap()[story()?.by ?? ""] ?? "hsl(30, 80%, 65%)"
-          }
           onToggleText={handleStoryTextClick}
         />
 
+        {/* TODO: on server load + first client pass, just show a skeleton */}
         <div class="user-text">
           <HnCommentList
             childComments={comments()}

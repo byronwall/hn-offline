@@ -1,21 +1,31 @@
 import { Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
+import { useColorMapStore } from "~/contexts/AppDataContext";
+import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { cn, getDomain, shareSafely, timeSince } from "~/lib/utils";
 
+import type { HnItem } from "~/models/interfaces";
+
 type HnStoryContentCardProps = {
-  author?: string;
-  score?: number;
-  time?: number;
-  url?: string;
-  textHtml: string;
-  hasText: boolean;
+  story?: HnItem | undefined;
   isTextOpen: boolean;
-  flashColor: string;
   onToggleText: () => void;
 };
 
 export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
+  const colorMapStore = useColorMapStore();
+
+  const author = () => props.story?.by;
+  const score = () => props.story?.score;
+  const time = () => props.story?.time;
+  const url = () => props.story?.url;
+  const hasText = () => props.story?.text !== undefined;
+  const textHtml = () =>
+    processHtmlAndTruncateAnchorText(props.story?.text || "");
+  const flashColor = () =>
+    colorMapStore.colorMap()[author() ?? ""] ?? "hsl(30, 80%, 65%)";
+
   const handleShareClick = async (event: MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -27,35 +37,35 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
     <div
       class={cn(
         {
-          "rounded-tl pr-2 pl-4": props.hasText,
+          "rounded-tl pr-2 pl-4": hasText(),
           collapsed: !props.isTextOpen,
         },
         "bp3-card"
       )}
       onClick={() => props.onToggleText()}
       style={{
-        "--flash-color": props.flashColor,
+        "--flash-color": flashColor(),
         "padding-left": "16px",
       }}
     >
       <div class="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-slate-700">
-        <span class="font-medium">{props.author}</span>
+        <span class="font-medium">{author()}</span>
         <span class="text-slate-300 select-none" aria-hidden="true">
           |
         </span>
         <span>
-          {props.score}
+          {score()}
           {" points"}
         </span>
         <span class="text-slate-300 select-none" aria-hidden="true">
           |
         </span>
-        <span>{timeSince(props.time)}</span>
+        <span>{timeSince(time())}</span>
         <span class="text-slate-300 select-none" aria-hidden="true">
           |
         </span>
         <span class="truncate font-mono text-[14px] text-slate-600">
-          {getDomain(props.url)}
+          {getDomain(url())}
         </span>
 
         <span class="text-slate-300 select-none" aria-hidden="true">
@@ -70,10 +80,10 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
         </button>
       </div>
 
-      <Show when={props.hasText && props.isTextOpen}>
+      <Show when={hasText() && props.isTextOpen}>
         <div>
           {/*  eslint-disable-next-line solid/no-innerhtml */}
-          <p class="user-text break-words" innerHTML={props.textHtml} />
+          <p class="user-text break-words" innerHTML={textHtml()} />
         </div>
       </Show>
     </div>

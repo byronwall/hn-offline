@@ -9,6 +9,9 @@ guidelines from comp_refs.
 
 ### Quick rules
 
+- Props
+  - Avoid accessor functions in props; pass the object/value directly when possible.
+
 - Generated output
   - If styles/types look wrong, run `pnpm prepare` (or `pnpm dev`, which runs it first).
 - Data loading (SolidStart)
