@@ -69,15 +69,12 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       onRefresh={dataStore.refreshActive}
     >
       <div class="relative pb-[70vh]">
-        <div>startedFromServer: {props.startedFromServer.toString()}</div>
         <HnStoryCommentBanner story={story()} />
         <HnStoryTitle story={story()} />
         <HnStoryContentCard
           story={story()}
           firstCommentId={comments()[0]?.id}
         />
-
-        {/* TODO: on server load + first client pass, just show a skeleton */}
 
         <HnCommentList
           childComments={comments()}
