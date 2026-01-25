@@ -3,11 +3,9 @@ import { createEffect, onMount } from "solid-js";
 import { PullToRefresh } from "~/components/PullToRefresh";
 import {
   useColorMapStore,
-  useCommentStore,
   useDataStore,
   useMessagesStore,
   useReadItemsStore,
-  useScrollStore,
   useServiceWorkerStore,
 } from "~/contexts/AppDataContext";
 import { getColorsForStory } from "~/lib/getColorsForStory";
@@ -28,14 +26,11 @@ interface HnStoryPageProps {
 export const HnStoryPage = (props: HnStoryPageProps) => {
   const colorMapStore = useColorMapStore();
   const messagesStore = useMessagesStore();
-  const scrollStore = useScrollStore();
   const serviceWorker = useServiceWorkerStore();
-  const commentStore = useCommentStore();
   const dataStore = useDataStore();
   const readItemsStore = useReadItemsStore();
 
   const story = () => props.story;
-  const storyId = () => story()?.id;
 
   createEffect(() => {
     if (!story()) {
@@ -56,35 +51,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     readItemsStore.saveIdToReadList(props.id);
   });
 
-  // Guard against scenarios which remove DOM node too early
-  // Need SSR to match the DOM
-  // need comment store to be ready
-  const isTextOpen = () => {
-    if (storyId() === undefined) {
-      return true;
-    }
-    return commentStore.collapsedTimestamps[storyId()!] === undefined;
-  };
-
   const comments = () => (story()?.kidsObj || []).filter(isValidComment);
-
-  function handleStoryTextClick() {
-    if (!story()?.text || storyId() === undefined) {
-      return;
-    }
-
-    const newIsCollapsed = !!isTextOpen();
-    commentStore.updateCollapsedState(storyId()!, newIsCollapsed);
-
-    // scroll to first comment if it exists
-    // schedule out 200ms to allow the collapse animation to finish
-    setTimeout(() => {
-      const firstCommentId = comments()[0]?.id;
-      if (newIsCollapsed && firstCommentId) {
-        scrollStore.setScrollToId(firstCommentId);
-      }
-    }, 100);
-  }
 
   return (
     <PullToRefresh
@@ -96,8 +63,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
         <HnStoryTitle story={story()} />
         <HnStoryContentCard
           story={story()}
-          isTextOpen={isTextOpen()}
-          onToggleText={handleStoryTextClick}
+          firstCommentId={comments()[0]?.id}
         />
 
         {/* TODO: on server load + first client pass, just show a skeleton */}
