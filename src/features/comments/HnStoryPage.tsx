@@ -37,13 +37,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const isClientMounted = useAppData().isClientMounted;
 
   createEffect(() => {
-    console.log("*** HnStoryPage skeleton check", {
-      startedFromServer: props.startedFromServer,
-      isClientMounted: isClientMounted(),
-    });
-  });
-
-  createEffect(() => {
     if (!story()) {
       return;
     }
