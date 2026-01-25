@@ -2,10 +2,12 @@ import { Meta, Title } from "@solidjs/meta";
 
 import GlobalErrorOverlay from "./components/GlobalErrorOverlay";
 import { NavBar } from "./components/NavBar";
+import { createClickGuard } from "./createClickGuard";
 
 import type { ParentProps } from "solid-js";
 
 export function AppShell(props: ParentProps) {
+  createClickGuard();
   return (
     <main class="mx-auto flex min-h-screen w-full max-w-[640px] flex-col items-center justify-between bg-white">
       <Title>HN Offline</Title>

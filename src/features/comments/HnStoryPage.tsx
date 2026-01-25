@@ -1,13 +1,4 @@
-import { useNavigate } from "@solidjs/router";
-import {
-  createEffect,
-  Match,
-  onCleanup,
-  onMount,
-  Show,
-  Switch,
-} from "solid-js";
-import { isServer } from "solid-js/web";
+import { createEffect, Match, onMount, Show, Switch } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { PullToRefresh } from "~/components/PullToRefresh";
@@ -35,8 +26,6 @@ interface HnStoryPageProps {
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
-  console.log("*** HnStoryPage", { isServer, props });
-
   const colorMapStore = useColorMapStore();
   const messagesStore = useMessagesStore();
   const scrollStore = useScrollStore();
@@ -57,8 +46,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
 
     await shareSafely({ url: window.location.href });
   };
-
-  const navigate = useNavigate();
 
   createEffect(() => {
     if (!story()) {
@@ -81,48 +68,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     readItemsStore.saveIdToReadList(props.id);
   });
 
-  onMount(() => {
-    const anchorClickHandler = (e: MouseEvent) => {
-      if (e.target instanceof HTMLElement && e.target.tagName !== "A") {
-        return;
-      }
-
-      const link = e.target as HTMLAnchorElement;
-
-      if (!link || !link.href) {
-        return;
-      }
-
-      const pathName = new URL(link.href).pathname;
-
-      const internalPaths = ["/story", "/day", "/week", "/month"];
-      if (internalPaths.some((path) => pathName.startsWith(path))) {
-        // let the navigation happen
-        return;
-      }
-
-      const regex = /https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/;
-      const matches = link.href.match(regex);
-
-      if (matches === null) {
-        // external link = open in new tab
-        link.target = "_blank";
-        return;
-      }
-
-      // we have an HN link - reroute internally
-      navigate("/story/" + matches[1]);
-      e.preventDefault();
-      return false;
-    };
-
-    document.body.addEventListener("click", anchorClickHandler);
-
-    onCleanup(() => {
-      document.body.removeEventListener("click", anchorClickHandler);
-    });
-  });
-
   // Guard against scenarios which remove DOM node too early
   // Need SSR to match the DOM
   // need comment store to be ready
@@ -134,8 +79,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   };
 
   const comments = () => (story()?.kidsObj || []).filter(isValidComment);
-
-  console.log("*** comments", comments());
 
   const isComment = () => story()?.type === "comment";
   const parentId = () => story()?.parent;
@@ -158,11 +101,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       }
     }, 100);
   }
-
-  createEffect(() => {
-    // log comments
-    console.log("*** comments", comments());
-  });
 
   return (
     <PullToRefresh
