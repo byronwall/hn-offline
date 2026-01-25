@@ -3,8 +3,10 @@ import {
   createMemo,
   createSignal,
   For,
+  Match,
   onCleanup,
   Show,
+  Switch,
 } from "solid-js";
 
 import { KidsObj3 } from "~/models/interfaces";
@@ -15,12 +17,19 @@ interface HnCommentListProps {
   childComments: Array<KidsObj3 | null>;
   depth: number;
   authorChain: (string | undefined)[];
+  skeletonOnly?: boolean;
 }
 
 const BATCH_SIZE = 1;
 const PAD_PX = 200;
 
 export function HnCommentList(props: HnCommentListProps) {
+  createEffect(() => {
+    console.log("*** HnCommentList", {
+      skeletonOnly: props.skeletonOnly,
+    });
+  });
+
   const children = createMemo(
     () => props.childComments.filter(Boolean) as KidsObj3[]
   );
@@ -128,20 +137,25 @@ export function HnCommentList(props: HnCommentListProps) {
   });
 
   return (
-    <>
-      <For each={visible()}>
-        {(child) => (
-          <HnComment
-            comment={child}
-            depth={props.depth}
-            authorChain={props.authorChain}
-          />
-        )}
-      </For>
+    <Switch>
+      <Match when={props.skeletonOnly}>
+        <div> skeleton</div>
+      </Match>
+      <Match when={!props.skeletonOnly}>
+        <For each={visible()}>
+          {(child) => (
+            <HnComment
+              comment={child}
+              depth={props.depth}
+              authorChain={props.authorChain}
+            />
+          )}
+        </For>
 
-      <Show when={showMore()}>
-        <div ref={setSentinel} style={{ height: "1px" }} />
-      </Show>
-    </>
+        <Show when={showMore()}>
+          <div ref={setSentinel} style={{ height: "1px" }} />
+        </Show>
+      </Match>
+    </Switch>
   );
 }

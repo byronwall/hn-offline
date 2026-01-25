@@ -2,6 +2,7 @@ import { createEffect, onMount } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
 import {
+  useAppData,
   useColorMapStore,
   useDataStore,
   useMessagesStore,
@@ -21,6 +22,7 @@ import type { HnItem } from "~/models/interfaces";
 interface HnStoryPageProps {
   id: number | undefined;
   story?: HnItem | undefined;
+  startedFromServer: boolean;
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
@@ -31,6 +33,14 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   const readItemsStore = useReadItemsStore();
 
   const story = () => props.story;
+  const isClientMounted = useAppData().isClientMounted;
+
+  createEffect(() => {
+    console.log("*** HnStoryPage skeleton check", {
+      startedFromServer: props.startedFromServer,
+      isClientMounted: isClientMounted(),
+    });
+  });
 
   createEffect(() => {
     if (!story()) {
@@ -59,6 +69,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       onRefresh={dataStore.refreshActive}
     >
       <div class="relative pb-[70vh]">
+        <div>startedFromServer: {props.startedFromServer.toString()}</div>
         <HnStoryCommentBanner story={story()} />
         <HnStoryTitle story={story()} />
         <HnStoryContentCard
@@ -67,13 +78,13 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
         />
 
         {/* TODO: on server load + first client pass, just show a skeleton */}
-        <div class="user-text">
-          <HnCommentList
-            childComments={comments()}
-            depth={0}
-            authorChain={[]}
-          />
-        </div>
+
+        <HnCommentList
+          childComments={comments()}
+          depth={0}
+          authorChain={[]}
+          skeletonOnly={props.startedFromServer && !isClientMounted()}
+        />
       </div>
     </PullToRefresh>
   );

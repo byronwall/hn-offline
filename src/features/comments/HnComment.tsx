@@ -166,7 +166,7 @@ export function HnComment(props: HnCommentProps) {
   return (
     <Show when={isValidComment(props.comment)} fallback={null}>
       <div
-        class={cn("bp3-card relative", { collapsed: !isOpen() })}
+        class={cn("bp3-card user-text relative", { collapsed: !isOpen() })}
         onClick={handleCardClick}
         style={{
           "--flash-color": borderColor(),

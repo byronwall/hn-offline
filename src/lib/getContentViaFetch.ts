@@ -25,7 +25,8 @@ export async function fetchObjById(
   if (options?.force) {
     await revalidate(getStoryById.keyFor(id));
   }
-  const data = await getStoryById(id);
+  const _data = await getStoryById(id);
+  const data = _data?.result;
 
   if (!data || "error" in data) {
     console.error(data);

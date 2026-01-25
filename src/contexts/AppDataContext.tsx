@@ -1,6 +1,8 @@
 // @refresh reload
 import {
+  Accessor,
   createContext,
+  createSignal,
   onCleanup,
   onMount,
   type ParentProps,
@@ -44,6 +46,7 @@ type AppDataContextValue = {
   scroll: ScrollStore;
   activeStory: ActiveStoryStore;
   colorMap: ColorMapStore;
+  isClientMounted: Accessor<boolean>;
 };
 
 const AppDataContext = createContext<AppDataContextValue>();
@@ -62,6 +65,13 @@ export function AppDataProvider(props: ParentProps) {
   const colorMap = createColorMapStore();
 
   console.log("*** AppDataProvider", { localForage });
+
+  // non-reactive flag to track if the client has been mounted
+  // consumers can check this but it's not reactive ON PURPOSE
+  const [isClientMounted, setIsClientMounted] = createSignal(false);
+  onMount(() => {
+    setIsClientMounted(true);
+  });
 
   const readItems = createReadItemsStore(
     messages.addMessage,
@@ -266,6 +276,7 @@ export function AppDataProvider(props: ParentProps) {
         scroll,
         activeStory,
         colorMap,
+        isClientMounted,
       }}
     >
       {props.children}

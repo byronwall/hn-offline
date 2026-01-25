@@ -70,7 +70,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
           "rounded-tl pr-2 pl-4": hasText(),
           collapsed: !isTextOpen(),
         },
-        "bp3-card"
+        "bp3-card user-text"
       )}
       onClick={handleStoryTextClick}
       style={{
