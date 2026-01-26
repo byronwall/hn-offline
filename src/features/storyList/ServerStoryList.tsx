@@ -1,5 +1,4 @@
 import { createAsync } from "@solidjs/router";
-import { fromArray } from "happy-dom/lib/PropertySymbol";
 import {
   createEffect,
   createMemo,
@@ -15,7 +14,7 @@ import {
   useRefreshStore,
 } from "~/contexts/AppDataContext";
 import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
-import { HnItem, TopStoriesType } from "~/models/interfaces";
+import { TopStoriesType } from "~/models/interfaces";
 import { getStoryListByType } from "~/server/queries";
 
 import { HnStoryList } from "./HnStoryList";
@@ -56,6 +55,8 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
     return fromQuery?.data;
   });
 
+  // TODO: need a method on the refreshStore that tracks the new active type
+
   const lastUpdatedTs = createMemo(() => {
     const page = props.page as StoryPage;
     return refreshStore.refreshTimestamps[page];
@@ -65,6 +66,8 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
     const page = props.page as StoryPage;
     return refreshStore.refreshRequestedTimestamps[page];
   });
+
+  // TODO: persistence should move out of the render path
 
   createEffect(() => {
     const p = props.page as StoryPage;
@@ -91,15 +94,6 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
     if (refreshStore.refreshRequestedTimestamps[page] === undefined) {
       refreshStore.setRefreshRequestedTimestamp(page);
     }
-  });
-
-  createEffect(() => {
-    if (!summaries()) {
-      return;
-    }
-    messagesStore.addMessage("render", "set summaries", {
-      count: summaries()?.length ?? 0,
-    });
   });
 
   return (

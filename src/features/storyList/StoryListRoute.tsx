@@ -17,6 +17,7 @@ export function StoryListRoute(props: { page: TopStoriesType }) {
     <>
       <Title>HN Offline: {title()}</Title>
       <Meta name="description" content={`Hacker News ${props.page} page`} />
+      {/* TODO: add a suspense here to trigger the skeleton */}
       <ServerStoryList page={props.page} />
     </>
   );
