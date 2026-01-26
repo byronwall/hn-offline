@@ -200,12 +200,12 @@ export function HnComment(props: HnCommentProps) {
             <Show when={isOpen()}>
               <span class="text-slate-300 select-none">|</span>
               <span>{timeSince(props.comment.time)}</span>
-              <span class="pointer-events-none text-slate-300 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 select-none">
+              <span class="pointer-events-none text-slate-300 opacity-0 transition-opacity select-none group-hover:opacity-100 [@media(hover:none)]:opacity-100">
                 |
               </span>
               <button
                 onClick={handleShareClick}
-                class="pointer-events-none text-slate-400 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 hover:text-orange-500 focus-visible:pointer-events-auto focus-visible:opacity-100"
+                class="text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-orange-500 [@media(hover:none)]:opacity-100"
                 aria-label="Share"
               >
                 <ArrowUpRightFromSquare width={16} />
