@@ -5,6 +5,7 @@ import {
   createRenderEffect,
   untrack,
 } from "solid-js";
+import { createStore, reconcile } from "solid-js/store";
 import { isServer } from "solid-js/web";
 
 import {
@@ -20,7 +21,7 @@ import { getStoryListByType } from "~/server/queries";
 import { HnStoryListBody } from "./HnStoryListBody";
 import { HnStoryListToggle } from "./HnStoryListToggle";
 
-import type { StoryPage } from "~/models/interfaces";
+import type { HnStorySummary, StoryPage } from "~/models/interfaces";
 
 export function ServerStoryList(props: { page: TopStoriesType }) {
   console.log("*** ServerStoryPage", { isServer, page: props.page });
@@ -56,6 +57,19 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
     return fromQuery?.data;
   });
 
+  const [summaryStore, setSummaryStore] = createStore<HnStorySummary[]>(
+    data.latest?.result?.data ?? []
+  );
+
+  createEffect(() => {
+    // in theory this store should give a nice reorder effect for auto-animate?
+    const sums = summaries();
+    if (!sums) {
+      return;
+    }
+    setSummaryStore(reconcile(sums));
+  });
+
   // TODO: persistence should move out of the render path
 
   createEffect(() => {
@@ -87,7 +101,7 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
 
   return (
     <>
-      <HnStoryListBody items={summaries()} page={props.page} />
+      <HnStoryListBody items={summaryStore} page={props.page} />
       <HnStoryListToggle />
     </>
   );

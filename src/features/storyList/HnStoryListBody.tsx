@@ -1,3 +1,4 @@
+import { createAutoAnimate } from "@formkit/auto-animate/solid";
 import { createMemo, Show } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
@@ -16,6 +17,7 @@ interface HnStoryListBodyProps {
 
 export function HnStoryListBody(props: HnStoryListBodyProps) {
   const dataStore = useDataStore();
+  const [listParent] = createAutoAnimate();
   const isLoading = () => dataStore.isLoadingData();
   const onRefresh = () => dataStore.refreshActive();
 
@@ -42,7 +44,7 @@ export function HnStoryListBody(props: HnStoryListBodyProps) {
     >
       <PullToRefresh disabled={isLoading()} onRefresh={onRefresh}>
         <HnStoryListRefreshBar page={props.page} />
-        <div class="grid grid-cols-[1fr_1fr_1fr_3fr]">
+        <div class="grid grid-cols-[1fr_1fr_1fr_3fr]" ref={listParent}>
           <HnStoryListItems items={itemsToRender() ?? []} />
         </div>
       </PullToRefresh>
