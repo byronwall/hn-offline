@@ -17,7 +17,8 @@ import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
 import { TopStoriesType } from "~/models/interfaces";
 import { getStoryListByType } from "~/server/queries";
 
-import { HnStoryList } from "./HnStoryList";
+import { HnStoryListBody } from "./HnStoryListBody";
+import { HnStoryListToggle } from "./HnStoryListToggle";
 
 import type { StoryPage } from "~/models/interfaces";
 
@@ -85,9 +86,9 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
   });
 
   return (
-    <HnStoryList
-      items={summaries()}
-      page={props.page}
-    />
+    <>
+      <HnStoryListBody items={summaries()} page={props.page} />
+      <HnStoryListToggle />
+    </>
   );
 }
