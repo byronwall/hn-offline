@@ -194,7 +194,7 @@ export function HnComment(props: HnCommentProps) {
             />
           </div>
         )}
-        <div class="group">
+        <div class="group flex flex-col gap-1">
           <p
             style={{
               "font-weight": isOpen() ? 450 : 300,
@@ -206,7 +206,7 @@ export function HnComment(props: HnCommentProps) {
             }}
             ref={setDivRef}
             class={cn(
-              "mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px]",
+              "flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px]",
               isOpen() ? "text-slate-700" : "text-slate-500"
             )}
           >
@@ -233,7 +233,7 @@ export function HnComment(props: HnCommentProps) {
               <span class="text-slate-300 select-none">|</span>
               <button
                 onClick={handleShareClick}
-                class="text-slate-400 hover:text-orange-500 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
+                class="pointer-events-none text-slate-400 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 hover:text-orange-500 focus-visible:pointer-events-auto focus-visible:opacity-100"
                 aria-label="Share"
               >
                 <ArrowUpRightFromSquare width={16} />

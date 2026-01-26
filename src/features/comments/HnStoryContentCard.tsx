@@ -60,7 +60,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
           "rounded-tl pr-2 pl-4": hasText(),
           collapsed: !isTextOpen(),
         },
-        "bp3-card user-text group"
+        "bp3-card group flex flex-col gap-1"
       )}
       onClick={handleStoryTextClick}
       style={{
@@ -68,7 +68,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
         "padding-left": "16px",
       }}
     >
-      <div class="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-slate-700">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-slate-700">
         <span class="font-medium">{author()}</span>
         <span class="text-slate-300 select-none" aria-hidden="true">
           |

@@ -19,7 +19,7 @@ export function formatCommentText(html: string): string {
       // It's a quote. Wrap it.
       // We can use a border-l and some padding/color to verify.
       // Using consistent tailwind classes for "block quote" look.
-      return `<div class="my-2 rounded-md bg-slate-50 px-3 py-2 italic text-slate-600">${segment}</div>`;
+      return `<div class="rounded-md bg-slate-50 px-3 py-2 italic text-slate-600">${segment}</div>`;
     }
 
     // Check if it starts with <pre><code> which is code blocks in HN
@@ -57,7 +57,9 @@ export function formatCommentText(html: string): string {
             }
             commonPrefix = commonPrefix.slice(0, j);
 
-            if (commonPrefix.length === 0) break;
+            if (commonPrefix.length === 0) {
+              break;
+            }
           }
 
           // 3. Strip indent
