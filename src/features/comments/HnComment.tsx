@@ -1,20 +1,17 @@
-import { decode } from "html-entities";
-import sanitizeHtml from "sanitize-html";
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
-import { formatCommentText } from "~/lib/commentUtils";
-import { createHasRendered } from "~/lib/createHasRendered";
-import { isValidComment } from "~/lib/isValidComment";
-import { cn, shareSafely, timeSince } from "~/lib/utils";
-import { KidsObj3 } from "~/models/interfaces";
-import { activeStoryData } from "~/stores/activeStorySignal";
-import { colorMap } from "~/stores/colorMap";
-import { clearScrollToId, scrollToIdSignal } from "~/stores/scrollSignal";
 import {
-  collapsedTimestamps,
-  handleCollapseEvent,
-} from "~/stores/useCommentStore";
+  useActiveStoryStore,
+  useColorMapStore,
+  useCommentStore,
+  useScrollStore,
+} from "~/contexts/AppDataContext";
+import { formatCommentText } from "~/lib/commentUtils";
+import { isValidComment } from "~/lib/isValidComment";
+import { shareHnTextContent } from "~/lib/shareHnTextContent";
+import { cn, timeSince } from "~/lib/utils";
+import { KidsObj3 } from "~/models/interfaces";
 
 import { HnCommentList } from "./HnCommentList";
 
@@ -25,23 +22,28 @@ export interface HnCommentProps {
 }
 
 export function HnComment(props: HnCommentProps) {
+  const activeStoryStore = useActiveStoryStore();
+  const colorMapStore = useColorMapStore();
+  const scrollStore = useScrollStore();
+  const commentStore = useCommentStore();
   const [divRef, setDivRef] = createSignal<HTMLDivElement | null>(null);
-
-  const hasRendered = createHasRendered();
 
   // this needs to get one good render so that the DOM matches SSR
   // then it needs to know that the comment store is OK
-  const isOpen = () =>
-    !hasRendered() ||
-    (props.comment?.id && collapsedTimestamps[props.comment.id] === undefined);
+  const isOpen = () => {
+    if (!props.comment?.id) {
+      return true;
+    }
+    return commentStore.collapsedTimestamps[props.comment.id] === undefined;
+  };
 
-  const onCollapse = handleCollapseEvent;
+  const onCollapse = commentStore.handleCollapseEvent;
 
   // derive from store; no extra effects needed
 
   // TODO: review this one
   createEffect(() => {
-    if (scrollToIdSignal() !== props.comment?.id) {
+    if (scrollStore.scrollToId() !== props.comment?.id) {
       return;
     }
 
@@ -61,52 +63,23 @@ export function HnComment(props: HnCommentProps) {
         behavior: "smooth",
       });
 
-      clearScrollToId();
+      scrollStore.clearScrollToId();
     });
   });
 
   const handleShareClick = async (e: MouseEvent) => {
     e.stopPropagation();
-    if (props.comment === null) {
+    if (!props.comment?.id) {
       return;
     }
 
-    let cleanText = sanitizeHtml(props.comment.text || "");
-    cleanText = cleanText.replace(/<a href="([^"]+)">([^<]+)<\/a>/g, "$1");
-    cleanText = cleanText.replace(/<p>/g, "\n");
-    cleanText = cleanText.replace(/<[^>]+>/g, "");
-    cleanText = decode(cleanText);
-
-    const commentUrl = `https://hn.byroni.us/story/${props.comment.id}`;
-    const storyExternalUrl = activeStoryData()?.url;
-    // intentionally unused: story title not required in footer
-    const storyId = activeStoryData()?.id;
-    const storyHnUrl = storyId ? `https://hn.byroni.us/story/${storyId}` : "";
-    // storyUrl no longer used; keep only HN + external links
-
-    const shareTextLines = [
-      `Comment by ${props.comment.by} on HN: ${commentUrl}`,
-      "",
-      cleanText,
-    ];
-
-    if (storyHnUrl || storyExternalUrl) {
-      shareTextLines.push("");
-      if (storyHnUrl) {
-        shareTextLines.push(`HN story: ${storyHnUrl}`);
-      }
-      if (storyExternalUrl) {
-        shareTextLines.push(`Content: ${storyExternalUrl}`);
-      }
-    }
-
-    const shareText = shareTextLines.join("\n");
-
-    console.log("share text", shareText);
-
-    await shareSafely({
-      title: `HN Comment by ${props.comment.by}`,
-      text: shareText,
+    await shareHnTextContent({
+      contentLabel: "Comment",
+      contentId: props.comment.id,
+      author: props.comment.by,
+      contentHtml: props.comment.text || "",
+      storyId: activeStoryStore.activeStoryData()?.id,
+      storyExternalUrl: activeStoryStore.activeStoryData()?.url,
     });
   };
 
@@ -156,21 +129,19 @@ export function HnComment(props: HnCommentProps) {
   });
 
   const borderColor = () =>
-    colorMap()[props.comment?.by ?? ""] ?? "transparent";
+    colorMapStore.colorMap()[props.comment?.by ?? ""] ?? "transparent";
   const childComments = () =>
     (props.comment.kidsObj || []).filter(isValidComment);
 
   return (
     <Show when={isValidComment(props.comment)} fallback={null}>
       <div
-        class={cn("bp3-card relative", { collapsed: !isOpen() })}
+        class={cn("bp3-card user-text relative", { collapsed: !isOpen() })}
         onClick={handleCardClick}
         style={{
           "--flash-color": borderColor(),
           "padding-left": `${16 + Math.max(4 - props.depth, 0)}px`,
           "margin-left": 0,
-          "border-top-left-radius": "4px",
-          "border-bottom-left-radius": "0",
         }}
       >
         {stickyInfo().shouldShowBar && isOpen() && (
@@ -183,69 +154,73 @@ export function HnComment(props: HnCommentProps) {
             }}
           >
             <div
+              class="comment-connector"
               style={{
-                position: "absolute",
                 top: "7px",
                 left: `${stickyInfo().leftPos - paddingByDepth[props.depth]}px`,
-                width: `${Math.abs(stickyInfo().leftPos + 4)}px`,
-                "background-color": "white",
-                "box-shadow": `inset 0 4px 6px -2px ${borderColor()}`,
-                height: "13px",
-                "border-top": "3px solid white",
-                "border-bottom": "3px solid white",
+                width: `${Math.abs(stickyInfo().leftPos) + 6}px`,
+                height: "8px",
               }}
             />
           </div>
         )}
-        <p
-          style={{
-            "font-weight": isOpen() ? 450 : 300,
-            "margin-top": `${
-              stickyInfo().shouldShowBar && isOpen()
-                ? -stickyInfo().stickyHeight
-                : 0
-            }px`,
-          }}
-          ref={setDivRef}
-          class={cn(
-            "mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px]",
-            isOpen() ? "text-slate-700" : "text-slate-500"
-          )}
-        >
-          <span
+        <div class="group flex flex-col gap-1">
+          <p
+            style={{
+              "font-weight": isOpen() ? 450 : 300,
+              "margin-top": `${
+                stickyInfo().shouldShowBar && isOpen()
+                  ? -stickyInfo().stickyHeight
+                  : 0
+              }px`,
+            }}
+            ref={setDivRef}
             class={cn(
-              "truncate",
-              isOpen()
-                ? {
-                    "font-bold text-orange-700":
-                      activeStoryData()?.by === props.comment.by,
-                    "font-medium": activeStoryData()?.by !== props.comment.by,
-                  }
-                : "font-normal"
+              "flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px]",
+              isOpen() ? "text-slate-700" : "text-slate-500"
             )}
           >
-            {props.comment.by}
-          </span>
-          <Show when={isOpen()}>
-            <span class="text-slate-300 select-none">|</span>
-            <span>{timeSince(props.comment.time)}</span>
-            <span class="text-slate-300 select-none">|</span>
-            <button
-              onClick={handleShareClick}
-              class="text-slate-400 hover:text-orange-500"
-              aria-label="Share"
+            <span
+              class={cn(
+                "truncate",
+                isOpen()
+                  ? {
+                      "font-bold text-orange-700":
+                        activeStoryStore.activeStoryData()?.by ===
+                        props.comment.by,
+                      "font-medium":
+                        activeStoryStore.activeStoryData()?.by !==
+                        props.comment.by,
+                    }
+                  : "font-normal"
+              )}
             >
-              <ArrowUpRightFromSquare width={16} />
-            </button>
+              {props.comment.by}
+            </span>
+            <Show when={isOpen()}>
+              <span class="text-slate-300 select-none">|</span>
+              <span>{timeSince(props.comment.time)}</span>
+              <span class="pointer-events-none text-slate-300 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 select-none">
+                |
+              </span>
+              <button
+                onClick={handleShareClick}
+                class="pointer-events-none text-slate-400 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 hover:text-orange-500 focus-visible:pointer-events-auto focus-visible:opacity-100"
+                aria-label="Share"
+              >
+                <ArrowUpRightFromSquare width={16} />
+              </button>
+            </Show>
+          </p>
+          <Show when={isOpen()}>
+            <div
+              class="comment"
+              // eslint-disable-next-line solid/no-innerhtml
+              innerHTML={formatCommentText(props.comment.text || "")}
+            />
           </Show>
-        </p>
+        </div>
         <Show when={isOpen()}>
-          {/* eslint-disable-next-line solid/no-innerhtml */}
-          <div
-            class="comment"
-            innerHTML={formatCommentText(props.comment.text || "")}
-          />
-
           <Show when={childComments().length > 0}>
             <HnCommentList
               childComments={childComments()}

@@ -1,10 +1,9 @@
 import { A } from "@solidjs/router";
 
 import { ChevronUp, MessageSquareQuote } from "~/components/Icon";
-import { trueIfRendered } from "~/lib/createHasRendered";
+import { useReadItemsStore } from "~/contexts/AppDataContext";
 import { cn, getDomain, timeSince } from "~/lib/utils";
 import { HnStorySummary } from "~/models/interfaces";
-import { readItems } from "~/stores/useReadItemsStore";
 
 export interface HnStoryProps {
   data: HnStorySummary;
@@ -13,7 +12,8 @@ export interface HnStoryProps {
 }
 
 export function HnListItem(props: HnStoryProps) {
-  const isRead = trueIfRendered(() => readItems[props.data.id] !== undefined);
+  const readItemsStore = useReadItemsStore();
+  const isRead = () => readItemsStore.readItems[props.data.id] !== undefined;
 
   const handleAnimationEnd = (e: AnimationEvent) => {
     console.warn("*** handleAnimationEnd", props.recentFadeOut);

@@ -1,9 +1,19 @@
 import { createSignal } from "solid-js";
 
-const [scrollToId, setScrollToIdSignal] = createSignal<number | undefined>(
-  undefined
-);
+export type ScrollStore = {
+  scrollToId: () => number | undefined;
+  setScrollToId: (id: number | undefined) => void;
+  clearScrollToId: () => void;
+};
 
-export const scrollToIdSignal = scrollToId;
-export const setScrollToId = setScrollToIdSignal;
-export const clearScrollToId = () => setScrollToIdSignal(undefined);
+export function createScrollStore(): ScrollStore {
+  const [scrollToId, setScrollToId] = createSignal<number | undefined>(
+    undefined
+  );
+
+  return {
+    scrollToId,
+    setScrollToId,
+    clearScrollToId: () => setScrollToId(undefined),
+  };
+}

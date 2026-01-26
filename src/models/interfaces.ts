@@ -21,13 +21,7 @@ export interface TopStoriesParams {
   type: TopStoriesType;
 }
 
-export const STORY_TYPE = [
-  "topstories",
-  "day",
-  "week",
-  "month",
-  "offline",
-] as const;
+export const STORY_TYPE = ["topstories", "day", "week", "month"] as const;
 export type TopStoriesType = (typeof STORY_TYPE)[number];
 
 export type StoryPage = "topstories" | "day" | "week";

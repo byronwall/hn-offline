@@ -6,6 +6,16 @@ type AlgoliaRes = { hits: AlgoliaHit[] };
 type AlgoliaHit = { objectID: string };
 
 export class AlgoliaApi {
+  static async getFrontPage(): Promise<number[]> {
+    const options = {
+      uri: `https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=${HITS_PER_PAGE}`,
+      json: true,
+    };
+
+    const results = (await (await fetch(options.uri)).json()) as AlgoliaRes;
+    return results.hits.map((result) => Number.parseInt(result.objectID));
+  }
+
   static async getAllByQuery(query: string): Promise<number[]> {
     const querySafe = encodeURIComponent(query);
 

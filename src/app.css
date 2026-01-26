@@ -61,22 +61,79 @@ pre {
 }
 /* used by the comment */
 .bp3-card {
-  padding-left: 5px;
-  padding-top: 4px;
-  padding-right: 0px;
-  padding-bottom: 0px;
   overflow-wrap: break-word;
-  margin-top: 15px;
+  /* margin-top: 15px; */
 
-  box-shadow: inset 3px 0px 4px -1px var(--flash-color);
-  border-top-width: 0.5px;
-  border-top-color: var(--flash-color);
-
-  border-bottom: none;
+  position: relative;
+  border-radius: 10px;
+  padding-top: 6px;
+  padding-bottom: 10px;
 
   background-color: white;
 
   transition: box-shadow 0.3s ease-in-out;
+}
+
+/* the vertical rail */
+.bp3-card::before {
+  content: "";
+  position: absolute;
+  left: 6px; /* rail x-position */
+  top: 2px; /* start of rail */
+  bottom: 2px; /* end of rail */
+  width: 5px;
+
+  /* soft edge rail */
+  /* soft edge rail */
+  background: linear-gradient(
+    to right,
+    rgb(from var(--flash-color) r g b / 0.45),
+    rgb(from var(--flash-color) r g b / 0.15) 60%,
+    rgb(from var(--flash-color) r g b / 0)
+  );
+
+  /* top/bottom fade without horizontal lines */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 10px,
+    black calc(100% - 10px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 10px,
+    black calc(100% - 10px),
+    transparent
+  );
+
+  pointer-events: none;
+}
+
+.comment-connector {
+  position: absolute;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgb(from var(--flash-color) r g b / 0.45),
+    rgb(from var(--flash-color) r g b / 0.15) 60%,
+    rgb(from var(--flash-color) r g b / 0)
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10px,
+    black calc(100% - 10px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10px,
+    black calc(100% - 10px),
+    transparent
+  );
 }
 
 .collapsed {
@@ -109,6 +166,20 @@ pre {
   to {
     opacity: 0;
     transform: translateY(-100%);
+  }
+}
+
+.comment-skeleton-shimmer {
+  background-size: 200% 100%;
+  animation: comment-skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes comment-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
 

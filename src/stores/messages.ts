@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { type Accessor, createSignal } from "solid-js";
 
 export type Message = {
   id: string;
@@ -8,28 +8,48 @@ export type Message = {
   timestamp: number;
 };
 
-const [messages, setMessages] = createSignal<Message[]>([]);
+export type AddMessage = (
+  key: string,
+  message: string,
+  ...args: unknown[]
+) => void;
 
-export const getMessages = messages;
+export type MessagesStore = {
+  messages: Accessor<Message[]>;
+  addMessage: AddMessage;
+  clearMessages: () => void;
+  removeMessage: (id: string) => void;
+};
 
-export function addMessage(key: string, message: string, ...args: unknown[]) {
-  const entry: Message = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    key,
-    message,
-    args,
-    timestamp: Date.now(),
+export function createMessagesStore(): MessagesStore {
+  const [messages, setMessages] = createSignal<Message[]>([]);
+
+  const addMessage: AddMessage = (key, message, ...args) => {
+    const entry: Message = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      key,
+      message,
+      args,
+      timestamp: Date.now(),
+    };
+
+    console.log("*** addMessage", entry);
+
+    setMessages((prev) => [entry, ...prev].slice(0, 200));
   };
 
-  console.log("*** addMessage", entry);
+  const clearMessages = () => {
+    setMessages([]);
+  };
 
-  setMessages((prev) => [entry, ...prev].slice(0, 200));
-}
+  const removeMessage = (id: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+  };
 
-export function clearMessages() {
-  setMessages([]);
-}
-
-export function removeMessage(id: string) {
-  setMessages((prev) => prev.filter((m) => m.id !== id));
+  return {
+    messages,
+    addMessage,
+    clearMessages,
+    removeMessage,
+  };
 }

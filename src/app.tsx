@@ -1,55 +1,31 @@
-import { Meta, Title } from "@solidjs/meta";
+// @refresh reload
+
+import { MetaProvider } from "@solidjs/meta";
 import { Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
-import { ErrorBoundary, Show, Suspense } from "solid-js";
+import { ErrorBoundary, Suspense } from "solid-js";
+import { isServer } from "solid-js/web";
 
-import GlobalErrorOverlay from "./components/GlobalErrorOverlay";
-import { NavBar } from "./components/NavBar";
-import { StatusBar } from "./components/StatusBar";
-import { showErrorOverlay } from "./stores/errorOverlay";
+import { AppShell } from "./AppShell";
+import { AppDataProvider } from "./contexts/AppDataContext";
+import { Fallback } from "./Fallback";
 
 import "./app.css";
 
 export default function App() {
+  console.log("*** App function", { isServer });
   return (
     <Router
       root={(props) => (
-        <main class="mx-auto flex min-h-screen w-full max-w-[640px] flex-col items-center justify-between bg-white">
-          <Title>HN Offline</Title>
-          <Meta name="description" content="Hacker News Offline" />
-          <NavBar />
-          <div class="h-12 w-full" />
-          <div class="w-full flex-1 border-x border-b border-slate-300 p-1">
-            <ErrorBoundary
-              fallback={(err) => {
-                // Surface the error overlay in all environments
-                showErrorOverlay(err);
-                return (
-                  <div class="flex flex-col items-start gap-2 rounded border border-red-300 bg-red-50 p-3 text-red-800">
-                    <div class="font-semibold">Something went wrong</div>
-                    {/* reload the age */}
-                    <button
-                      class="my-2 inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50 focus:ring-2 focus:ring-blue-500/20 focus:outline-none active:bg-slate-100"
-                      onClick={() => {
-                        window.location.reload();
-                      }}
-                      type="button"
-                    >
-                      Reload
-                    </button>
-                    <pre class="text-xs whitespace-pre-wrap">{String(err)}</pre>
-                  </div>
-                );
-              }}
-            >
-              <Suspense>{props.children}</Suspense>
-            </ErrorBoundary>
-          </div>
-          <GlobalErrorOverlay />
-          <Show when={import.meta.env.DEV}>
-            <StatusBar />
-          </Show>
-        </main>
+        <ErrorBoundary fallback={(err) => <div>Error: {err.message}</div>}>
+          <MetaProvider>
+            <AppDataProvider>
+              <Suspense fallback={<Fallback label="root" />}>
+                <AppShell>{props.children}</AppShell>
+              </Suspense>
+            </AppDataProvider>
+          </MetaProvider>
+        </ErrorBoundary>
       )}
     >
       <FileRoutes />

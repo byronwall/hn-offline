@@ -1,97 +1,76 @@
-import { Meta, Title } from "@solidjs/meta";
 import { createAsync, useParams } from "@solidjs/router";
-import {
-  createEffect,
-  createMemo,
-  createRenderEffect,
-  Show,
-  Suspense,
-} from "solid-js";
+import { createEffect, createMemo, untrack } from "solid-js";
 import { isServer } from "solid-js/web";
 
-import { HnStoryPage } from "~/features/comments/HnStoryPage";
-import { getDomain } from "~/lib/utils";
-import { HnItem } from "~/models/interfaces";
-import { getStoryById } from "~/server/queries";
-import { setActiveStoryData } from "~/stores/activeStorySignal";
-import { isOfflineMode } from "~/stores/serviceWorkerStatus";
 import {
-  getContent,
-  persistStoryToStorage,
-  setRefreshType,
-} from "~/stores/useDataStore";
+  useActiveStoryStore,
+  useAppData,
+  useDataStore,
+} from "~/contexts/AppDataContext";
+import { HnStoryPage } from "~/features/comments/HnStoryPage";
+import { getStoryById } from "~/server/queries";
 
 export default function Story() {
+  const dataStore = useDataStore();
+
+  const activeStoryStore = useActiveStoryStore();
+
   const params = useParams();
   const id = createMemo(() => +params.id);
 
-  createEffect(() => {
-    console.log("*** Story", id());
-  });
+  const isClientMounted = useAppData().isClientMounted;
 
   const data = createAsync(async () => {
-    const idParam = id();
-    console.log("*** createStoryAsync", idParam);
-    if (!idParam || Number.isNaN(idParam)) {
-      return undefined;
+    // untrack the isClientMounted signal to avoid re-processing on mount
+    const isClient = untrack(() => isClientMounted());
+
+    console.log("*** getStoryById query", {
+      isServer,
+      isClient,
+    });
+
+    if (isClient) {
+      console.log("*** getStoryById client mounted bypass");
+      return {
+        result: await dataStore.getContent(id()),
+        startedFromServer: false,
+      };
     }
-    if (!isServer || isOfflineMode()) {
-      return await getContent(idParam, { allowNetwork: false });
+
+    return getStoryById(id());
+  });
+
+  const story = () => data.latest?.result ?? undefined;
+
+  // persist the story if from server
+  // TODO: move into the store and call with one clean function
+  createEffect(() => {
+    const s = story();
+    if (!(data.latest?.startedFromServer && s)) {
+      return;
     }
-    const storyData = await getStoryById(idParam);
-    return storyData ?? undefined;
+    void dataStore.persistStoryToStorage(id(), s);
   });
 
   createEffect(() => {
-    const story = data();
-    if (!story) {
-      return;
-    }
-    void persistStoryToStorage(id(), story as HnItem);
-  });
+    console.log("*** getStoryById result", {
+      data: data.latest,
+      isClientMounted: isClientMounted(),
+    });
 
-  createRenderEffect(() => {
-    const story = data();
-    if (!story) {
+    if (!story()) {
       return;
     }
 
-    setActiveStoryData(story as HnItem);
-    setRefreshType({ type: "story", id: id() });
+    activeStoryStore.setActiveStoryData(story());
+    dataStore.setRefreshType({ type: "story", id: id() });
   });
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <Show when={data()} fallback={<HnStoryPage id={id()} />}>
-        {(data) => {
-          const storyData = data() as HnItem | undefined;
-          return (
-            <Show when={storyData} fallback={<HnStoryPage id={id()} />}>
-              {(_) => {
-                const titlePrefix =
-                  storyData!.type === "comment"
-                    ? "HN Offline Comment by " + storyData!.by
-                    : "HN Offline: " + storyData!.title;
-                const description =
-                  storyData!.type === "comment"
-                    ? `${storyData!.text ?? "Comment"}`
-                    : `${storyData!.score} points at ${getDomain(
-                        storyData!.url
-                      )} by ${storyData!.by} - ${
-                        storyData!.descendants
-                      } comments`;
-                return (
-                  <>
-                    <Title>{titlePrefix}</Title>
-                    <Meta name="description" content={description} />
-                    <HnStoryPage id={id()} />
-                  </>
-                );
-              }}
-            </Show>
-          );
-        }}
-      </Show>
-    </Suspense>
+    <HnStoryPage
+      id={id()}
+      story={story()}
+      startedFromServer={data.latest?.startedFromServer ?? false}
+    />
   );
 }

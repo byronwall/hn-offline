@@ -1,32 +1,44 @@
 import localforage from "localforage";
-import { createSignal } from "solid-js";
+import { type Accessor, createSignal } from "solid-js";
 import { isServer } from "solid-js/web";
 
-import { addMessage } from "./messages";
+import type { AddMessage } from "./messages";
 
-// this is meant to be the primary reference to localforage
-// goal is to ensure it's only configured in 1 file
-export const [LOCAL_FORAGE_TO_USE, setLocalForageToUse] = createSignal<
-  LocalForage | undefined
->(undefined);
+export type LocalForageStore = {
+  localForage: Accessor<LocalForage | undefined>;
+  initializeLocalForage: () => void;
+};
 
-export function initializeLocalForage() {
-  addMessage("localforage", "initializeLocalForage init");
+export function createLocalForageStore(
+  addMessage: AddMessage
+): LocalForageStore {
+  const [localForage, setLocalForage] = createSignal<LocalForage | undefined>(
+    undefined
+  );
 
-  if (isServer) {
-    return;
-  }
+  const initializeLocalForage = () => {
+    addMessage("localforage", "initializeLocalForage init");
 
-  localforage.config({
-    driver: localforage.INDEXEDDB, // Force WebSQL; same as using setDriver()
-    name: "hn_next",
-    version: 1.0,
-    size: 4980736, // Size of database, in bytes. WebSQL-only for now.
-    storeName: "keyvaluepairs", // Should be alphanumeric, with underscores.
-    description: "some description",
-  });
+    if (isServer) {
+      return;
+    }
 
-  setLocalForageToUse(localforage);
+    localforage.config({
+      driver: localforage.INDEXEDDB, // Force WebSQL; same as using setDriver()
+      name: "hn_next",
+      version: 1.0,
+      size: 4980736, // Size of database, in bytes. WebSQL-only for now.
+      storeName: "keyvaluepairs", // Should be alphanumeric, with underscores.
+      description: "some description",
+    });
 
-  addMessage("localforage", "initializeLocalForage done");
+    setLocalForage(localforage);
+
+    addMessage("localforage", "initializeLocalForage done");
+  };
+
+  return {
+    localForage,
+    initializeLocalForage,
+  };
 }

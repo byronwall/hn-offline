@@ -1,6 +1,6 @@
 import { createEffect, createSignal, ParentProps, Show } from "solid-js";
 
-import { isLoadingData } from "~/stores/useDataStore";
+import { useDataStore } from "~/contexts/AppDataContext";
 
 type PullToRefreshProps = ParentProps<{
   onRefresh: () => Promise<void> | void;
@@ -10,6 +10,7 @@ type PullToRefreshProps = ParentProps<{
 }>;
 
 export function PullToRefresh(props: PullToRefreshProps) {
+  const dataStore = useDataStore();
   const [pullDistance, setPullDistance] = createSignal(0);
   const [isPulling, setIsPulling] = createSignal(false);
   const [isRefreshing, setIsRefreshing] = createSignal(false);
@@ -23,7 +24,7 @@ export function PullToRefresh(props: PullToRefreshProps) {
     if (typeof window === "undefined" || shouldDisable()) {
       return;
     }
-    if (isLoadingData() || isRefreshing()) {
+    if (dataStore.isLoadingData() || isRefreshing()) {
       return;
     }
     if (window.scrollY > 0) {
@@ -55,7 +56,7 @@ export function PullToRefresh(props: PullToRefreshProps) {
       return;
     }
     const shouldRefresh =
-      pullDistance() >= activationThreshold() && !isLoadingData();
+      pullDistance() >= activationThreshold() && !dataStore.isLoadingData();
     setIsPulling(false);
     if (shouldRefresh) {
       setIsRefreshing(true);
@@ -77,7 +78,7 @@ export function PullToRefresh(props: PullToRefreshProps) {
   };
 
   createEffect(() => {
-    if (!isLoadingData() && isRefreshing()) {
+    if (!dataStore.isLoadingData() && isRefreshing()) {
       setIsRefreshing(false);
     }
   });

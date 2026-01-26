@@ -1,65 +1,49 @@
-import { useNavigate } from "@solidjs/router";
-import {
-  createRenderEffect,
-  Match,
-  onCleanup,
-  onMount,
-  Show,
-  Switch,
-} from "solid-js";
+import { createEffect, Match, onMount, Switch } from "solid-js";
 
-import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { PullToRefresh } from "~/components/PullToRefresh";
-import { createHasRendered } from "~/lib/createHasRendered";
+import {
+  useAppData,
+  useColorMapStore,
+  useDataStore,
+  useMessagesStore,
+  useReadItemsStore,
+  useServiceWorkerStore,
+} from "~/contexts/AppDataContext";
 import { getColorsForStory } from "~/lib/getColorsForStory";
 import { isValidComment } from "~/lib/isValidComment";
-import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
-import { cn, getDomain, shareSafely, timeSince } from "~/lib/utils";
-import { activeStoryData } from "~/stores/activeStorySignal";
-import { colorMap, setColorMap } from "~/stores/colorMap";
-import { addMessage } from "~/stores/messages";
-import { setScrollToId } from "~/stores/scrollSignal";
-import { isOfflineMode } from "~/stores/serviceWorkerStatus";
-import {
-  collapsedTimestamps,
-  updateCollapsedState,
-} from "~/stores/useCommentStore";
-import { isLoadingData, refreshActive } from "~/stores/useDataStore";
-import {
-  saveIdToReadList,
-  setRecentlyReadId,
-} from "~/stores/useReadItemsStore";
 
 import { HnCommentList } from "./HnCommentList";
+import { HnCommentSkeletonList } from "./HnCommentSkeletonList";
+import { HnStoryCommentBanner } from "./HnStoryCommentBanner";
+import { HnStoryContentCard } from "./HnStoryContentCard";
+import { HnStoryMetaRow } from "./HnStoryMetaRow";
+import { HnStoryTitle } from "./HnStoryTitle";
+
+import type { HnItem } from "~/models/interfaces";
 
 interface HnStoryPageProps {
   id: number | undefined;
+  story?: HnItem | undefined;
+  startedFromServer: boolean;
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
-  const hasRendered = createHasRendered();
+  const colorMapStore = useColorMapStore();
+  const messagesStore = useMessagesStore();
+  const serviceWorker = useServiceWorkerStore();
+  const dataStore = useDataStore();
+  const readItemsStore = useReadItemsStore();
 
-  const textToRender = () =>
-    processHtmlAndTruncateAnchorText(activeStoryData()?.text || "");
+  const story = () => props.story;
+  const isClientMounted = useAppData().isClientMounted;
 
-  const handleShareClick = async (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    await shareSafely({ url: window.location.href });
-  };
-
-  const navigate = useNavigate();
-
-  createRenderEffect(() => {
-    if (!activeStoryData()) {
+  createEffect(() => {
+    if (!story()) {
       return;
     }
 
-    addMessage("HnStoryPage", "update color map");
-
-    const colors = getColorsForStory(activeStoryData());
-    setColorMap(colors);
+    messagesStore.addMessage("HnStoryPage", "update color map");
+    colorMapStore.setColorMap(getColorsForStory(story()));
   });
 
   onMount(() => {
@@ -68,195 +52,40 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     }
     // Track most recently read for list fade-out UX on back nav
     console.warn("*** setting recently read id", props.id);
-    setRecentlyReadId(props.id);
-    saveIdToReadList(props.id);
+    readItemsStore.setRecentlyReadId(props.id);
+    readItemsStore.saveIdToReadList(props.id);
   });
 
-  onMount(() => {
-    const anchorClickHandler = (e: MouseEvent) => {
-      if (e.target instanceof HTMLElement && e.target.tagName !== "A") {
-        return;
-      }
-
-      const link = e.target as HTMLAnchorElement;
-
-      if (!link || !link.href) {
-        return;
-      }
-
-      const pathName = new URL(link.href).pathname;
-
-      const internalPaths = ["/story", "/day", "/week", "/month"];
-      if (internalPaths.some((path) => pathName.startsWith(path))) {
-        // let the navigation happen
-        return;
-      }
-
-      const regex = /https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/;
-      const matches = link.href.match(regex);
-
-      if (matches === null) {
-        // external link = open in new tab
-        link.target = "_blank";
-        return;
-      }
-
-      // we have an HN link - reroute internally
-      navigate("/story/" + matches[1]);
-      e.preventDefault();
-      return false;
-    };
-
-    document.body.addEventListener("click", anchorClickHandler);
-
-    onCleanup(() => {
-      document.body.removeEventListener("click", anchorClickHandler);
-    });
-  });
-
-  // Guard against scenarios which remove DOM node too early
-  // Need SSR to match the DOM
-  // need comment store to be ready
-  const isTextOpen = () =>
-    !hasRendered() ||
-    (activeStoryData()?.id &&
-      collapsedTimestamps[activeStoryData()!.id] === undefined);
-
-  const comments = () =>
-    (activeStoryData()?.kidsObj || []).filter(isValidComment);
-
-  const isComment = () => activeStoryData()?.type === "comment";
-  const parentId = () => activeStoryData()?.parent;
-  const rootId = () => activeStoryData()?.root;
-
-  function handleStoryTextClick() {
-    if (!activeStoryData()?.text) {
-      return;
-    }
-
-    const newIsCollapsed = !!isTextOpen();
-    updateCollapsedState(activeStoryData()!.id, newIsCollapsed);
-
-    // scroll to first comment if it exists
-    // schedule out 200ms to allow the collapse animation to finish
-    setTimeout(() => {
-      const firstCommentId = comments()[0]?.id;
-      if (newIsCollapsed && firstCommentId) {
-        setScrollToId(firstCommentId);
-      }
-    }, 100);
-  }
+  const comments = () => (story()?.kidsObj || []).filter(isValidComment);
+  const showSkeleton = () => props.startedFromServer && !isClientMounted();
 
   return (
     <PullToRefresh
-      disabled={isLoadingData() || isOfflineMode()}
-      onRefresh={refreshActive}
-      // message={pullMessage()}
+      disabled={dataStore.isLoadingData() || serviceWorker.isOfflineMode()}
+      onRefresh={dataStore.refreshActive}
     >
       <div class="relative pb-[70vh]">
-        <Show when={isComment() && parentId()}>
-          <div class="mb-3 rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700">
-            <span class="mr-2 rounded bg-slate-200 px-1.5 py-0.5 font-semibold tracking-wide text-slate-700 uppercase">
-              Comment
-            </span>
-            <span>
-              <span class="mr-1">
-                {rootId() && rootId() === parentId() ? "root" : "parent"}:
-              </span>
-              <a
-                class="text-orange-600 underline hover:text-orange-500 focus-visible:text-orange-500"
-                href={`/story/${parentId()}`}
-              >
-                {parentId()}
-              </a>
-              <Show when={rootId() && rootId() !== parentId()}>
-                <span class="mr-1 ml-3">root:</span>
-                <a
-                  class="text-orange-600 underline hover:text-orange-500 focus-visible:text-orange-500"
-                  href={`/story/${rootId()}`}
-                >
-                  {rootId()}
-                </a>
-              </Show>
-            </span>
-          </div>
-        </Show>
-        <h2
-          class="track-visited mb-2 text-2xl font-bold hover:underline focus-visible:underline active:underline"
-          style={{ "overflow-wrap": "break-word" }}
-        >
-          <Switch>
-            <Match when={activeStoryData()?.url === undefined}>
-              <span>{activeStoryData()?.title}</span>
-            </Match>
-            <Match when={activeStoryData()?.url !== undefined}>
-              <a href={activeStoryData()?.url}>{activeStoryData()?.title}</a>
-            </Match>
-          </Switch>
-        </h2>
+        <HnStoryCommentBanner story={story()} />
+        <HnStoryTitle story={story()} />
+        <HnStoryMetaRow story={story()} />
+        <HnStoryContentCard
+          story={story()}
+          firstCommentId={comments()[0]?.id}
+        />
 
-        <div
-          class={cn(
-            {
-              "rounded-tl pr-2 pl-4": activeStoryData()?.text,
-              collapsed: !isTextOpen(),
-            },
-            "bp3-card"
-          )}
-          onClick={handleStoryTextClick}
-          style={{
-            "--flash-color":
-              colorMap()[activeStoryData()?.by ?? ""] ?? "hsl(30, 80%, 65%)",
-            "padding-left": "16px",
-          }}
-        >
-          <div class="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-slate-700">
-            <span class="font-medium">{activeStoryData()?.by}</span>
-            <span class="text-slate-300 select-none" aria-hidden="true">
-              |
-            </span>
-            <span>
-              {activeStoryData()?.score}
-              {" points"}
-            </span>
-            <span class="text-slate-300 select-none" aria-hidden="true">
-              |
-            </span>
-            <span>{timeSince(activeStoryData()?.time)}</span>
-            <span class="text-slate-300 select-none" aria-hidden="true">
-              |
-            </span>
-            <span class="truncate font-mono text-[14px] text-slate-600">
-              {getDomain(activeStoryData()?.url)}
-            </span>
-
-            <span class="text-slate-300 select-none" aria-hidden="true">
-              |
-            </span>
-            <button
-              onClick={handleShareClick}
-              class="text-slate-400 hover:text-orange-500"
-              aria-label="Share"
-            >
-              <ArrowUpRightFromSquare width={16} height={16} />
-            </button>
-          </div>
-
-          <Show when={activeStoryData()?.text !== undefined && isTextOpen()}>
-            <div>
-              {/*  eslint-disable-next-line solid/no-innerhtml */}
-              <p class="user-text break-words" innerHTML={textToRender()} />
-            </div>
-          </Show>
-        </div>
-
-        <div class="user-text">
-          <HnCommentList
-            childComments={comments()}
-            depth={0}
-            authorChain={[]}
-          />
-        </div>
+        <Switch>
+          {/* NOTE: showing a skeleton on comments to avoid complexity in hydration */}
+          <Match when={showSkeleton()}>
+            <HnCommentSkeletonList />
+          </Match>
+          <Match when={!showSkeleton()}>
+            <HnCommentList
+              childComments={comments()}
+              depth={0}
+              authorChain={[]}
+            />
+          </Match>
+        </Switch>
       </div>
     </PullToRefresh>
   );

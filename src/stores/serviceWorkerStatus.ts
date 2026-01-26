@@ -1,6 +1,6 @@
 import { createEffect, createSignal } from "solid-js";
 
-import { addMessage } from "./messages";
+import type { AddMessage } from "./messages";
 
 export type ServiceWorkerStatus =
   | "unsupported"
@@ -12,34 +12,55 @@ export type ServiceWorkerStatus =
   | "controllerchanged"
   | "error";
 
-const initialStatus: ServiceWorkerStatus =
-  typeof navigator !== "undefined" && "serviceWorker" in navigator
-    ? "registering"
-    : "unsupported";
-
-export const [serviceWorkerStatus, _setServiceWorkerStatus] =
-  createSignal<ServiceWorkerStatus>(initialStatus);
-
-export const [serviceWorkerVersion, setServiceWorkerVersion] = createSignal<
-  string | undefined
->(undefined);
-
-export const setServiceWorkerStatus = (status: ServiceWorkerStatus) => {
-  console.log("*** setting service worker status", status);
-  _setServiceWorkerStatus(status);
+export type ServiceWorkerStore = {
+  serviceWorkerStatus: () => ServiceWorkerStatus;
+  serviceWorkerVersion: () => string | undefined;
+  isOfflineMode: () => boolean;
+  setServiceWorkerStatus: (status: ServiceWorkerStatus) => void;
+  setServiceWorkerVersion: (version: string | undefined) => void;
+  setIsOfflineMode: (offline: boolean) => void;
 };
 
-createEffect(() => {
-  addMessage("swStatus", serviceWorkerStatus());
-});
+export function createServiceWorkerStatusStore(
+  addMessage: AddMessage
+): ServiceWorkerStore {
+  const initialStatus: ServiceWorkerStatus =
+    typeof navigator !== "undefined" && "serviceWorker" in navigator
+      ? "registering"
+      : "unsupported";
 
-// Offline mode tracking
-export const [isOfflineMode, setIsOfflineMode] = createSignal<boolean>(false);
+  const [serviceWorkerStatus, setServiceWorkerStatusSignal] =
+    createSignal<ServiceWorkerStatus>(initialStatus);
 
-createEffect(() => {
-  const offline = isOfflineMode();
-  addMessage(
-    "offline",
-    offline ? "Entered offline mode" : "Exited offline mode"
-  );
-});
+  const [serviceWorkerVersion, setServiceWorkerVersion] = createSignal<
+    string | undefined
+  >(undefined);
+
+  const [isOfflineMode, setIsOfflineMode] = createSignal<boolean>(false);
+
+  const setServiceWorkerStatus = (status: ServiceWorkerStatus) => {
+    console.log("*** setting service worker status", status);
+    setServiceWorkerStatusSignal(status);
+  };
+
+  createEffect(() => {
+    addMessage("swStatus", serviceWorkerStatus());
+  });
+
+  createEffect(() => {
+    const offline = isOfflineMode();
+    addMessage(
+      "offline",
+      offline ? "Entered offline mode" : "Exited offline mode"
+    );
+  });
+
+  return {
+    serviceWorkerStatus,
+    serviceWorkerVersion,
+    isOfflineMode,
+    setServiceWorkerStatus,
+    setServiceWorkerVersion,
+    setIsOfflineMode,
+  };
+}

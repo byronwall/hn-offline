@@ -1,10 +1,13 @@
 import { Meta, Title } from "@solidjs/meta";
+import { isServer } from "solid-js/web";
 
 import { TopStoriesType } from "~/models/interfaces";
 
-import { ServerStoryPage } from "./ServerStoryPage";
+import { ServerStoryList } from "./ServerStoryList";
 
 export function StoryListRoute(props: { page: TopStoriesType }) {
+  console.log("*** StoryListRoute", { isServer, page: props.page });
+
   const title = () =>
     props.page === "topstories"
       ? "Top"
@@ -14,9 +17,8 @@ export function StoryListRoute(props: { page: TopStoriesType }) {
     <>
       <Title>HN Offline: {title()}</Title>
       <Meta name="description" content={`Hacker News ${props.page} page`} />
-      <ServerStoryPage page={props.page} />
+      {/* TODO: add a suspense here to trigger the skeleton */}
+      <ServerStoryList page={props.page} />
     </>
   );
 }
-
-export default StoryListRoute;

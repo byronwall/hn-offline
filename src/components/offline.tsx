@@ -1,13 +1,15 @@
 import { A } from "@solidjs/router";
 import { onMount } from "solid-js";
 
-import { addMessage } from "~/stores/messages";
+import { useMessagesStore } from "~/contexts/AppDataContext";
 
 import { Shell } from "./Icon";
 
 export default function Offline() {
+  const messagesStore = useMessagesStore();
+
   onMount(() => {
-    addMessage("Offline", "Loading offline shell");
+    messagesStore.addMessage("Offline", "Loading offline shell");
   });
 
   return (
