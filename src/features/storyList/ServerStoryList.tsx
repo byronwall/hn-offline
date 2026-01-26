@@ -55,18 +55,6 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
     return fromQuery?.data;
   });
 
-  // TODO: need a method on the refreshStore that tracks the new active type
-
-  const lastUpdatedTs = createMemo(() => {
-    const page = props.page as StoryPage;
-    return refreshStore.refreshTimestamps[page];
-  });
-
-  const lastRequestedTs = createMemo(() => {
-    const page = props.page as StoryPage;
-    return refreshStore.refreshRequestedTimestamps[page];
-  });
-
   // TODO: persistence should move out of the render path
 
   createEffect(() => {
@@ -99,11 +87,7 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
   return (
     <HnStoryList
       items={summaries()}
-      sortType={props.page === "topstories" ? undefined : "score"}
-      isLoading={dataStore.isLoadingData()}
-      lastUpdatedTs={lastUpdatedTs()}
-      lastRequestedTs={lastRequestedTs()}
-      onRefresh={dataStore.refreshActive}
+      page={props.page}
     />
   );
 }

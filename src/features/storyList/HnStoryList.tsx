@@ -3,30 +3,37 @@ import { createMemo, For, Show } from "solid-js";
 import { Shell } from "~/components/Icon";
 import { PullToRefresh } from "~/components/PullToRefresh";
 import {
+  useDataStore,
   useReadItemsStore,
+  useRefreshStore,
   useServiceWorkerStore,
 } from "~/contexts/AppDataContext";
 import { useSortFunction } from "~/hooks/useSortFunction";
 import { timeSince } from "~/lib/utils";
-import { HnStorySummary } from "~/models/interfaces";
 
 import { HnListItem } from "./HnListItem";
 
+import type {
+  HnStorySummary,
+  StoryPage,
+  TopStoriesType,
+} from "~/models/interfaces";
+
 interface HnStoryListProps {
   items?: HnStorySummary[];
-  sortType?: "score";
-  isLoading: boolean;
 
-  lastUpdatedTs?: number;
-  lastRequestedTs?: number;
-  onRefresh: () => Promise<void> | void;
+  page: TopStoriesType;
 }
 
 export function HnStoryList(props: HnStoryListProps) {
+  const dataStore = useDataStore();
   const readItemsStore = useReadItemsStore();
+  const refreshStore = useRefreshStore();
 
   const serviceWorker = useServiceWorkerStore();
   const isOffline = serviceWorker.isOfflineMode;
+  const isLoading = () => dataStore.isLoadingData();
+  const onRefresh = () => dataStore.refreshActive();
 
   // server will not have any stories to render since we rely on createEffect
   // render 0 here to avoid hydration mismatch
@@ -35,11 +42,18 @@ export function HnStoryList(props: HnStoryListProps) {
     if (!items) {
       return undefined;
     }
-    return useSortFunction(items, props.sortType) ?? [];
+    const sortType = props.page === "topstories" ? undefined : "score";
+    return useSortFunction(items, sortType) ?? [];
   };
 
   const lastUpdatedTs = createMemo(() => {
-    return props.lastUpdatedTs;
+    const page = props.page as StoryPage;
+    return refreshStore.refreshTimestamps[page];
+  });
+
+  const lastRequestedTs = createMemo(() => {
+    const page = props.page as StoryPage;
+    return refreshStore.refreshRequestedTimestamps[page];
   });
 
   const pullMessage = createMemo(() => {
@@ -49,8 +63,8 @@ export function HnStoryList(props: HnStoryListProps) {
   });
 
   const requestMessage = createMemo(() => {
-    return props.lastRequestedTs
-      ? `Requested ${timeSince(props.lastRequestedTs, true)}`
+    return lastRequestedTs()
+      ? `Requested ${timeSince(lastRequestedTs(), true)}`
       : undefined;
   });
 
@@ -73,8 +87,8 @@ export function HnStoryList(props: HnStoryListProps) {
         }
       >
         <PullToRefresh
-          disabled={props.isLoading}
-          onRefresh={props.onRefresh}
+          disabled={isLoading()}
+          onRefresh={onRefresh}
           // message={pullMessage()}
         >
           <Show when={pullMessage() || requestMessage()}>
@@ -83,17 +97,17 @@ export function HnStoryList(props: HnStoryListProps) {
                 type="button"
                 title="Refresh now"
                 onClick={() => {
-                  if (isOffline() || props.isLoading) {
+                  if (isOffline() || isLoading()) {
                     return;
                   }
-                  props.onRefresh();
+                  onRefresh();
                 }}
                 class="inline-flex items-center gap-1 hover:text-orange-500 focus:outline-none active:text-orange-500"
                 aria-label="Refresh list"
               >
                 <span
                   class={
-                    props.isLoading ? "inline-flex animate-spin" : "inline-flex"
+                    isLoading() ? "inline-flex animate-spin" : "inline-flex"
                   }
                 >
                   <Shell width="12" height="12" />
@@ -105,10 +119,10 @@ export function HnStoryList(props: HnStoryListProps) {
                   type="button"
                   title="Refresh now"
                   onClick={() => {
-                    if (isOffline() || props.isLoading) {
+                    if (isOffline() || isLoading()) {
                       return;
                     }
-                    props.onRefresh();
+                    onRefresh();
                   }}
                   class="text-[10px] text-slate-400 hover:text-orange-500 focus:outline-none active:text-orange-500"
                   aria-label="Refresh list"
