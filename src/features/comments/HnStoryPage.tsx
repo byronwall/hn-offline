@@ -16,6 +16,7 @@ import { HnCommentList } from "./HnCommentList";
 import { HnCommentSkeletonList } from "./HnCommentSkeletonList";
 import { HnStoryCommentBanner } from "./HnStoryCommentBanner";
 import { HnStoryContentCard } from "./HnStoryContentCard";
+import { HnStoryMetaRow } from "./HnStoryMetaRow";
 import { HnStoryTitle } from "./HnStoryTitle";
 
 import type { HnItem } from "~/models/interfaces";
@@ -66,6 +67,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       <div class="relative pb-[70vh]">
         <HnStoryCommentBanner story={story()} />
         <HnStoryTitle story={story()} />
+        <HnStoryMetaRow story={story()} />
         <HnStoryContentCard
           story={story()}
           firstCommentId={comments()[0]?.id}

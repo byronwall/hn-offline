@@ -1,13 +1,12 @@
 import { Show } from "solid-js";
 
-import { ArrowUpRightFromSquare } from "~/components/Icon";
 import {
   useColorMapStore,
   useCommentStore,
   useScrollStore,
 } from "~/contexts/AppDataContext";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
-import { cn, getDomain, shareSafely, timeSince } from "~/lib/utils";
+import { cn, timeSince } from "~/lib/utils";
 
 import type { HnItem } from "~/models/interfaces";
 
@@ -22,9 +21,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
   const scrollStore = useScrollStore();
 
   const author = () => props.story?.by;
-  const score = () => props.story?.score;
   const time = () => props.story?.time;
-  const url = () => props.story?.url;
   const hasText = () => props.story?.text !== undefined;
   const storyId = () => props.story?.id;
   const textHtml = () =>
@@ -56,13 +53,6 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
     }, 100);
   }
 
-  const handleShareClick = async (event: MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    await shareSafely({ url: window.location.href });
-  };
-
   return (
     <div
       class={cn(
@@ -83,31 +73,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
         <span class="text-slate-300 select-none" aria-hidden="true">
           |
         </span>
-        <span>
-          {score()}
-          {" points"}
-        </span>
-        <span class="text-slate-300 select-none" aria-hidden="true">
-          |
-        </span>
         <span>{timeSince(time())}</span>
-        <span class="text-slate-300 select-none" aria-hidden="true">
-          |
-        </span>
-        <span class="truncate font-mono text-[14px] text-slate-600">
-          {getDomain(url())}
-        </span>
-
-        <span class="text-slate-300 select-none" aria-hidden="true">
-          |
-        </span>
-        <button
-          onClick={handleShareClick}
-          class="text-slate-400 hover:text-orange-500 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
-          aria-label="Share"
-        >
-          <ArrowUpRightFromSquare width={16} height={16} />
-        </button>
       </div>
 
       <Show when={hasText() && isTextOpen()}>
