@@ -86,7 +86,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
         "--flash-color": flashColor(),
         "padding-left": "16px",
       }}
-      >
+    >
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-slate-700">
         <span class="font-medium">{author()}</span>
         <span class="text-slate-300 select-none" aria-hidden="true">
@@ -96,7 +96,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
         <Show when={hasText() && isTextOpen()}>
           <button
             onClick={handleShareClick}
-            class="pointer-events-none ml-auto text-slate-400 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 hover:text-orange-500 focus-visible:pointer-events-auto focus-visible:opacity-100"
+            class="text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-orange-500 [@media(hover:none)]:opacity-100"
             aria-label="Share"
           >
             <ArrowUpRightFromSquare width={16} />
