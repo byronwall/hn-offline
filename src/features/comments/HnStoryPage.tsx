@@ -72,6 +72,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
         />
 
         <Switch>
+          {/* NOTE: showing a skeleton on comments to avoid complexity in hydration */}
           <Match when={showSkeleton()}>
             <HnCommentSkeletonList />
           </Match>
