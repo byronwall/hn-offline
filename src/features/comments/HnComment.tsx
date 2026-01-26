@@ -1,5 +1,3 @@
-import { decode } from "html-entities";
-import sanitizeHtml from "sanitize-html";
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
@@ -11,7 +9,8 @@ import {
 } from "~/contexts/AppDataContext";
 import { formatCommentText } from "~/lib/commentUtils";
 import { isValidComment } from "~/lib/isValidComment";
-import { cn, shareSafely, timeSince } from "~/lib/utils";
+import { shareHnTextContent } from "~/lib/shareHnTextContent";
+import { cn, timeSince } from "~/lib/utils";
 import { KidsObj3 } from "~/models/interfaces";
 
 import { HnCommentList } from "./HnCommentList";
@@ -70,46 +69,17 @@ export function HnComment(props: HnCommentProps) {
 
   const handleShareClick = async (e: MouseEvent) => {
     e.stopPropagation();
-    if (props.comment === null) {
+    if (!props.comment?.id) {
       return;
     }
 
-    let cleanText = sanitizeHtml(props.comment.text || "");
-    cleanText = cleanText.replace(/<a href="([^"]+)">([^<]+)<\/a>/g, "$1");
-    cleanText = cleanText.replace(/<p>/g, "\n");
-    cleanText = cleanText.replace(/<[^>]+>/g, "");
-    cleanText = decode(cleanText);
-
-    const commentUrl = `https://hn.byroni.us/story/${props.comment.id}`;
-    const storyExternalUrl = activeStoryStore.activeStoryData()?.url;
-    // intentionally unused: story title not required in footer
-    const storyId = activeStoryStore.activeStoryData()?.id;
-    const storyHnUrl = storyId ? `https://hn.byroni.us/story/${storyId}` : "";
-    // storyUrl no longer used; keep only HN + external links
-
-    const shareTextLines = [
-      `Comment by ${props.comment.by} on HN: ${commentUrl}`,
-      "",
-      cleanText,
-    ];
-
-    if (storyHnUrl || storyExternalUrl) {
-      shareTextLines.push("");
-      if (storyHnUrl) {
-        shareTextLines.push(`HN story: ${storyHnUrl}`);
-      }
-      if (storyExternalUrl) {
-        shareTextLines.push(`Content: ${storyExternalUrl}`);
-      }
-    }
-
-    const shareText = shareTextLines.join("\n");
-
-    console.log("share text", shareText);
-
-    await shareSafely({
-      title: `HN Comment by ${props.comment.by}`,
-      text: shareText,
+    await shareHnTextContent({
+      contentLabel: "Comment",
+      contentId: props.comment.id,
+      author: props.comment.by,
+      contentHtml: props.comment.text || "",
+      storyId: activeStoryStore.activeStoryData()?.id,
+      storyExternalUrl: activeStoryStore.activeStoryData()?.url,
     });
   };
 
@@ -230,7 +200,9 @@ export function HnComment(props: HnCommentProps) {
             <Show when={isOpen()}>
               <span class="text-slate-300 select-none">|</span>
               <span>{timeSince(props.comment.time)}</span>
-              <span class="text-slate-300 select-none">|</span>
+              <span class="pointer-events-none text-slate-300 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 select-none">
+                |
+              </span>
               <button
                 onClick={handleShareClick}
                 class="pointer-events-none text-slate-400 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 hover:text-orange-500 focus-visible:pointer-events-auto focus-visible:opacity-100"

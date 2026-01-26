@@ -1,11 +1,13 @@
 import { Show } from "solid-js";
 
+import { ArrowUpRightFromSquare } from "~/components/Icon";
 import {
   useColorMapStore,
   useCommentStore,
   useScrollStore,
 } from "~/contexts/AppDataContext";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
+import { shareHnTextContent } from "~/lib/shareHnTextContent";
 import { cn, timeSince } from "~/lib/utils";
 
 import type { HnItem } from "~/models/interfaces";
@@ -53,6 +55,23 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
     }, 100);
   }
 
+  const handleShareClick = async (e: MouseEvent) => {
+    e.stopPropagation();
+
+    if (!props.story?.id) {
+      return;
+    }
+
+    await shareHnTextContent({
+      contentLabel: "Story",
+      contentId: props.story.id,
+      author: props.story.by,
+      contentHtml: props.story.text || "",
+      storyId: props.story.id,
+      storyExternalUrl: props.story.url,
+    });
+  };
+
   return (
     <div
       class={cn(
@@ -67,13 +86,22 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
         "--flash-color": flashColor(),
         "padding-left": "16px",
       }}
-    >
+      >
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-slate-700">
         <span class="font-medium">{author()}</span>
         <span class="text-slate-300 select-none" aria-hidden="true">
           |
         </span>
         <span>{timeSince(time())}</span>
+        <Show when={hasText() && isTextOpen()}>
+          <button
+            onClick={handleShareClick}
+            class="pointer-events-none ml-auto text-slate-400 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 hover:text-orange-500 focus-visible:pointer-events-auto focus-visible:opacity-100"
+            aria-label="Share"
+          >
+            <ArrowUpRightFromSquare width={16} />
+          </button>
+        </Show>
       </div>
 
       <Show when={hasText() && isTextOpen()}>
