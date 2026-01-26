@@ -111,6 +111,31 @@ pre {
   pointer-events: none;
 }
 
+.comment-connector {
+  position: absolute;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgb(from var(--flash-color) r g b / 0.45),
+    rgb(from var(--flash-color) r g b / 0.15) 60%,
+    rgb(from var(--flash-color) r g b / 0)
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10px,
+    black calc(100% - 10px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10px,
+    black calc(100% - 10px),
+    transparent
+  );
+}
+
 .collapsed {
   --flash-color: #ff6600;
   animation: flash-background 200ms;

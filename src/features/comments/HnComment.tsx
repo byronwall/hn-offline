@@ -184,16 +184,12 @@ export function HnComment(props: HnCommentProps) {
             }}
           >
             <div
+              class="comment-connector"
               style={{
-                position: "absolute",
                 top: "7px",
                 left: `${stickyInfo().leftPos - paddingByDepth[props.depth]}px`,
-                width: `${Math.abs(stickyInfo().leftPos + 4)}px`,
-                "background-color": "white",
-                "box-shadow": `inset 0 4px 6px -2px ${borderColor()}`,
-                height: "13px",
-                "border-top": "3px solid white",
-                "border-bottom": "3px solid white",
+                width: `${Math.abs(stickyInfo().leftPos) + 6}px`,
+                height: "8px",
               }}
             />
           </div>
