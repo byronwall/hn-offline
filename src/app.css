@@ -66,7 +66,8 @@ pre {
 
   position: relative;
   border-radius: 10px;
-  padding: 6px;
+  padding-top: 6px;
+  padding-bottom: 10px;
 
   background-color: white;
 
@@ -77,10 +78,10 @@ pre {
 .bp3-card::before {
   content: "";
   position: absolute;
-  left: 8px; /* rail x-position */
-  top: 8px; /* start of rail */
-  bottom: 8px; /* end of rail */
-  width: 2px;
+  left: 6px; /* rail x-position */
+  top: 2px; /* start of rail */
+  bottom: 2px; /* end of rail */
+  width: 5px;
 
   /* soft edge rail */
   /* soft edge rail */
