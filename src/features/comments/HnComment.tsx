@@ -194,58 +194,61 @@ export function HnComment(props: HnCommentProps) {
             />
           </div>
         )}
-        <p
-          style={{
-            "font-weight": isOpen() ? 450 : 300,
-            "margin-top": `${
-              stickyInfo().shouldShowBar && isOpen()
-                ? -stickyInfo().stickyHeight
-                : 0
-            }px`,
-          }}
-          ref={setDivRef}
-          class={cn(
-            "mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px]",
-            isOpen() ? "text-slate-700" : "text-slate-500"
-          )}
-        >
-          <span
+        <div class="group">
+          <p
+            style={{
+              "font-weight": isOpen() ? 450 : 300,
+              "margin-top": `${
+                stickyInfo().shouldShowBar && isOpen()
+                  ? -stickyInfo().stickyHeight
+                  : 0
+              }px`,
+            }}
+            ref={setDivRef}
             class={cn(
-              "truncate",
-              isOpen()
-                ? {
-                    "font-bold text-orange-700":
-                      activeStoryStore.activeStoryData()?.by ===
-                      props.comment.by,
-                    "font-medium":
-                      activeStoryStore.activeStoryData()?.by !==
-                      props.comment.by,
-                  }
-                : "font-normal"
+              "mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px]",
+              isOpen() ? "text-slate-700" : "text-slate-500"
             )}
           >
-            {props.comment.by}
-          </span>
-          <Show when={isOpen()}>
-            <span class="text-slate-300 select-none">|</span>
-            <span>{timeSince(props.comment.time)}</span>
-            <span class="text-slate-300 select-none">|</span>
-            <button
-              onClick={handleShareClick}
-              class="text-slate-400 hover:text-orange-500"
-              aria-label="Share"
+            <span
+              class={cn(
+                "truncate",
+                isOpen()
+                  ? {
+                      "font-bold text-orange-700":
+                        activeStoryStore.activeStoryData()?.by ===
+                        props.comment.by,
+                      "font-medium":
+                        activeStoryStore.activeStoryData()?.by !==
+                        props.comment.by,
+                    }
+                  : "font-normal"
+              )}
             >
-              <ArrowUpRightFromSquare width={16} />
-            </button>
+              {props.comment.by}
+            </span>
+            <Show when={isOpen()}>
+              <span class="text-slate-300 select-none">|</span>
+              <span>{timeSince(props.comment.time)}</span>
+              <span class="text-slate-300 select-none">|</span>
+              <button
+                onClick={handleShareClick}
+                class="text-slate-400 hover:text-orange-500 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
+                aria-label="Share"
+              >
+                <ArrowUpRightFromSquare width={16} />
+              </button>
+            </Show>
+          </p>
+          <Show when={isOpen()}>
+            <div
+              class="comment"
+              // eslint-disable-next-line solid/no-innerhtml
+              innerHTML={formatCommentText(props.comment.text || "")}
+            />
           </Show>
-        </p>
+        </div>
         <Show when={isOpen()}>
-          <div
-            class="comment"
-            // eslint-disable-next-line solid/no-innerhtml
-            innerHTML={formatCommentText(props.comment.text || "")}
-          />
-
           <Show when={childComments().length > 0}>
             <HnCommentList
               childComments={childComments()}

@@ -70,7 +70,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
           "rounded-tl pr-2 pl-4": hasText(),
           collapsed: !isTextOpen(),
         },
-        "bp3-card user-text"
+        "bp3-card user-text group"
       )}
       onClick={handleStoryTextClick}
       style={{
@@ -103,7 +103,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
         </span>
         <button
           onClick={handleShareClick}
-          class="text-slate-400 hover:text-orange-500"
+          class="text-slate-400 hover:text-orange-500 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto"
           aria-label="Share"
         >
           <ArrowUpRightFromSquare width={16} height={16} />
