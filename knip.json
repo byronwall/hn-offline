@@ -1,0 +1,12 @@
+{
+    "entry": [
+        "src/entry-server.tsx",
+        "src/entry-client.tsx",
+        "src/app.tsx",
+        "src/routes/**/*.tsx"
+    ],
+    "project": [
+        "src/**/*.ts",
+        "src/**/*.tsx"
+    ]
+}
