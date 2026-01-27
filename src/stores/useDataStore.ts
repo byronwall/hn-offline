@@ -37,8 +37,6 @@ export type ContentForPage =
       data: HnItem[];
     };
 
-export type DataStore = ReturnType<typeof createDataStore>;
-
 type RefreshType =
   | {
       type: "storyList";
