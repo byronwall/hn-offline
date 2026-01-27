@@ -44,35 +44,9 @@ const baseHnItemSchema = z.object({
 });
 
 // Schema for comment objects
-export const kidsObj3Schema = z.object({
-  id: z
-    .number("Comment ID must be a number")
-    .int("Comment ID must be an integer")
-    .positive("Comment ID must be positive"),
-
-  parent: z
-    .number("Parent ID must be a number")
-    .int("Parent ID must be an integer")
-    .positive("Parent ID must be positive"),
-
-  time: z
-    .number("Comment timestamp must be a number")
-    .int("Comment timestamp must be an integer")
-    .min(0, "Comment timestamp must be non-negative"),
-
-  type: z
-    .string("Comment type must be a string")
-    .min(1, "Comment type cannot be empty"),
-
-  by: z.string().optional(),
-  text: z.string().optional(),
-  kidsObj: z.array(z.any()).optional(), // Simplified to avoid circular reference issues
-  deleted: z.boolean().optional(),
-  dead: z.boolean().optional(),
-});
 
 // Schema for HnItem (main story/item schema)
-export const hnItemSchema = baseHnItemSchema.extend({
+const hnItemSchema = baseHnItemSchema.extend({
   title: z
     .string("Story title must be a string")
     .min(1, "Story title cannot be empty"),
@@ -96,7 +70,7 @@ export const hnItemSchema = baseHnItemSchema.extend({
 });
 
 // Schema for HnItem with comments (extends HnItem)
-export const hnItemWithCommentsSchema = hnItemSchema.extend({
+const hnItemWithCommentsSchema = hnItemSchema.extend({
   kids: z
     .array(
       z
@@ -108,69 +82,16 @@ export const hnItemWithCommentsSchema = hnItemSchema.extend({
 });
 
 // Schema for error responses
-export const errorResponseSchema = z.object({
-  error: z
-    .string("Error message must be a string")
-    .min(1, "Error message cannot be empty"),
-});
 
 // Schema for array of HnItems
-export const hnItemArraySchema = z.array(hnItemSchema);
 
 // Schema for HnStorySummary (story summary schema)
-export const hnStorySummarySchema = z.object({
-  id: z
-    .number("Story ID must be a number")
-    .int("Story ID must be an integer")
-    .positive("Story ID must be positive"),
-
-  title: z
-    .string("Story title must be a string")
-    .min(1, "Story title cannot be empty")
-    .optional(),
-
-  score: z
-    .number("Story score must be a number")
-    .int("Story score must be an integer")
-    .min(0, "Story score must be non-negative")
-    .optional(),
-
-  url: z.string().url("URL must be a valid URL").optional(),
-
-  descendants: z
-    .number()
-    .int("Descendants count must be an integer")
-    .min(0, "Descendants count must be non-negative")
-    .optional(),
-
-  by: z
-    .string("Author name must be a string")
-    .min(1, "Author name cannot be empty")
-    .optional(),
-
-  time: z
-    .number("Timestamp must be a number")
-    .int("Timestamp must be an integer")
-    .min(0, "Timestamp must be non-negative")
-    .optional(),
-
-  lastUpdated: z
-    .number("Last updated timestamp must be a number")
-    .int("Last updated timestamp must be an integer")
-    .min(0, "Last updated timestamp must be non-negative"),
-});
 
 // Schema for array of HnStorySummaries
-export const hnStorySummaryArraySchema = z.array(hnStorySummarySchema);
 
-// Type exports for use in other files
-export type ValidatedHnItem = z.infer<typeof hnItemSchema>;
 export type ValidatedHnItemWithComments = z.infer<
   typeof hnItemWithCommentsSchema
 >;
-export type ValidatedKidsObj3 = z.infer<typeof kidsObj3Schema>;
-export type ValidatedErrorResponse = z.infer<typeof errorResponseSchema>;
-export type ValidatedHnStorySummary = z.infer<typeof hnStorySummarySchema>;
 
 export type ValidationResponse<T> =
   | { success: true; data: T }
@@ -237,7 +158,7 @@ function formatZodError(err: any): string {
 }
 
 // General validation function that can be used with any Zod schema
-export function validateWithSchema<T>(
+function validateWithSchema<T>(
   schema: z.ZodSchema<T>,
   data: unknown,
   context: string = "Validation"
@@ -256,12 +177,6 @@ export function validateWithSchema<T>(
   };
 }
 
-export function validateHnItemArray(
-  data: unknown
-): ValidationResponse<ValidatedHnItem[]> {
-  return validateWithSchema(hnItemArraySchema, data, "Array validation");
-}
-
 export function validateHnItemWithComments(
   data: unknown
 ): ValidationResponse<ValidatedHnItemWithComments> {
@@ -269,47 +184,5 @@ export function validateHnItemWithComments(
     hnItemWithCommentsSchema,
     data,
     "Item with comments validation"
-  );
-}
-
-export function validateHnItem(
-  data: unknown
-): ValidationResponse<ValidatedHnItem> {
-  return validateWithSchema(hnItemSchema, data, "Item validation");
-}
-
-export function validateKidsObj3(
-  data: unknown
-): ValidationResponse<ValidatedKidsObj3> {
-  return validateWithSchema(kidsObj3Schema, data, "Comment validation");
-}
-
-export function validateErrorResponse(
-  data: unknown
-): ValidationResponse<ValidatedErrorResponse> {
-  return validateWithSchema(
-    errorResponseSchema,
-    data,
-    "Error response validation"
-  );
-}
-
-export function validateHnStorySummaryArray(
-  data: unknown
-): ValidationResponse<ValidatedHnStorySummary[]> {
-  return validateWithSchema(
-    hnStorySummaryArraySchema,
-    data,
-    "Story summary array validation"
-  );
-}
-
-export function validateHnStorySummary(
-  data: unknown
-): ValidationResponse<ValidatedHnStorySummary> {
-  return validateWithSchema(
-    hnStorySummarySchema,
-    data,
-    "Story summary validation"
   );
 }

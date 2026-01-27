@@ -7,7 +7,7 @@ import { Item, ItemExt } from "~/models/interfaces";
 
 const API_URL = "https://hacker-news.firebaseio.com";
 const API_VERSION = "/v0";
-export const STORIES_PER_PAGE = 25;
+const STORIES_PER_PAGE = 25;
 
 export class HackerNewsApi {
   constructor() {

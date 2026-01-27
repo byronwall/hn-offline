@@ -7,7 +7,7 @@ import { ContentForPage } from "~/stores/useDataStore";
 import { getFullDataForIds } from "./getFullDataForIds";
 import { getTopStories } from "./getTopStories";
 
-export const queryWithServerInfo = <T, A extends unknown[]>(
+const queryWithServerInfo = <T, A extends unknown[]>(
   queryFn: (...args: A) => Promise<T>,
   key: string
 ) => {
