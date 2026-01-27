@@ -23,9 +23,8 @@ export function createErrorOverlayStore(): ErrorOverlayStore {
   let nextErrorId = 1;
 
   const [isErrorOverlayVisible, setIsErrorOverlayVisible] = createSignal(false);
-  const [currentErrorDetails, setCurrentErrorDetails] = createSignal<
-    AppErrorDetails | null
-  >(null);
+  const [currentErrorDetails, setCurrentErrorDetails] =
+    createSignal<AppErrorDetails | null>(null);
 
   function safeStringify(value: unknown): string {
     try {
@@ -73,7 +72,8 @@ export function createErrorOverlayStore(): ErrorOverlayStore {
 
     if (input && typeof input === "object") {
       const anyInput = input as Record<string, unknown>;
-      const name = typeof anyInput.name === "string" ? anyInput.name : base.name;
+      const name =
+        typeof anyInput.name === "string" ? anyInput.name : base.name;
       const message =
         typeof anyInput.message === "string"
           ? anyInput.message

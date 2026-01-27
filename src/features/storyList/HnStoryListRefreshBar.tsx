@@ -60,7 +60,9 @@ export function HnStoryListRefreshBar(props: HnStoryListRefreshBarProps) {
           class="inline-flex items-center gap-1 hover:text-orange-500 focus:outline-none active:text-orange-500"
           aria-label="Refresh list"
         >
-          <span class={isLoading() ? "inline-flex animate-spin" : "inline-flex"}>
+          <span
+            class={isLoading() ? "inline-flex animate-spin" : "inline-flex"}
+          >
             <Shell width="12" height="12" />
           </span>
           <span>{pullMessage() ?? "Refresh"}</span>

@@ -11,8 +11,8 @@ import { HnItem, HnStorySummary } from "~/models/interfaces";
 
 import { createPersistedStore } from "./createPersistedStore";
 
-import type { ActiveStoryStore } from "./activeStorySignal";
 import type { AddMessage } from "./messages";
+import type { StoryUiStore } from "./storyUiStore";
 import type { ReadItemsStore } from "./useReadItemsStore";
 import type { RefreshStore } from "./useRefreshStore";
 import type { StoryPage } from "~/models/interfaces";
@@ -68,7 +68,7 @@ export function createDataStore(params: {
   localForage: Accessor<LocalForage | undefined>;
   readItemsStore: ReadItemsStore;
   refreshStore: RefreshStore;
-  activeStoryStore: ActiveStoryStore;
+  storyUi: StoryUiStore;
 }): DataStore {
   const [storyListStore, setStoryListStore] = createPersistedStore(
     "STORY_LIST_STORE",
@@ -319,7 +319,7 @@ export function createDataStore(params: {
           addMessage: params.addMessage,
           persistStoryToStorage,
         });
-        params.activeStoryStore.setActiveStoryData(storyData);
+        params.storyUi.setActiveStoryData(storyData);
       }
     } finally {
       setIsLoadingData(false);

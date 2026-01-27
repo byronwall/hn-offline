@@ -10,25 +10,21 @@ import {
 } from "solid-js";
 import { isServer } from "solid-js/web";
 
-import { createActiveStoryStore } from "~/stores/activeStorySignal";
-import { createColorMapStore } from "~/stores/colorMap";
 import { createErrorOverlayStore } from "~/stores/errorOverlay";
 import { createLocalForageStore } from "~/stores/localforage";
 import { createMessagesStore } from "~/stores/messages";
-import { createScrollStore } from "~/stores/scrollSignal";
 import { createServiceWorkerStatusStore } from "~/stores/serviceWorkerStatus";
+import { createStoryUiStore } from "~/stores/storyUiStore";
 import { createCommentStore } from "~/stores/useCommentStore";
 import { createDataStore } from "~/stores/useDataStore";
 import { createReadItemsStore } from "~/stores/useReadItemsStore";
 import { createRefreshStore } from "~/stores/useRefreshStore";
 
-import type { ActiveStoryStore } from "~/stores/activeStorySignal";
-import type { ColorMapStore } from "~/stores/colorMap";
 import type { ErrorOverlayStore } from "~/stores/errorOverlay";
 import type { LocalForageStore } from "~/stores/localforage";
 import type { MessagesStore } from "~/stores/messages";
-import type { ScrollStore } from "~/stores/scrollSignal";
 import type { ServiceWorkerStore } from "~/stores/serviceWorkerStatus";
+import type { StoryUiStore } from "~/stores/storyUiStore";
 import type { CommentStore } from "~/stores/useCommentStore";
 import type { DataStore } from "~/stores/useDataStore";
 import type { ReadItemsStore } from "~/stores/useReadItemsStore";
@@ -43,9 +39,7 @@ type AppDataContextValue = {
   refresh: RefreshStore;
   data: DataStore;
   comments: CommentStore;
-  scroll: ScrollStore;
-  activeStory: ActiveStoryStore;
-  colorMap: ColorMapStore;
+  storyUi: StoryUiStore;
   isClientMounted: Accessor<boolean>;
 };
 
@@ -56,9 +50,7 @@ export function AppDataProvider(props: ParentProps) {
   const errorOverlay = createErrorOverlayStore();
   const localForage = createLocalForageStore(messages.addMessage);
   const serviceWorker = createServiceWorkerStatusStore(messages.addMessage);
-  const scroll = createScrollStore();
-  const activeStory = createActiveStoryStore();
-  const colorMap = createColorMapStore();
+  const storyUi = createStoryUiStore();
 
   console.log("*** AppDataProvider", { localForage });
 
@@ -81,13 +73,12 @@ export function AppDataProvider(props: ParentProps) {
     localForage: localForage.localForage,
     readItemsStore: readItems,
     refreshStore: refresh,
-    activeStoryStore: activeStory,
+    storyUi,
   });
   const comments = createCommentStore({
     addMessage: messages.addMessage,
     localForage: localForage.localForage,
-    activeStory,
-    scroll,
+    storyUi,
   });
 
   onMount(() => {
@@ -267,9 +258,7 @@ export function AppDataProvider(props: ParentProps) {
         refresh,
         data,
         comments,
-        scroll,
-        activeStory,
-        colorMap,
+        storyUi,
         isClientMounted,
       }}
     >
@@ -318,14 +307,6 @@ export function useCommentStore() {
   return useAppData().comments;
 }
 
-export function useScrollStore() {
-  return useAppData().scroll;
-}
-
-export function useActiveStoryStore() {
-  return useAppData().activeStory;
-}
-
-export function useColorMapStore() {
-  return useAppData().colorMap;
+export function useStoryUiStore() {
+  return useAppData().storyUi;
 }

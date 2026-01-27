@@ -1,12 +1,7 @@
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
-import {
-  useActiveStoryStore,
-  useColorMapStore,
-  useCommentStore,
-  useScrollStore,
-} from "~/contexts/AppDataContext";
+import { useCommentStore, useStoryUiStore } from "~/contexts/AppDataContext";
 import { formatCommentText } from "~/lib/commentUtils";
 import { isValidComment } from "~/lib/isValidComment";
 import { shareHnTextContent } from "~/lib/shareHnTextContent";
@@ -22,9 +17,7 @@ export interface HnCommentProps {
 }
 
 export function HnComment(props: HnCommentProps) {
-  const activeStoryStore = useActiveStoryStore();
-  const colorMapStore = useColorMapStore();
-  const scrollStore = useScrollStore();
+  const storyUiStore = useStoryUiStore();
   const commentStore = useCommentStore();
   const [divRef, setDivRef] = createSignal<HTMLDivElement | null>(null);
 
@@ -43,7 +36,7 @@ export function HnComment(props: HnCommentProps) {
 
   // TODO: review this one
   createEffect(() => {
-    if (scrollStore.scrollToId() !== props.comment?.id) {
+    if (storyUiStore.scrollToId() !== props.comment?.id) {
       return;
     }
 
@@ -63,7 +56,7 @@ export function HnComment(props: HnCommentProps) {
         behavior: "smooth",
       });
 
-      scrollStore.clearScrollToId();
+      storyUiStore.clearScrollToId();
     });
   });
 
@@ -78,8 +71,8 @@ export function HnComment(props: HnCommentProps) {
       contentId: props.comment.id,
       author: props.comment.by,
       contentHtml: props.comment.text || "",
-      storyId: activeStoryStore.activeStoryData()?.id,
-      storyExternalUrl: activeStoryStore.activeStoryData()?.url,
+      storyId: storyUiStore.activeStoryData()?.id,
+      storyExternalUrl: storyUiStore.activeStoryData()?.url,
     });
   };
 
@@ -129,7 +122,7 @@ export function HnComment(props: HnCommentProps) {
   });
 
   const borderColor = () =>
-    colorMapStore.colorMap()[props.comment?.by ?? ""] ?? "transparent";
+    storyUiStore.colorMap()[props.comment?.by ?? ""] ?? "transparent";
   const childComments = () =>
     (props.comment.kidsObj || []).filter(isValidComment);
 
@@ -186,11 +179,9 @@ export function HnComment(props: HnCommentProps) {
                 isOpen()
                   ? {
                       "font-bold text-orange-700":
-                        activeStoryStore.activeStoryData()?.by ===
-                        props.comment.by,
+                        storyUiStore.activeStoryData()?.by === props.comment.by,
                       "font-medium":
-                        activeStoryStore.activeStoryData()?.by !==
-                        props.comment.by,
+                        storyUiStore.activeStoryData()?.by !== props.comment.by,
                     }
                   : "font-normal"
               )}

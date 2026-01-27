@@ -3,9 +3,9 @@ import { createEffect, createMemo, untrack } from "solid-js";
 import { isServer } from "solid-js/web";
 
 import {
-  useActiveStoryStore,
   useAppData,
   useDataStore,
+  useStoryUiStore,
 } from "~/contexts/AppDataContext";
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { getStoryById } from "~/server/queries";
@@ -13,7 +13,7 @@ import { getStoryById } from "~/server/queries";
 export default function Story() {
   const dataStore = useDataStore();
 
-  const activeStoryStore = useActiveStoryStore();
+  const storyUiStore = useStoryUiStore();
 
   const params = useParams();
   const id = createMemo(() => +params.id);
@@ -62,7 +62,7 @@ export default function Story() {
       return;
     }
 
-    activeStoryStore.setActiveStoryData(story());
+    storyUiStore.setActiveStoryData(story());
     dataStore.setRefreshType({ type: "story", id: id() });
   });
 

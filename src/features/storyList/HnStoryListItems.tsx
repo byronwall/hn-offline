@@ -16,8 +16,7 @@ export function HnStoryListItems(props: HnStoryListItemsProps) {
   return (
     <For each={props.items}>
       {(item) => {
-        const isRead = () =>
-          readItemsStore.readItems[item.id] !== undefined;
+        const isRead = () => readItemsStore.readItems[item.id] !== undefined;
         const isRecentRead = () => readItemsStore.recentlyReadId() === item.id;
         const shouldRender = () =>
           // allow SSR hydration match, or if not hiding read items
@@ -33,9 +32,7 @@ export function HnStoryListItems(props: HnStoryListItemsProps) {
                 isRecentRead() &&
                 readItemsStore.readSettings.shouldHideReadItems
               }
-              onFadeComplete={() =>
-                readItemsStore.setRecentlyReadId(undefined)
-              }
+              onFadeComplete={() => readItemsStore.setRecentlyReadId(undefined)}
             />
           </Show>
         );
