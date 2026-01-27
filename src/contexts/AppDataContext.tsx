@@ -9,7 +9,6 @@ import {
   type ParentProps,
   useContext,
 } from "solid-js";
-import { isServer } from "solid-js/web";
 
 import {
   type HnItem,
@@ -28,7 +27,6 @@ import { createReadItemsStore } from "~/stores/useReadItemsStore";
 import { createRefreshStore } from "~/stores/useRefreshStore";
 
 import type { ErrorOverlayStore } from "~/stores/errorOverlay";
-import type { LocalForageStore } from "~/stores/localforage";
 import type { MessagesStore } from "~/stores/messages";
 import type { ServiceWorkerStore } from "~/stores/serviceWorkerStatus";
 import type { StoryUiStore } from "~/stores/storyUiStore";
@@ -40,7 +38,6 @@ import type { RefreshStore } from "~/stores/useRefreshStore";
 type AppDataContextValue = {
   messages: MessagesStore;
   errorOverlay: ErrorOverlayStore;
-  localForage: LocalForageStore;
   serviceWorker: ServiceWorkerStore;
   readItems: ReadItemsStore;
   refresh: RefreshStore;
@@ -58,8 +55,6 @@ export function AppDataProvider(props: ParentProps) {
   const localForage = createLocalForageStore(messages.addMessage);
   const serviceWorker = createServiceWorkerStatusStore(messages.addMessage);
   const storyUi = createStoryUiStore();
-
-  console.log("*** AppDataProvider", { localForage });
 
   const [isClientMounted, setIsClientMounted] = createSignal(false);
   onMount(() => {
@@ -89,7 +84,6 @@ export function AppDataProvider(props: ParentProps) {
   });
 
   onMount(() => {
-    console.log("*** AppDataProvider onMount");
     errorOverlay.attachGlobalErrorHandlers();
     localForage.initializeLocalForage();
     const cleanupServiceWorker = serviceWorker.initializeServiceWorker();
@@ -98,17 +92,11 @@ export function AppDataProvider(props: ParentProps) {
     });
   });
 
-  console.log("*** AppDataProvider returning", {
-    isServer,
-    localForage: localForage.localForage(),
-  });
-
   return (
     <AppDataContext.Provider
       value={{
         messages,
         errorOverlay,
-        localForage,
         serviceWorker,
         readItems,
         refresh,
@@ -137,10 +125,6 @@ export function useMessagesStore() {
 
 export function useErrorOverlay() {
   return useAppData().errorOverlay;
-}
-
-export function useLocalForageStore() {
-  return useAppData().localForage;
 }
 
 export function useServiceWorkerStore() {
