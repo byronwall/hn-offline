@@ -4,8 +4,8 @@ import { isServer } from "solid-js/web";
 
 import { createPersistedStore } from "./createPersistedStore";
 import { findNextSibling } from "./findNextSibling";
-import type { AddMessage } from "./messages";
 
+import type { AddMessage } from "./messages";
 import type { StoryUiStore } from "./storyUiStore";
 
 export type CollapsedTimestampMap = Record<number, number>;

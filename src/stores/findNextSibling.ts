@@ -1,5 +1,4 @@
 import { isValidComment } from "~/lib/isValidComment";
-
 import { KidsObj3 } from "~/models/interfaces";
 
 export function findNextSibling(
