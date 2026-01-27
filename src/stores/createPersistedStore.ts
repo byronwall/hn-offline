@@ -8,7 +8,6 @@ export function createPersistedStore<T extends object>(
 ) {
   console.log("*** createPersistedStore", { name, initialValue, localForage });
   const [store, rawSetStore] = createStore(initialValue);
-  const [isLoaded, setIsLoaded] = createSignal(false);
 
   const setStore = async <K extends keyof T>(
     keyOrNewStore: K | T | ((currentStore: T) => T),
@@ -69,11 +68,7 @@ export function createPersistedStore<T extends object>(
     if (initValueFromLocalForage()) {
       rawSetStore(initValueFromLocalForage() as T);
     }
-    if (initValueFromLocalForage()) {
-      console.log("*** setting is loaded to true", name);
-      setIsLoaded(true);
-    }
   });
 
-  return [store, setStore, { isLoaded }] as const;
+  return [store, setStore] as const;
 }

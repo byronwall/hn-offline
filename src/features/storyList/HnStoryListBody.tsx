@@ -11,7 +11,7 @@ import { HnStoryListRefreshBar } from "./HnStoryListRefreshBar";
 import type { HnStorySummary, TopStoriesType } from "~/models/interfaces";
 
 interface HnStoryListBodyProps {
-  items?: HnStorySummary[];
+  items?: (HnStorySummary | null | undefined)[];
   page: TopStoriesType;
 }
 
@@ -20,11 +20,14 @@ export function HnStoryListBody(props: HnStoryListBodyProps) {
   const [listParent] = createAutoAnimate();
   const isLoading = () => dataStore.isLoadingData();
   const onRefresh = () => dataStore.refreshActive();
+  const isStorySummary = (
+    item: HnStorySummary | null | undefined
+  ): item is HnStorySummary => !!item && typeof item.id === "number";
 
   // server will not have any stories to render since we rely on createEffect
   // render 0 here to avoid hydration mismatch
   const itemsToRender = createMemo(() => {
-    const items = props.items;
+    const items = props.items?.filter(isStorySummary);
     if (!items) {
       return undefined;
     }

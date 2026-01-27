@@ -1,6 +1,5 @@
 import { type Accessor, createEffect, createSignal } from "solid-js";
 import { reconcile } from "solid-js/store";
-import { isServer } from "solid-js/web";
 
 import { createPersistedStore } from "./createPersistedStore";
 
@@ -8,26 +7,12 @@ import type { AddMessage } from "./messages";
 
 export type TimestampHash = Record<number, number>;
 
-export type ReadItemsStore = {
-  readSettings: { shouldHideReadItems: boolean };
-  setReadSettings: (
-    key: "shouldHideReadItems",
-    value: boolean
-  ) => Promise<void>;
-  readItems: TimestampHash;
-  setReadItems: (id: number, value: number) => Promise<void>;
-  recentlyReadId: Accessor<number | undefined>;
-  setRecentlyReadId: (id: number | undefined) => void;
-  saveIdToReadList: (id: number | undefined) => Promise<void>;
-  cleanUpOldReadEntries: () => void;
-
-  isLoaded: Accessor<boolean>;
-};
+export type ReadItemsStore = ReturnType<typeof createReadItemsStore>;
 
 export function createReadItemsStore(
   addMessage: AddMessage,
   localForage: Accessor<LocalForage | undefined>
-): ReadItemsStore {
+) {
   console.log("*** createReadItemsStore", { addMessage, localForage });
   const [readSettings, setReadSettings] = createPersistedStore(
     "READ_SETTINGS",
@@ -37,7 +22,7 @@ export function createReadItemsStore(
     localForage
   );
 
-  const [readItems, setReadItems, { isLoaded }] = createPersistedStore(
+  const [readItems, setReadItems] = createPersistedStore(
     "READ_ITEMS",
     {} as TimestampHash,
     localForage
@@ -62,15 +47,17 @@ export function createReadItemsStore(
     setReadItems(reconcile(newStore));
   };
 
+  let hasDoneCleanup = false;
   createEffect(() => {
-    if (isLoaded()) {
-      addMessage("readItems", "scheduleCleanup init");
-      if (!isServer) {
-        setTimeout(() => {
-          cleanUpOldReadEntries();
-        }, 1000);
-      }
+    void readItems;
+    if (hasDoneCleanup) {
+      return;
     }
+    hasDoneCleanup = true;
+
+    addMessage("readItems", "scheduleCleanup init");
+
+    setTimeout(cleanUpOldReadEntries, 1000);
   });
 
   const saveIdToReadList = async (id: number | undefined): Promise<void> => {
@@ -94,6 +81,5 @@ export function createReadItemsStore(
     setRecentlyReadId,
     saveIdToReadList,
     cleanUpOldReadEntries,
-    isLoaded,
   };
 }

@@ -69,7 +69,7 @@ export default function GlobalErrorOverlay() {
           <div class="mb-3 rounded border border-zinc-700 bg-zinc-950 p-3">
             <div class="mb-1 text-sm text-zinc-400">{error()?.time}</div>
             <div class="break-words whitespace-pre-wrap">
-              <span class="font-semibold">{error()?.name}</span>: {" "}
+              <span class="font-semibold">{error()?.name}</span>:{" "}
               {error()?.message}
             </div>
           </div>

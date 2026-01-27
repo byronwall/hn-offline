@@ -27,12 +27,6 @@ export function saveDatabase() {
   fs.writeFileSync(dbPath, dataStr);
 }
 
-export function clearDatabase() {
-  db = {};
-  saveDatabase();
-  return { success: true };
-}
-
 export function reloadDatabase() {
   // create database if it's missing
   if (!fs.existsSync(dbPath)) {

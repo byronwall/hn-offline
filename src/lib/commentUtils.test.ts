@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { formatCommentText } from "./commentUtils";
 import { Window } from "happy-dom";
+import { describe, expect, it } from "vitest";
+
+import { formatCommentText } from "./commentUtils";
 
 const window = new Window();
 const document = window.document;

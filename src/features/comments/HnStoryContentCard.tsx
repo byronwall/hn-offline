@@ -1,11 +1,7 @@
 import { Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
-import {
-  useColorMapStore,
-  useCommentStore,
-  useScrollStore,
-} from "~/contexts/AppDataContext";
+import { useCommentStore, useStoryUiStore } from "~/contexts/AppDataContext";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { shareHnTextContent } from "~/lib/shareHnTextContent";
 import { cn, timeSince } from "~/lib/utils";
@@ -18,9 +14,8 @@ type HnStoryContentCardProps = {
 };
 
 export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
-  const colorMapStore = useColorMapStore();
   const commentStore = useCommentStore();
-  const scrollStore = useScrollStore();
+  const storyUiStore = useStoryUiStore();
 
   const author = () => props.story?.by;
   const time = () => props.story?.time;
@@ -29,7 +24,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
   const textHtml = () =>
     processHtmlAndTruncateAnchorText(props.story?.text || "");
   const flashColor = () =>
-    colorMapStore.colorMap()[author() ?? ""] ?? "hsl(30, 80%, 65%)";
+    storyUiStore.colorMap()[author() ?? ""] ?? "hsl(30, 80%, 65%)";
 
   const isTextOpen = () => {
     if (storyId() === undefined) {
@@ -50,7 +45,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
     // schedule out 200ms to allow the collapse animation to finish
     setTimeout(() => {
       if (newIsCollapsed && props.firstCommentId) {
-        scrollStore.setScrollToId(props.firstCommentId);
+        storyUiStore.setScrollToId(props.firstCommentId);
       }
     }, 100);
   }

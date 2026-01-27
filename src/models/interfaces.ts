@@ -1,8 +1,8 @@
-export interface HasTime {
+interface HasTime {
   lastUpdated: number; // UNIX timestamp in seconds
 }
 
-export interface HasAuthorAndTime {
+interface HasAuthorAndTime {
   by?: string;
   time?: number;
   lastUpdated: number;
@@ -17,18 +17,11 @@ export interface ItemExt extends Item, HasTime {
   firstLayerOnly?: boolean;
 }
 
-export interface TopStoriesParams {
-  type: TopStoriesType;
-}
-
 export const STORY_TYPE = ["topstories", "day", "week", "month"] as const;
 export type TopStoriesType = (typeof STORY_TYPE)[number];
 
 export type StoryPage = "topstories" | "day" | "week";
 
-export interface ItemParams {
-  id: number;
-}
 export interface Item {
   /**
    * The item's unique id.

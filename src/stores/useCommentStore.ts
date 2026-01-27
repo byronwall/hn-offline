@@ -4,28 +4,17 @@ import { isServer } from "solid-js/web";
 
 import { createPersistedStore } from "./createPersistedStore";
 import { findNextSibling } from "./findNextSibling";
-import type { AddMessage } from "./messages";
 
-import type { ActiveStoryStore } from "./activeStorySignal";
-import type { ScrollStore } from "./scrollSignal";
+import type { AddMessage } from "./messages";
+import type { createStoryUiStore } from "./storyUiStore";
 
 export type CollapsedTimestampMap = Record<number, number>;
 
-export type CommentStore = {
-  collapsedTimestamps: CollapsedTimestampMap;
-  updateCollapsedState: (commentId: number | undefined, collapsed: boolean) => void;
-  cleanUpOldEntries: () => void;
-  handleCollapseEvent: (id: number, newOpen: boolean) => void;
-};
-
-export function createCommentStore(
-  params: {
-    addMessage: AddMessage;
-    localForage: () => LocalForage | undefined;
-    activeStory: ActiveStoryStore;
-    scroll: ScrollStore;
-  }
-): CommentStore {
+export function createCommentStore(params: {
+  addMessage: AddMessage;
+  localForage: () => LocalForage | undefined;
+  storyUi: ReturnType<typeof createStoryUiStore>;
+}) {
   params.addMessage("commentStore", "init");
 
   const [collapsedTimestamps, setCollapsedTimestamps] = createPersistedStore(
@@ -81,11 +70,11 @@ export function createCommentStore(
     updateCollapsedState(id, !newOpen);
 
     if (newOpen) {
-      params.scroll.setScrollToId(id);
+      params.storyUi.setScrollToId(id);
       return;
     }
 
-    const currentActiveStoryData = params.activeStory.activeStoryData();
+    const currentActiveStoryData = params.storyUi.activeStoryData();
     if (!currentActiveStoryData) {
       return;
     }
@@ -105,7 +94,7 @@ export function createCommentStore(
     // For closing, wait for DOM updates to complete before setting scroll target
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        params.scroll.setScrollToId(nextSiblingId);
+        params.storyUi.setScrollToId(nextSiblingId);
       });
     });
   };

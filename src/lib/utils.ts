@@ -52,7 +52,7 @@ export function _getUnixTimestamp() {
   return Math.floor(new Date().valueOf() / 1000);
 }
 
-export const isNavigator = typeof navigator !== "undefined";
+const isNavigator = typeof navigator !== "undefined";
 
 export async function shareSafely(options: ShareData): Promise<void> {
   if (!isNavigator || !navigator.share) {

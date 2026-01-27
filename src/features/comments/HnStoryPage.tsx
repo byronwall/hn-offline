@@ -3,11 +3,11 @@ import { createEffect, Match, onMount, Switch } from "solid-js";
 import { PullToRefresh } from "~/components/PullToRefresh";
 import {
   useAppData,
-  useColorMapStore,
   useDataStore,
   useMessagesStore,
   useReadItemsStore,
   useServiceWorkerStore,
+  useStoryUiStore,
 } from "~/contexts/AppDataContext";
 import { getColorsForStory } from "~/lib/getColorsForStory";
 import { isValidComment } from "~/lib/isValidComment";
@@ -28,7 +28,7 @@ interface HnStoryPageProps {
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
-  const colorMapStore = useColorMapStore();
+  const storyUiStore = useStoryUiStore();
   const messagesStore = useMessagesStore();
   const serviceWorker = useServiceWorkerStore();
   const dataStore = useDataStore();
@@ -43,7 +43,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     }
 
     messagesStore.addMessage("HnStoryPage", "update color map");
-    colorMapStore.setColorMap(getColorsForStory(story()));
+    storyUiStore.setColorMap(getColorsForStory(story()));
   });
 
   onMount(() => {

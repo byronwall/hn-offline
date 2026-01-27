@@ -1,4 +1,5 @@
 // @refresh reload
+import { createAsync } from "@solidjs/router";
 import {
   Accessor,
   createContext,
@@ -8,44 +9,35 @@ import {
   type ParentProps,
   useContext,
 } from "solid-js";
-import { isServer } from "solid-js/web";
 
-import { createActiveStoryStore } from "~/stores/activeStorySignal";
-import { createColorMapStore } from "~/stores/colorMap";
+import {
+  type HnItem,
+  type StoryPage,
+  TopStoriesType,
+} from "~/models/interfaces";
+import { WithServerInfo } from "~/server/queries";
 import { createErrorOverlayStore } from "~/stores/errorOverlay";
 import { createLocalForageStore } from "~/stores/localforage";
 import { createMessagesStore } from "~/stores/messages";
-import { createScrollStore } from "~/stores/scrollSignal";
 import { createServiceWorkerStatusStore } from "~/stores/serviceWorkerStatus";
+import { createStoryUiStore } from "~/stores/storyUiStore";
 import { createCommentStore } from "~/stores/useCommentStore";
 import { createDataStore } from "~/stores/useDataStore";
 import { createReadItemsStore } from "~/stores/useReadItemsStore";
 import { createRefreshStore } from "~/stores/useRefreshStore";
 
-import type { ActiveStoryStore } from "~/stores/activeStorySignal";
-import type { ColorMapStore } from "~/stores/colorMap";
-import type { ErrorOverlayStore } from "~/stores/errorOverlay";
-import type { LocalForageStore } from "~/stores/localforage";
-import type { MessagesStore } from "~/stores/messages";
-import type { ScrollStore } from "~/stores/scrollSignal";
-import type { ServiceWorkerStore } from "~/stores/serviceWorkerStatus";
-import type { CommentStore } from "~/stores/useCommentStore";
-import type { DataStore } from "~/stores/useDataStore";
-import type { ReadItemsStore } from "~/stores/useReadItemsStore";
-import type { RefreshStore } from "~/stores/useRefreshStore";
+import type { ContentForPage } from "~/stores/useDataStore";
 
 type AppDataContextValue = {
-  messages: MessagesStore;
-  errorOverlay: ErrorOverlayStore;
-  localForage: LocalForageStore;
-  serviceWorker: ServiceWorkerStore;
-  readItems: ReadItemsStore;
-  refresh: RefreshStore;
-  data: DataStore;
-  comments: CommentStore;
-  scroll: ScrollStore;
-  activeStory: ActiveStoryStore;
-  colorMap: ColorMapStore;
+  messages: ReturnType<typeof createMessagesStore>;
+  errorOverlay: ReturnType<typeof createErrorOverlayStore>;
+  serviceWorker: ReturnType<typeof createServiceWorkerStatusStore>;
+  readItems: ReturnType<typeof createReadItemsStore>;
+  refresh: ReturnType<typeof createRefreshStore>;
+  data: ReturnType<typeof createDataStore>;
+  comments: ReturnType<typeof createCommentStore>;
+  storyUi: ReturnType<typeof createStoryUiStore>;
+
   isClientMounted: Accessor<boolean>;
 };
 
@@ -56,11 +48,7 @@ export function AppDataProvider(props: ParentProps) {
   const errorOverlay = createErrorOverlayStore();
   const localForage = createLocalForageStore(messages.addMessage);
   const serviceWorker = createServiceWorkerStatusStore(messages.addMessage);
-  const scroll = createScrollStore();
-  const activeStory = createActiveStoryStore();
-  const colorMap = createColorMapStore();
-
-  console.log("*** AppDataProvider", { localForage });
+  const storyUi = createStoryUiStore();
 
   const [isClientMounted, setIsClientMounted] = createSignal(false);
   onMount(() => {
@@ -81,179 +69,21 @@ export function AppDataProvider(props: ParentProps) {
     localForage: localForage.localForage,
     readItemsStore: readItems,
     refreshStore: refresh,
-    activeStoryStore: activeStory,
+    storyUi,
   });
   const comments = createCommentStore({
     addMessage: messages.addMessage,
     localForage: localForage.localForage,
-    activeStory,
-    scroll,
+    storyUi,
   });
 
   onMount(() => {
-    console.log("*** AppDataProvider onMount");
     errorOverlay.attachGlobalErrorHandlers();
     localForage.initializeLocalForage();
-
-    const skipDev = import.meta.env.PROD;
-    let cleanupServiceWorkerListeners: (() => void) | null = null;
-    let cleanupOnlineListeners: (() => void) | null = null;
-
-    if ("serviceWorker" in navigator && skipDev) {
-      let controllerChangeHandler: (() => void) | null = null;
-      let messageHandler: ((event: MessageEvent) => void) | null = null;
-
-      cleanupServiceWorkerListeners = () => {
-        if (controllerChangeHandler) {
-          navigator.serviceWorker.removeEventListener(
-            "controllerchange",
-            controllerChangeHandler
-          );
-        }
-        if (messageHandler) {
-          navigator.serviceWorker.removeEventListener(
-            "message",
-            messageHandler
-          );
-        }
-      };
-
-      void (async () => {
-        try {
-          const reg = await navigator.serviceWorker.register("/_build/sw.js", {
-            scope: "/",
-          });
-
-          serviceWorker.setServiceWorkerStatus("registering");
-
-          // If an active worker already exists (e.g., after reload), mark active immediately
-          if (reg.active || navigator.serviceWorker.controller) {
-            serviceWorker.setServiceWorkerStatus("active");
-          }
-
-          // Ensure we mark active as soon as the SW is ready/controlling
-          navigator.serviceWorker.ready
-            .then(() => serviceWorker.setServiceWorkerStatus("active"))
-            .catch(() => {});
-
-          // Optional: prompt flow (replace with your toast UI)
-          reg.addEventListener("updatefound", () => {
-            const sw = reg.installing;
-            if (!sw) {
-              return;
-            }
-            serviceWorker.setServiceWorkerStatus("installing");
-            sw.addEventListener("statechange", () => {
-              const isUpdate =
-                sw.state === "installed" && navigator.serviceWorker.controller;
-              if (isUpdate) {
-                // Auto-activate; or show a toast and do this on confirm:
-                sw.postMessage({ type: "SKIP_WAITING" });
-              }
-              if (sw.state === "installed") {
-                serviceWorker.setServiceWorkerStatus("installed");
-              }
-              if (sw.state === "activating") {
-                serviceWorker.setServiceWorkerStatus("activating");
-              }
-              if (sw.state === "activated") {
-                serviceWorker.setServiceWorkerStatus("active");
-              }
-            });
-          });
-
-          const handleControllerChange = () => {
-            // New SW has taken control — reload to pick up fresh HTML/asset graph
-            serviceWorker.setServiceWorkerStatus("controllerchanged");
-            window.location.reload();
-          };
-          controllerChangeHandler = handleControllerChange;
-
-          navigator.serviceWorker.addEventListener(
-            "controllerchange",
-            handleControllerChange
-          );
-
-          const handleMessage = (event: MessageEvent) => {
-            const data = event.data as
-              | { type?: string; version?: string; online?: boolean }
-              | undefined;
-            if (!data || typeof data !== "object") {
-              return;
-            }
-            switch (data.type) {
-              case "SW_READY":
-                serviceWorker.setServiceWorkerStatus("active");
-                break;
-              case "SW_VERSION":
-                if (data.version) {
-                  serviceWorker.setServiceWorkerVersion(data.version);
-                }
-                break;
-              default:
-                break;
-            }
-          };
-          messageHandler = handleMessage;
-
-          navigator.serviceWorker.addEventListener("message", handleMessage);
-
-          // Request SW version proactively once controlling or ready
-          const requestVersion = () => {
-            try {
-              if (navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
-                  type: "GET_VERSION",
-                });
-              }
-            } catch (_) {
-              // no-op
-            }
-          };
-
-          if (navigator.serviceWorker.controller) {
-            requestVersion();
-          }
-          navigator.serviceWorker.ready.then(requestVersion).catch(() => {});
-        } catch (e) {
-          serviceWorker.setServiceWorkerStatus("error");
-          // eslint-disable-next-line no-console
-          console.error("Service worker registration failed", e);
-        }
-      })();
-    } else {
-      serviceWorker.setServiceWorkerStatus("unsupported");
-    }
-
-    // Track browser online/offline to toggle offline mode
-    try {
-      if (typeof window !== "undefined") {
-        const onlineHandler = () => serviceWorker.setIsOfflineMode(false);
-        const offlineHandler = () => serviceWorker.setIsOfflineMode(true);
-
-        // Initialize from current navigator state
-        serviceWorker.setIsOfflineMode(!navigator.onLine);
-        window.addEventListener("online", onlineHandler);
-        window.addEventListener("offline", offlineHandler);
-
-        cleanupOnlineListeners = () => {
-          window.removeEventListener("online", onlineHandler);
-          window.removeEventListener("offline", offlineHandler);
-        };
-      }
-    } catch (_) {
-      // no-op
-    }
-
+    const cleanupServiceWorker = serviceWorker.initializeServiceWorker();
     onCleanup(() => {
-      cleanupServiceWorkerListeners?.();
-      cleanupOnlineListeners?.();
+      cleanupServiceWorker();
     });
-  });
-
-  console.log("*** AppDataProvider returning", {
-    isServer,
-    localForage: localForage.localForage(),
   });
 
   return (
@@ -261,15 +91,12 @@ export function AppDataProvider(props: ParentProps) {
       value={{
         messages,
         errorOverlay,
-        localForage,
         serviceWorker,
         readItems,
         refresh,
         data,
         comments,
-        scroll,
-        activeStory,
-        colorMap,
+        storyUi,
         isClientMounted,
       }}
     >
@@ -294,10 +121,6 @@ export function useErrorOverlay() {
   return useAppData().errorOverlay;
 }
 
-export function useLocalForageStore() {
-  return useAppData().localForage;
-}
-
 export function useServiceWorkerStore() {
   return useAppData().serviceWorker;
 }
@@ -318,14 +141,57 @@ export function useCommentStore() {
   return useAppData().comments;
 }
 
-export function useScrollStore() {
-  return useAppData().scroll;
+export function useStoryUiStore() {
+  return useAppData().storyUi;
 }
 
-export function useActiveStoryStore() {
-  return useAppData().activeStory;
+export function updateStoryListDataStores(
+  page: TopStoriesType,
+  data: StoryListResource
+) {
+  const dataStore = useDataStore();
+  const refreshStore = useRefreshStore();
+  const messagesStore = useMessagesStore();
+
+  const p = page as StoryPage;
+  const latest = data.latest;
+  const d = latest?.result;
+  if (latest?.startedFromServer && d && Array.isArray(d)) {
+    console.log("*** persisting story list", p, d.length);
+    void dataStore.persistStoryList(p, d);
+  }
+
+  dataStore.setRefreshType({
+    type: "storyList",
+    page: page as StoryPage,
+  });
+
+  messagesStore.addMessage("refresh", "setRefreshType", {
+    page,
+  });
+
+  refreshStore.setRefreshRequestedTimestamp(p);
 }
 
-export function useColorMapStore() {
-  return useAppData().colorMap;
+type StoryListResult = WithServerInfo<ContentForPage>;
+type StoryListResource = ReturnType<typeof createAsync<StoryListResult>>;
+
+type StoryResult = WithServerInfo<HnItem | null | undefined>;
+type StoryResource = ReturnType<typeof createAsync<StoryResult>>;
+
+export function updateStoryDataStores(id: number, data: StoryResource) {
+  const dataStore = useDataStore();
+  const storyUiStore = useStoryUiStore();
+  const story = data.latest?.result;
+
+  if (!story) {
+    return;
+  }
+
+  if (data.latest?.startedFromServer) {
+    void dataStore.persistStoryToStorage(id, story);
+  }
+
+  storyUiStore.setActiveStoryData(story);
+  dataStore.setRefreshType({ type: "story", id });
 }

@@ -1,6 +1,6 @@
 import type { StoryPage } from "~/models/interfaces";
 
-export function isStoryPage(page: string): page is StoryPage {
+function isStoryPage(page: string): page is StoryPage {
   return page === "topstories" || page === "day" || page === "week";
 }
 

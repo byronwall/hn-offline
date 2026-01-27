@@ -1,13 +1,14 @@
 import { Meta, Title } from "@solidjs/meta";
+import { type ParentProps, Show } from "solid-js";
 
 import GlobalErrorOverlay from "./components/GlobalErrorOverlay";
 import { NavBar } from "./components/NavBar";
+import { StatusBar } from "./components/StatusBar";
 import { createClickGuard } from "./createClickGuard";
-
-import type { ParentProps } from "solid-js";
 
 export function AppShell(props: ParentProps) {
   createClickGuard();
+
   return (
     <main class="mx-auto flex min-h-screen w-full max-w-[640px] flex-col items-center justify-between bg-white">
       <Title>HN Offline</Title>
@@ -18,7 +19,10 @@ export function AppShell(props: ParentProps) {
       <div class="w-full flex-1 border-x border-b border-slate-300 p-1">
         {props.children}
       </div>
-      <GlobalErrorOverlay />
+      <Show when={import.meta.env.DEV}>
+        <GlobalErrorOverlay />
+        <StatusBar />
+      </Show>
     </main>
   );
 }

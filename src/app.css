@@ -68,12 +68,17 @@ pre {
   border-radius: 10px;
   padding-top: 6px;
   padding-bottom: 10px;
+  padding-right: 6px;
 
   background-color: white;
 
   transition: box-shadow 0.3s ease-in-out;
 }
 
+.bp3-card .bp3-card {
+  /* nested comments need a little space */
+  margin-top: 4px;
+}
 /* the vertical rail */
 .bp3-card::before {
   content: "";

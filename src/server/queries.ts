@@ -7,7 +7,7 @@ import { ContentForPage } from "~/stores/useDataStore";
 import { getFullDataForIds } from "./getFullDataForIds";
 import { getTopStories } from "./getTopStories";
 
-export const queryWithServerInfo = <T, A extends unknown[]>(
+const queryWithServerInfo = <T, A extends unknown[]>(
   queryFn: (...args: A) => Promise<T>,
   key: string
 ) => {
@@ -17,7 +17,7 @@ export const queryWithServerInfo = <T, A extends unknown[]>(
   }, key);
 };
 
-type WithServerInfo<T> = { result: T; startedFromServer: boolean };
+export type WithServerInfo<T> = { result: T; startedFromServer: boolean };
 
 export const getStoryById = queryWithServerInfo(async (id: number) => {
   "use server";
