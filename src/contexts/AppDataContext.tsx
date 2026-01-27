@@ -11,7 +11,11 @@ import {
 } from "solid-js";
 import { isServer } from "solid-js/web";
 
-import { type StoryPage, TopStoriesType } from "~/models/interfaces";
+import {
+  type HnItem,
+  type StoryPage,
+  TopStoriesType,
+} from "~/models/interfaces";
 import { WithServerInfo } from "~/server/queries";
 import { createErrorOverlayStore } from "~/stores/errorOverlay";
 import { createLocalForageStore } from "~/stores/localforage";
@@ -344,3 +348,23 @@ export function updateStoryListDataStores(
 
 type StoryListResult = WithServerInfo<ContentForPage>;
 type StoryListResource = ReturnType<typeof createAsync<StoryListResult>>;
+
+type StoryResult = WithServerInfo<HnItem | null | undefined>;
+type StoryResource = ReturnType<typeof createAsync<StoryResult>>;
+
+export function updateStoryDataStores(id: number, data: StoryResource) {
+  const dataStore = useDataStore();
+  const storyUiStore = useStoryUiStore();
+  const story = data.latest?.result;
+
+  if (!story) {
+    return;
+  }
+
+  if (data.latest?.startedFromServer) {
+    void dataStore.persistStoryToStorage(id, story);
+  }
+
+  storyUiStore.setActiveStoryData(story);
+  dataStore.setRefreshType({ type: "story", id });
+}

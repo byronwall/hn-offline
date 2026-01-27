@@ -3,17 +3,15 @@ import { createEffect, createMemo, untrack } from "solid-js";
 import { isServer } from "solid-js/web";
 
 import {
+  updateStoryDataStores,
   useAppData,
   useDataStore,
-  useStoryUiStore,
 } from "~/contexts/AppDataContext";
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { getStoryById } from "~/server/queries";
 
 export default function Story() {
   const dataStore = useDataStore();
-
-  const storyUiStore = useStoryUiStore();
 
   const params = useParams();
   const id = createMemo(() => +params.id);
@@ -42,28 +40,13 @@ export default function Story() {
 
   const story = () => data.latest?.result ?? undefined;
 
-  // persist the story if from server
-  // TODO: move into the store and call with one clean function
-  createEffect(() => {
-    const s = story();
-    if (!(data.latest?.startedFromServer && s)) {
-      return;
-    }
-    void dataStore.persistStoryToStorage(id(), s);
-  });
-
   createEffect(() => {
     console.log("*** getStoryById result", {
       data: data.latest,
       isClientMounted: isClientMounted(),
     });
 
-    if (!story()) {
-      return;
-    }
-
-    storyUiStore.setActiveStoryData(story());
-    dataStore.setRefreshType({ type: "story", id: id() });
+    updateStoryDataStores(id(), data);
   });
 
   return (
