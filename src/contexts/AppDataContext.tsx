@@ -1,4 +1,5 @@
 // @refresh reload
+import { createAsync } from "@solidjs/router";
 import {
   Accessor,
   createContext,
@@ -10,6 +11,8 @@ import {
 } from "solid-js";
 import { isServer } from "solid-js/web";
 
+import { type StoryPage, TopStoriesType } from "~/models/interfaces";
+import { WithServerInfo } from "~/server/queries";
 import { createErrorOverlayStore } from "~/stores/errorOverlay";
 import { createLocalForageStore } from "~/stores/localforage";
 import { createMessagesStore } from "~/stores/messages";
@@ -26,7 +29,7 @@ import type { MessagesStore } from "~/stores/messages";
 import type { ServiceWorkerStore } from "~/stores/serviceWorkerStatus";
 import type { StoryUiStore } from "~/stores/storyUiStore";
 import type { CommentStore } from "~/stores/useCommentStore";
-import type { DataStore } from "~/stores/useDataStore";
+import type { ContentForPage, DataStore } from "~/stores/useDataStore";
 import type { ReadItemsStore } from "~/stores/useReadItemsStore";
 import type { RefreshStore } from "~/stores/useRefreshStore";
 
@@ -310,3 +313,34 @@ export function useCommentStore() {
 export function useStoryUiStore() {
   return useAppData().storyUi;
 }
+
+export function updateStoryListDataStores(
+  page: TopStoriesType,
+  data: StoryListResource
+) {
+  const dataStore = useDataStore();
+  const refreshStore = useRefreshStore();
+  const messagesStore = useMessagesStore();
+
+  const p = page as StoryPage;
+  const latest = data.latest;
+  const d = latest?.result;
+  if (latest?.startedFromServer && d && Array.isArray(d)) {
+    console.log("*** persisting story list", p, d.length);
+    void dataStore.persistStoryList(p, d);
+  }
+
+  dataStore.setRefreshType({
+    type: "storyList",
+    page: page as StoryPage,
+  });
+
+  messagesStore.addMessage("refresh", "setRefreshType", {
+    page,
+  });
+
+  refreshStore.setRefreshRequestedTimestamp(p);
+}
+
+type StoryListResult = WithServerInfo<ContentForPage>;
+type StoryListResource = ReturnType<typeof createAsync<StoryListResult>>;

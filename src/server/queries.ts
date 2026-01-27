@@ -17,7 +17,7 @@ export const queryWithServerInfo = <T, A extends unknown[]>(
   }, key);
 };
 
-type WithServerInfo<T> = { result: T; startedFromServer: boolean };
+export type WithServerInfo<T> = { result: T; startedFromServer: boolean };
 
 export const getStoryById = queryWithServerInfo(async (id: number) => {
   "use server";
