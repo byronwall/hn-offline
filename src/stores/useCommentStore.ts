@@ -6,25 +6,15 @@ import { createPersistedStore } from "./createPersistedStore";
 import { findNextSibling } from "./findNextSibling";
 
 import type { AddMessage } from "./messages";
-import type { StoryUiStore } from "./storyUiStore";
+import type { createStoryUiStore } from "./storyUiStore";
 
 export type CollapsedTimestampMap = Record<number, number>;
-
-export type CommentStore = {
-  collapsedTimestamps: CollapsedTimestampMap;
-  updateCollapsedState: (
-    commentId: number | undefined,
-    collapsed: boolean
-  ) => void;
-  cleanUpOldEntries: () => void;
-  handleCollapseEvent: (id: number, newOpen: boolean) => void;
-};
 
 export function createCommentStore(params: {
   addMessage: AddMessage;
   localForage: () => LocalForage | undefined;
-  storyUi: StoryUiStore;
-}): CommentStore {
+  storyUi: ReturnType<typeof createStoryUiStore>;
+}) {
   params.addMessage("commentStore", "init");
 
   const [collapsedTimestamps, setCollapsedTimestamps] = createPersistedStore(

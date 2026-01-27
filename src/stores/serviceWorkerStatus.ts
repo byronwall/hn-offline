@@ -12,19 +12,7 @@ export type ServiceWorkerStatus =
   | "controllerchanged"
   | "error";
 
-export type ServiceWorkerStore = {
-  serviceWorkerStatus: () => ServiceWorkerStatus;
-  serviceWorkerVersion: () => string | undefined;
-  isOfflineMode: () => boolean;
-  setServiceWorkerStatus: (status: ServiceWorkerStatus) => void;
-  setServiceWorkerVersion: (version: string | undefined) => void;
-  setIsOfflineMode: (offline: boolean) => void;
-  initializeServiceWorker: () => () => void;
-};
-
-export function createServiceWorkerStatusStore(
-  addMessage: AddMessage
-): ServiceWorkerStore {
+export function createServiceWorkerStatusStore(addMessage: AddMessage) {
   const initialStatus: ServiceWorkerStatus =
     typeof navigator !== "undefined" && "serviceWorker" in navigator
       ? "registering"

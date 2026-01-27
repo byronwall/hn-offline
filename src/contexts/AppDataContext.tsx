@@ -26,24 +26,18 @@ import { createDataStore } from "~/stores/useDataStore";
 import { createReadItemsStore } from "~/stores/useReadItemsStore";
 import { createRefreshStore } from "~/stores/useRefreshStore";
 
-import type { ErrorOverlayStore } from "~/stores/errorOverlay";
-import type { MessagesStore } from "~/stores/messages";
-import type { ServiceWorkerStore } from "~/stores/serviceWorkerStatus";
-import type { StoryUiStore } from "~/stores/storyUiStore";
-import type { CommentStore } from "~/stores/useCommentStore";
-import type { ContentForPage, DataStore } from "~/stores/useDataStore";
-import type { ReadItemsStore } from "~/stores/useReadItemsStore";
-import type { RefreshStore } from "~/stores/useRefreshStore";
+import type { ContentForPage } from "~/stores/useDataStore";
 
 type AppDataContextValue = {
-  messages: MessagesStore;
-  errorOverlay: ErrorOverlayStore;
-  serviceWorker: ServiceWorkerStore;
-  readItems: ReadItemsStore;
-  refresh: RefreshStore;
-  data: DataStore;
-  comments: CommentStore;
-  storyUi: StoryUiStore;
+  messages: ReturnType<typeof createMessagesStore>;
+  errorOverlay: ReturnType<typeof createErrorOverlayStore>;
+  serviceWorker: ReturnType<typeof createServiceWorkerStatusStore>;
+  readItems: ReturnType<typeof createReadItemsStore>;
+  refresh: ReturnType<typeof createRefreshStore>;
+  data: ReturnType<typeof createDataStore>;
+  comments: ReturnType<typeof createCommentStore>;
+  storyUi: ReturnType<typeof createStoryUiStore>;
+
   isClientMounted: Accessor<boolean>;
 };
 

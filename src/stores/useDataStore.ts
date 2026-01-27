@@ -12,9 +12,9 @@ import { HnItem, HnStorySummary } from "~/models/interfaces";
 import { createPersistedStore } from "./createPersistedStore";
 
 import type { AddMessage } from "./messages";
-import type { StoryUiStore } from "./storyUiStore";
+import type { createStoryUiStore } from "./storyUiStore";
 import type { ReadItemsStore } from "./useReadItemsStore";
-import type { RefreshStore } from "./useRefreshStore";
+import type { createRefreshStore } from "./useRefreshStore";
 import type { StoryPage } from "~/models/interfaces";
 
 export type StoryId = number;
@@ -37,21 +37,7 @@ export type ContentForPage =
       data: HnItem[];
     };
 
-export type DataStore = {
-  storyListStore: StoryListStore;
-  isLoadingData: Accessor<boolean>;
-  refreshType: Accessor<RefreshType | undefined>;
-  setRefreshType: (type: RefreshType | undefined) => void;
-  persistStoryList: (page: StoryPage, data: HnItem[]) => Promise<void>;
-  persistStoryToStorage: (id: StoryId, content: HnItem) => Promise<boolean>;
-  purgeLocalForage: () => Promise<void>;
-  getContent: (
-    id: StoryId,
-    options?: { allowNetwork?: boolean }
-  ) => Promise<HnItem | undefined>;
-  getContentForPage: (rawPage: string) => Promise<ContentForPage>;
-  refreshActive: () => Promise<void>;
-};
+export type DataStore = ReturnType<typeof createDataStore>;
 
 type RefreshType =
   | {
@@ -67,9 +53,9 @@ export function createDataStore(params: {
   addMessage: AddMessage;
   localForage: Accessor<LocalForage | undefined>;
   readItemsStore: ReadItemsStore;
-  refreshStore: RefreshStore;
-  storyUi: StoryUiStore;
-}): DataStore {
+  refreshStore: ReturnType<typeof createRefreshStore>;
+  storyUi: ReturnType<typeof createStoryUiStore>;
+}) {
   const [storyListStore, setStoryListStore] = createPersistedStore(
     "STORY_LIST_STORE",
     {} as StoryListStore,

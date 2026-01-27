@@ -6,17 +6,10 @@ import type { StoryPage } from "~/models/interfaces";
 
 export type RefreshTimestampStore = Record<StoryPage, number>;
 
-export type RefreshStore = {
-  refreshTimestamps: RefreshTimestampStore;
-  refreshRequestedTimestamps: RefreshTimestampStore;
-  setRefreshTimestamp: (page: StoryPage, ts?: number) => void;
-  setRefreshRequestedTimestamp: (page: StoryPage, ts?: number) => void;
-};
-
 export function createRefreshStore(
   addMessage: AddMessage,
   localForage: Accessor<LocalForage | undefined>
-): RefreshStore {
+) {
   const [refreshTimestamps, setRefreshTimestamps] = createPersistedStore(
     "REFRESH_TIMESTAMPS",
     {} as RefreshTimestampStore,

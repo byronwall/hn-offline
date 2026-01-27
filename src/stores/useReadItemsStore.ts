@@ -7,24 +7,12 @@ import type { AddMessage } from "./messages";
 
 export type TimestampHash = Record<number, number>;
 
-export type ReadItemsStore = {
-  readSettings: { shouldHideReadItems: boolean };
-  setReadSettings: (
-    key: "shouldHideReadItems",
-    value: boolean
-  ) => Promise<void>;
-  readItems: TimestampHash;
-  setReadItems: (id: number, value: number) => Promise<void>;
-  recentlyReadId: Accessor<number | undefined>;
-  setRecentlyReadId: (id: number | undefined) => void;
-  saveIdToReadList: (id: number | undefined) => Promise<void>;
-  cleanUpOldReadEntries: () => void;
-};
+export type ReadItemsStore = ReturnType<typeof createReadItemsStore>;
 
 export function createReadItemsStore(
   addMessage: AddMessage,
   localForage: Accessor<LocalForage | undefined>
-): ReadItemsStore {
+) {
   console.log("*** createReadItemsStore", { addMessage, localForage });
   const [readSettings, setReadSettings] = createPersistedStore(
     "READ_SETTINGS",

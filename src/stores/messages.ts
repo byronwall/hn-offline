@@ -1,4 +1,4 @@
-import { type Accessor, createSignal } from "solid-js";
+import { createSignal } from "solid-js";
 
 export type Message = {
   id: string;
@@ -14,14 +14,7 @@ export type AddMessage = (
   ...args: unknown[]
 ) => void;
 
-export type MessagesStore = {
-  messages: Accessor<Message[]>;
-  addMessage: AddMessage;
-  clearMessages: () => void;
-  removeMessage: (id: string) => void;
-};
-
-export function createMessagesStore(): MessagesStore {
+export function createMessagesStore() {
   const [messages, setMessages] = createSignal<Message[]>([]);
 
   const addMessage: AddMessage = (key, message, ...args) => {

@@ -1,4 +1,4 @@
-import { type Accessor, createSignal } from "solid-js";
+import { createSignal } from "solid-js";
 
 export type AppErrorDetails = {
   id: number;
@@ -10,16 +10,7 @@ export type AppErrorDetails = {
   extras?: unknown;
 };
 
-export type ErrorOverlayStore = {
-  isVisible: Accessor<boolean>;
-  error: Accessor<AppErrorDetails | null>;
-  showErrorOverlay: (errorLike: unknown, extras?: unknown) => void;
-  hideErrorOverlay: () => void;
-  attachGlobalErrorHandlers: () => void;
-  normalizeErrorDetails: (input: unknown, extras?: unknown) => AppErrorDetails;
-};
-
-export function createErrorOverlayStore(): ErrorOverlayStore {
+export function createErrorOverlayStore() {
   let nextErrorId = 1;
 
   const [isErrorOverlayVisible, setIsErrorOverlayVisible] = createSignal(false);
