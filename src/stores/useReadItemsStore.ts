@@ -22,7 +22,7 @@ export function createReadItemsStore(
     localForage
   );
 
-  const [readItems, setReadItems] = createPersistedStore(
+  const [readItems, setReadItems, readItemsHydrated] = createPersistedStore(
     "READ_ITEMS",
     {} as TimestampHash,
     localForage
@@ -49,6 +49,9 @@ export function createReadItemsStore(
 
   let hasDoneCleanup = false;
   createEffect(() => {
+    if (!readItemsHydrated()) {
+      return;
+    }
     void readItems;
     if (hasDoneCleanup) {
       return;

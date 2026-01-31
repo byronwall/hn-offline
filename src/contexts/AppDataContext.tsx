@@ -17,25 +17,24 @@ import {
 } from "~/models/interfaces";
 import { WithServerInfo } from "~/server/queries";
 import { createErrorOverlayStore } from "~/stores/errorOverlay";
-import { createLocalForageStore } from "~/stores/localforage";
+import { createLocalDataStore } from "~/stores/localDataStore";
 import { createMessagesStore } from "~/stores/messages";
 import { createServiceWorkerStatusStore } from "~/stores/serviceWorkerStatus";
 import { createStoryUiStore } from "~/stores/storyUiStore";
-import { createCommentStore } from "~/stores/useCommentStore";
-import { createDataStore } from "~/stores/useDataStore";
-import { createReadItemsStore } from "~/stores/useReadItemsStore";
-import { createRefreshStore } from "~/stores/useRefreshStore";
 
 import type { ContentForPage } from "~/stores/useDataStore";
+
+type LocalDataStore = ReturnType<typeof createLocalDataStore>;
 
 type AppDataContextValue = {
   messages: ReturnType<typeof createMessagesStore>;
   errorOverlay: ReturnType<typeof createErrorOverlayStore>;
   serviceWorker: ReturnType<typeof createServiceWorkerStatusStore>;
-  readItems: ReturnType<typeof createReadItemsStore>;
-  refresh: ReturnType<typeof createRefreshStore>;
-  data: ReturnType<typeof createDataStore>;
-  comments: ReturnType<typeof createCommentStore>;
+  localData: LocalDataStore;
+  readItems: LocalDataStore["readItems"];
+  refresh: LocalDataStore["refresh"];
+  data: LocalDataStore["data"];
+  comments: LocalDataStore["comments"];
   storyUi: ReturnType<typeof createStoryUiStore>;
 
   isClientMounted: Accessor<boolean>;
@@ -46,40 +45,26 @@ const AppDataContext = createContext<AppDataContextValue>();
 export function AppDataProvider(props: ParentProps) {
   const messages = createMessagesStore();
   const errorOverlay = createErrorOverlayStore();
-  const localForage = createLocalForageStore(messages.addMessage);
   const serviceWorker = createServiceWorkerStatusStore(messages.addMessage);
   const storyUi = createStoryUiStore();
+  const localData = createLocalDataStore({
+    addMessage: messages.addMessage,
+    storyUi,
+  });
 
   const [isClientMounted, setIsClientMounted] = createSignal(false);
   onMount(() => {
     setIsClientMounted(true);
   });
 
-  const readItems = createReadItemsStore(
-    messages.addMessage,
-    localForage.localForage
-  );
-
-  const refresh = createRefreshStore(
-    messages.addMessage,
-    localForage.localForage
-  );
-  const data = createDataStore({
-    addMessage: messages.addMessage,
-    localForage: localForage.localForage,
-    readItemsStore: readItems,
-    refreshStore: refresh,
-    storyUi,
-  });
-  const comments = createCommentStore({
-    addMessage: messages.addMessage,
-    localForage: localForage.localForage,
-    storyUi,
-  });
+  const readItems = localData.readItems;
+  const refresh = localData.refresh;
+  const data = localData.data;
+  const comments = localData.comments;
 
   onMount(() => {
     errorOverlay.attachGlobalErrorHandlers();
-    localForage.initializeLocalForage();
+    localData.initializeLocalForage();
     const cleanupServiceWorker = serviceWorker.initializeServiceWorker();
     onCleanup(() => {
       cleanupServiceWorker();
@@ -92,6 +77,7 @@ export function AppDataProvider(props: ParentProps) {
         messages,
         errorOverlay,
         serviceWorker,
+        localData,
         readItems,
         refresh,
         data,

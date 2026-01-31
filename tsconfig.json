@@ -10,7 +10,11 @@
     "allowJs": true,
     "noEmit": true,
     "strict": true,
-    "types": ["vinxi/types/client", "vite-plugin-pwa/pwa-assets"],
+    "types": [
+      "vinxi/types/client",
+      "vite-plugin-pwa/pwa-assets",
+      "@testing-library/jest-dom"
+    ],
     "isolatedModules": true,
     "skipLibCheck": true,
     "paths": {
