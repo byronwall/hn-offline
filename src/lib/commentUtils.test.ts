@@ -12,6 +12,11 @@ describe("formatCommentText", () => {
     return document.body;
   };
 
+  const getQuoteBlocks = (html: string) => {
+    const body = parseHtml(html);
+    return Array.from(body.querySelectorAll("div"));
+  };
+
   it("handles empty input", () => {
     expect(formatCommentText("")).toBe("");
   });
@@ -27,16 +32,19 @@ describe("formatCommentText", () => {
     expect(output).toContain("This is a quote");
 
     // Check structure
-    const body = parseHtml(output);
-    const div = body.querySelector("div");
-    expect(div).not.toBeNull();
-    expect(div?.textContent).toContain("This is a quote");
+    const blocks = getQuoteBlocks(output);
+    expect(blocks.length).toBe(1);
+    expect(blocks[0]?.textContent).toContain("This is a quote");
   });
 
   it("detects a block quote with &gt;", () => {
     const input = "&gt; This is a quote";
     const output = formatCommentText(input);
     expect(output).toContain("This is a quote");
+
+    const blocks = getQuoteBlocks(output);
+    expect(blocks.length).toBe(1);
+    expect(blocks[0]?.textContent).toContain("This is a quote");
   });
 
   it("handles quote amidst paragraphs", () => {
@@ -61,12 +69,50 @@ describe("formatCommentText", () => {
     const output = formatCommentText(input);
     expect(output).toContain("<a href='foo'>link</a>");
     expect(output).toContain("Quote with");
+
+    const blocks = getQuoteBlocks(output);
+    expect(blocks.length).toBe(1);
+    expect(blocks[0]?.querySelector("a")?.getAttribute("href")).toBe("foo");
   });
 
   it("detects block quote in complex user example", () => {
     const input = "&gt; I've often dreamed of a system...<p>Have a bot...";
     const output = formatCommentText(input);
     expect(output).toContain("I've often dreamed");
+
+    const blocks = getQuoteBlocks(output);
+    expect(blocks.length).toBe(1);
+    expect(blocks[0]?.textContent).toContain("I've often dreamed");
+  });
+
+  it("does not wrap lines where > is not leading", () => {
+    const input = "This is not a quote > just text";
+    const output = formatCommentText(input);
+    expect(output).toBe(input);
+    expect(getQuoteBlocks(output).length).toBe(0);
+  });
+
+  it("wraps when > is preceded by whitespace", () => {
+    const input = "   > Indented quote";
+    const output = formatCommentText(input);
+    const blocks = getQuoteBlocks(output);
+    expect(blocks.length).toBe(1);
+    expect(blocks[0]?.textContent).toContain("Indented quote");
+  });
+
+  it("wraps only quote-leading paragraphs in mixed content", () => {
+    const input = "Intro<p>> Quote one<p>Middle<p>&gt; Quote two<p>Tail";
+    const output = formatCommentText(input);
+
+    const blocks = getQuoteBlocks(output);
+    expect(blocks.length).toBe(2);
+    expect(blocks[0]?.textContent).toContain("Quote one");
+    expect(blocks[1]?.textContent).toContain("Quote two");
+
+    const body = parseHtml(output);
+    expect(body.textContent).toContain("Intro");
+    expect(body.textContent).toContain("Middle");
+    expect(body.textContent).toContain("Tail");
   });
 
   it("does not mix up code blocks", () => {
