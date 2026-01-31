@@ -156,9 +156,9 @@ export function updateStoryListDataStores(
   const p = page as StoryPage;
   const latest = data.latest;
   const d = latest?.result;
-  if (latest?.startedFromServer && d && Array.isArray(d)) {
-    console.log("*** persisting story list", p, d.length);
-    void dataStore.persistStoryList(p, d);
+
+  if (latest?.startedFromServer && d?.type === "fullData") {
+    void dataStore.persistStoryList(p, d?.data ?? []);
   }
 
   dataStore.setRefreshType({
