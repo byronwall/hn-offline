@@ -1,4 +1,4 @@
-import { type Accessor, createEffect, createSignal } from "solid-js";
+import { type Accessor, createEffect, createSignal, onCleanup } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
 
 export function createPersistedStore<T extends object>(
@@ -9,6 +9,19 @@ export function createPersistedStore<T extends object>(
   console.log("*** createPersistedStore", { name, initialValue, localForage });
   const [store, rawSetStore] = createStore(initialValue);
 
+  const [hasHydratedFromStorage, setHasHydratedFromStorage] =
+    createSignal(false);
+  const [storageSnapshot, setStorageSnapshot] = createSignal<{
+    value: T | undefined;
+    loaded: boolean;
+  }>({ value: undefined, loaded: false });
+
+  const pendingMutations: Array<(current: T) => T> = [];
+
+  const queueMutation = (mutation: (current: T) => T) => {
+    pendingMutations.push(mutation);
+  };
+
   const setStore = async <K extends keyof T>(
     keyOrNewStore: K | T | ((currentStore: T) => T),
     value?: T[K]
@@ -17,10 +30,15 @@ export function createPersistedStore<T extends object>(
 
     // handle setting the store via a function
     if (typeof keyOrNewStore === "function") {
-      const newStore = keyOrNewStore(unwrap(store));
+      const mutation = keyOrNewStore as (currentStore: T) => T;
+      const newStore = mutation(unwrap(store));
       console.log("*** newStore", newStore);
       rawSetStore(newStore);
-      await localForage()?.setItem(name, newStore);
+      if (hasHydratedFromStorage()) {
+        await localForage()?.setItem(name, newStore);
+      } else {
+        queueMutation(mutation);
+      }
       return;
     }
 
@@ -29,7 +47,11 @@ export function createPersistedStore<T extends object>(
       const newStore = unwrap(keyOrNewStore);
       console.log("*** keyOrNewStore", newStore);
       rawSetStore(newStore);
-      await localForage()?.setItem(name, newStore);
+      if (hasHydratedFromStorage()) {
+        await localForage()?.setItem(name, newStore);
+      } else {
+        queueMutation(() => newStore);
+      }
 
       return;
     }
@@ -37,38 +59,67 @@ export function createPersistedStore<T extends object>(
     // handle setting a single key
     console.log("setting store", name, keyOrNewStore, value);
     rawSetStore(keyOrNewStore as any, value);
-    await localForage()?.setItem(name, unwrap(store));
+    const mutation = (currentStore: T) => ({
+      ...currentStore,
+      [keyOrNewStore]: value as T[K],
+    });
+    if (hasHydratedFromStorage()) {
+      await localForage()?.setItem(name, unwrap(store));
+    } else {
+      queueMutation(mutation);
+    }
   };
 
-  const [initValueFromLocalForage, setInitValueFromLocalForage] = createSignal<
-    T | undefined
-  >(undefined);
-
-  async function getInitialValueFromLocalForage() {
-    const initialValue = (await localForage()?.getItem(name)) as T;
-    console.log(
-      "*** initial value from local forage in resource",
-      name,
-      initialValue
-    );
-    setInitValueFromLocalForage(() => initialValue);
-  }
-
   createEffect(() => {
-    void localForage();
-    void getInitialValueFromLocalForage();
-  });
-
-  createEffect(() => {
-    console.log(
-      "*** creating effect to set data",
-      name,
-      initValueFromLocalForage()
-    );
-    if (initValueFromLocalForage()) {
-      rawSetStore(initValueFromLocalForage() as T);
+    const lf = localForage();
+    if (!lf) {
+      return;
     }
+
+    let cancelled = false;
+    void (async () => {
+      const initialValue = (await lf.getItem(name)) as T;
+      if (cancelled) {
+        return;
+      }
+      console.log(
+        "*** initial value from local forage in resource",
+        name,
+        initialValue
+      );
+      setStorageSnapshot({ value: initialValue, loaded: true });
+    })();
+    onCleanup(() => {
+      cancelled = true;
+    });
   });
 
-  return [store, setStore] as const;
+  createEffect(() => {
+    const lf = localForage();
+    const snapshot = storageSnapshot();
+    if (!lf || !snapshot.loaded || hasHydratedFromStorage()) {
+      return;
+    }
+
+    console.log("*** creating effect to set data", name, snapshot.value);
+
+    const base = snapshot.value ?? initialValue;
+    let merged = base;
+    if (pendingMutations.length > 0) {
+      for (const mutation of pendingMutations) {
+        merged = mutation(merged);
+      }
+    }
+
+    rawSetStore(merged as T);
+    setHasHydratedFromStorage(true);
+
+    if (pendingMutations.length > 0) {
+      void lf.setItem(name, merged);
+    }
+
+    pendingMutations.length = 0;
+  });
+
+  return [store, setStore, hasHydratedFromStorage] as const;
 }

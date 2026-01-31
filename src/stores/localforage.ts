@@ -8,6 +8,7 @@ export function createLocalForageStore(addMessage: AddMessage) {
   const [localForage, setLocalForage] = createSignal<LocalForage | undefined>(
     undefined
   );
+  const [isReady, setIsReady] = createSignal(false);
 
   const initializeLocalForage = () => {
     addMessage("localforage", "initializeLocalForage init");
@@ -25,13 +26,18 @@ export function createLocalForageStore(addMessage: AddMessage) {
       description: "some description",
     });
 
-    setLocalForage(localforage);
+    void localforage.ready().then(() => {
+      setLocalForage(localforage);
+      setIsReady(true);
+      addMessage("localforage", "initializeLocalForage ready");
+    });
 
     addMessage("localforage", "initializeLocalForage done");
   };
 
   return {
     localForage,
+    isReady,
     initializeLocalForage,
   };
 }
