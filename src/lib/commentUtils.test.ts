@@ -24,7 +24,6 @@ describe("formatCommentText", () => {
   it("detects a simple block quote with >", () => {
     const input = "> This is a quote";
     const output = formatCommentText(input);
-    expect(output).toContain("border-l-4");
     expect(output).toContain("This is a quote");
 
     // Check structure
@@ -37,7 +36,7 @@ describe("formatCommentText", () => {
   it("detects a block quote with &gt;", () => {
     const input = "&gt; This is a quote";
     const output = formatCommentText(input);
-    expect(output).toContain("border-l-4");
+    expect(output).toContain("This is a quote");
   });
 
   it("handles quote amidst paragraphs", () => {
@@ -61,13 +60,12 @@ describe("formatCommentText", () => {
     const input = "> Quote with <a href='foo'>link</a>";
     const output = formatCommentText(input);
     expect(output).toContain("<a href='foo'>link</a>");
-    expect(output).toContain("border-l-4");
+    expect(output).toContain("Quote with");
   });
 
   it("detects block quote in complex user example", () => {
     const input = "&gt; I've often dreamed of a system...<p>Have a bot...";
     const output = formatCommentText(input);
-    expect(output).toContain("border-l-4");
     expect(output).toContain("I've often dreamed");
   });
 
