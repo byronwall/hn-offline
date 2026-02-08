@@ -130,6 +130,30 @@ export function createDataStore(params: {
     params.localForage
   );
 
+  const didStoryListChange = (
+    current: PersistedStoryList | undefined,
+    next: HnStorySummary[]
+  ) => {
+    if (!current) {
+      return true;
+    }
+
+    if (current.data.length !== next.length) {
+      return true;
+    }
+
+    return next.some((item, index) => {
+      const existing = current.data[index];
+      if (!existing) {
+        return true;
+      }
+
+      return (
+        existing.id !== item.id || existing.lastUpdated !== item.lastUpdated
+      );
+    });
+  };
+
   const persistStoryList = async (page: StoryPage, data: HnItem[]) => {
     // overall goals: update store -> saves list to local forage
     // then go through all items and save them to local forage
@@ -171,14 +195,19 @@ export function createDataStore(params: {
 
     console.log("*** current", current);
 
-    if (!current || incomingTimestamp > (current.serverUpdateTimestamp ?? 0)) {
+    const shouldOverwrite =
+      !current ||
+      incomingTimestamp > (current.serverUpdateTimestamp ?? 0) ||
+      didStoryListChange(current, storySummaries);
+
+    if (shouldOverwrite) {
       // save if none or if the incoming timestamp is newer
       params.addMessage("persist", "persistStoryList over store", {
         page,
         incomingTimestamp,
         currentTimestamp: current?.serverUpdateTimestamp,
       });
-      setStoryListStore(page, {
+      await setStoryListStore(page, {
         serverUpdateTimestamp: incomingTimestamp,
         page,
         data: storySummaries,
@@ -196,7 +225,7 @@ export function createDataStore(params: {
         continue;
       }
 
-      const didSave = persistStoryToStorage(item.id, item);
+      const didSave = await persistStoryToStorage(item.id, item);
       if (!didSave) {
         skippedSaves++;
       }
