@@ -9,6 +9,8 @@ export function createLocalForageStore(addMessage: AddMessage) {
     undefined
   );
   const [isReady, setIsReady] = createSignal(false);
+  let isInitializing = false;
+  let initRetryAttempt = 0;
 
   const initializeLocalForage = () => {
     addMessage("localforage", "initializeLocalForage init");
@@ -18,7 +20,7 @@ export function createLocalForageStore(addMessage: AddMessage) {
     }
 
     localforage.config({
-      driver: localforage.INDEXEDDB, // Force WebSQL; same as using setDriver()
+      driver: localforage.INDEXEDDB,
       name: "hn_next",
       version: 1.0,
       size: 4980736, // Size of database, in bytes. WebSQL-only for now.
@@ -26,11 +28,42 @@ export function createLocalForageStore(addMessage: AddMessage) {
       description: "some description",
     });
 
-    void localforage.ready().then(() => {
-      setLocalForage(localforage);
-      setIsReady(true);
-      addMessage("localforage", "initializeLocalForage ready");
-    });
+    const tryInitialize = () => {
+      if (isReady() || isInitializing) {
+        return;
+      }
+
+      isInitializing = true;
+      initRetryAttempt += 1;
+
+      void localforage
+        .setDriver(localforage.INDEXEDDB)
+        .then(async () => {
+          await localforage.ready();
+          setLocalForage(localforage);
+          setIsReady(true);
+          initRetryAttempt = 0;
+          addMessage("localforage", "initializeLocalForage ready");
+        })
+        .catch((error: unknown) => {
+          const delayMs = Math.min(30000, 500 * 2 ** (initRetryAttempt - 1));
+          console.error("localForage init failed; will retry", {
+            error,
+            initRetryAttempt,
+            delayMs,
+          });
+          addMessage("localforage", "initializeLocalForage retrying", {
+            attempt: initRetryAttempt,
+            delayMs,
+          });
+          setTimeout(tryInitialize, delayMs);
+        })
+        .finally(() => {
+          isInitializing = false;
+        });
+    };
+
+    tryInitialize();
 
     addMessage("localforage", "initializeLocalForage done");
   };

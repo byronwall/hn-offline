@@ -109,4 +109,50 @@ describe("createPersistedStore", () => {
 
     cleanup();
   });
+
+  it("does not throw when hydration or persistence fails", async () => {
+    const getItem = vi.fn().mockRejectedValue(new Error("indexedDB failed"));
+    const setItem = vi.fn().mockRejectedValue(new Error("indexedDB failed"));
+    const mockLocalForage = {
+      getItem,
+      setItem,
+    } as unknown as LocalForage;
+
+    const { result, owner, cleanup } = renderHook(() => {
+      const [localForage, setLocalForage] = createSignal<
+        LocalForage | undefined
+      >(undefined);
+      const [store, setStore, hasHydrated] = createPersistedStore(
+        "TEST_STORE_FAIL",
+        { a: 0 },
+        localForage
+      );
+
+      return {
+        store,
+        setStore,
+        hasHydrated,
+        setLocalForage,
+      };
+    });
+
+    runWithOwner(owner, () => {
+      result.setLocalForage(mockLocalForage);
+    });
+
+    await new Promise<void>((resolve) => {
+      runWithOwner(owner, () => {
+        createEffect(() => {
+          if (result.hasHydrated()) {
+            resolve();
+          }
+        });
+      });
+    });
+
+    await expect(result.setStore("a", 5)).resolves.toBeUndefined();
+    expect(result.store.a).toBe(5);
+
+    cleanup();
+  });
 });
