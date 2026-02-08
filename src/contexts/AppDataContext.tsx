@@ -144,6 +144,7 @@ export function updateStoryListDataStores(
   const d = latest?.result;
 
   if (latest?.startedFromServer && d?.type === "fullData") {
+    refreshStore.setRefreshRequestedTimestamp(p);
     void dataStore.persistStoryList(p, d?.data ?? []);
   }
 
@@ -155,8 +156,6 @@ export function updateStoryListDataStores(
   messagesStore.addMessage("refresh", "setRefreshType", {
     page,
   });
-
-  refreshStore.setRefreshRequestedTimestamp(p);
 }
 
 type StoryListResult = WithServerInfo<ContentForPage>;

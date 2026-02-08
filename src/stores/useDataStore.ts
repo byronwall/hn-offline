@@ -329,6 +329,7 @@ export function createDataStore(params: {
     }
 
     console.log("*** no list found, fetching from api", page);
+    params.refreshStore.setRefreshRequestedTimestamp(page);
 
     const data = await fetchAllStoryDataForPage(page, {
       addMessage: params.addMessage,
