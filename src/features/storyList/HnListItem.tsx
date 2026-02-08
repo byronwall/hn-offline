@@ -1,8 +1,8 @@
 import { A } from "@solidjs/router";
 
 import { ChevronUp, MessageSquareQuote } from "~/components/Icon";
-import { useReadItemsStore } from "~/contexts/AppDataContext";
-import { cn, getDomain, timeSince } from "~/lib/utils";
+import { useReadItemsStore, useRelativeTime } from "~/contexts/AppDataContext";
+import { cn, getDomain } from "~/lib/utils";
 import { HnStorySummary } from "~/models/interfaces";
 
 export interface HnStoryProps {
@@ -13,6 +13,7 @@ export interface HnStoryProps {
 
 export function HnListItem(props: HnStoryProps) {
   const readItemsStore = useReadItemsStore();
+  const relativeTime = useRelativeTime();
   const isRead = () => readItemsStore.readItems[props.data.id] !== undefined;
 
   const handleAnimationEnd = (e: AnimationEvent) => {
@@ -58,7 +59,7 @@ export function HnListItem(props: HnStoryProps) {
         </A>
       )}
       <span class="mr-2 text-right text-gray-600">
-        {timeSince(props.data.time)}
+        {relativeTime(props.data.time)}
       </span>
       <span class="truncate text-gray-400">{getDomain(props.data.url)}</span>
     </div>

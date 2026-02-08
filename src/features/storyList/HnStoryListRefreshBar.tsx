@@ -4,9 +4,9 @@ import { Shell } from "~/components/Icon";
 import {
   useDataStore,
   useRefreshStore,
+  useRelativeTime,
   useServiceWorkerStore,
 } from "~/contexts/AppDataContext";
-import { timeSince } from "~/lib/utils";
 
 import type { StoryPage, TopStoriesType } from "~/models/interfaces";
 
@@ -16,6 +16,7 @@ interface HnStoryListRefreshBarProps {
 
 export function HnStoryListRefreshBar(props: HnStoryListRefreshBarProps) {
   const dataStore = useDataStore();
+  const relativeTime = useRelativeTime();
   const refreshStore = useRefreshStore();
   const serviceWorker = useServiceWorkerStore();
 
@@ -35,13 +36,13 @@ export function HnStoryListRefreshBar(props: HnStoryListRefreshBarProps) {
 
   const pullMessage = createMemo(() => {
     return lastUpdatedTs()
-      ? `Updated ${timeSince(lastUpdatedTs(), true)}`
+      ? `Updated ${relativeTime(lastUpdatedTs(), true)}`
       : undefined;
   });
 
   const requestMessage = createMemo(() => {
     return lastRequestedTs()
-      ? `Requested ${timeSince(lastRequestedTs(), true)}`
+      ? `Requested ${relativeTime(lastRequestedTs(), true)}`
       : undefined;
   });
 

@@ -1,10 +1,14 @@
 import { Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
-import { useCommentStore, useStoryUiStore } from "~/contexts/AppDataContext";
+import {
+  useCommentStore,
+  useRelativeTime,
+  useStoryUiStore,
+} from "~/contexts/AppDataContext";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { shareHnTextContent } from "~/lib/shareHnTextContent";
-import { cn, timeSince } from "~/lib/utils";
+import { cn } from "~/lib/utils";
 
 import type { HnItem } from "~/models/interfaces";
 
@@ -15,6 +19,7 @@ type HnStoryContentCardProps = {
 
 export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
   const commentStore = useCommentStore();
+  const relativeTime = useRelativeTime();
   const storyUiStore = useStoryUiStore();
 
   const author = () => props.story?.by;
@@ -87,7 +92,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
         <span class="text-slate-300 select-none" aria-hidden="true">
           |
         </span>
-        <span>{timeSince(time())}</span>
+        <span>{relativeTime(time())}</span>
         <Show when={hasText() && isTextOpen()}>
           <button
             onClick={handleShareClick}
