@@ -32,7 +32,7 @@ export async function fetchAllStoryDataForPage(
 
     // save to localforage after fetching
     if (options?.persistStoryList) {
-      void options.persistStoryList(page, data);
+      await options.persistStoryList(page, data);
     }
 
     options?.addMessage?.("fetchPage", "done", { page, data: data.length });

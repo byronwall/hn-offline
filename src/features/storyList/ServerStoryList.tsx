@@ -1,4 +1,4 @@
-import { createEffect, createResource, untrack } from "solid-js";
+import { createEffect, createMemo, createResource, untrack } from "solid-js";
 
 import {
   updateStoryListDataStores,
@@ -10,6 +10,8 @@ import { getStoryListByType } from "~/server/queries";
 
 import { HnStoryListBody } from "./HnStoryListBody";
 import { HnStoryListToggle } from "./HnStoryListToggle";
+
+import type { StoryPage } from "~/models/interfaces";
 
 export function ServerStoryList(props: { page: TopStoriesType }) {
   const isClientMounted = useAppData().isClientMounted;
@@ -31,9 +33,18 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
     updateStoryListDataStores(props.page, data);
   });
 
+  const listItems = createMemo(() => {
+    const persisted = dataStore.storyListStore[props.page as StoryPage];
+    if (persisted?.data && persisted.data.length > 0) {
+      return persisted.data;
+    }
+
+    return data()?.result?.data ?? [];
+  });
+
   return (
     <>
-      <HnStoryListBody items={data()?.result?.data ?? []} page={props.page} />
+      <HnStoryListBody items={listItems()} page={props.page} />
       <HnStoryListToggle />
     </>
   );

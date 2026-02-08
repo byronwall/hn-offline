@@ -1,11 +1,15 @@
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
-import { useCommentStore, useStoryUiStore } from "~/contexts/AppDataContext";
+import {
+  useCommentStore,
+  useRelativeTime,
+  useStoryUiStore,
+} from "~/contexts/AppDataContext";
 import { formatCommentText } from "~/lib/commentUtils";
 import { isValidComment } from "~/lib/isValidComment";
 import { shareHnTextContent } from "~/lib/shareHnTextContent";
-import { cn, timeSince } from "~/lib/utils";
+import { cn } from "~/lib/utils";
 import { KidsObj3 } from "~/models/interfaces";
 
 import { HnCommentList } from "./HnCommentList";
@@ -19,6 +23,7 @@ export interface HnCommentProps {
 export function HnComment(props: HnCommentProps) {
   const storyUiStore = useStoryUiStore();
   const commentStore = useCommentStore();
+  const relativeTime = useRelativeTime();
   const [divRef, setDivRef] = createSignal<HTMLDivElement | null>(null);
 
   // this needs to get one good render so that the DOM matches SSR
@@ -190,7 +195,7 @@ export function HnComment(props: HnCommentProps) {
             </span>
             <Show when={isOpen()}>
               <span class="text-slate-300 select-none">|</span>
-              <span>{timeSince(props.comment.time)}</span>
+              <span>{relativeTime(props.comment.time)}</span>
               <span class="pointer-events-none text-slate-300 opacity-0 transition-opacity select-none group-hover:opacity-100 [@media(hover:none)]:opacity-100">
                 |
               </span>

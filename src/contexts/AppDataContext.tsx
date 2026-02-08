@@ -10,6 +10,7 @@ import {
   useContext,
 } from "solid-js";
 
+import { timeSince } from "~/lib/utils";
 import {
   type HnItem,
   type StoryPage,
@@ -38,6 +39,7 @@ type AppDataContextValue = {
   storyUi: ReturnType<typeof createStoryUiStore>;
 
   isClientMounted: Accessor<boolean>;
+  relativeTimeTick: Accessor<number>;
 };
 
 const AppDataContext = createContext<AppDataContextValue>();
@@ -53,8 +55,10 @@ export function AppDataProvider(props: ParentProps) {
   });
 
   const [isClientMounted, setIsClientMounted] = createSignal(false);
+  const [relativeTimeTick, setRelativeTimeTick] = createSignal(0);
   onMount(() => {
     setIsClientMounted(true);
+    setRelativeTimeTick(Date.now());
   });
 
   const readItems = localData.readItems;
@@ -66,7 +70,23 @@ export function AppDataProvider(props: ParentProps) {
     errorOverlay.attachGlobalErrorHandlers();
     localData.initializeLocalForage();
     const cleanupServiceWorker = serviceWorker.initializeServiceWorker();
+    const bumpRelativeTimeTick = () => {
+      setRelativeTimeTick(Date.now());
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        bumpRelativeTimeTick();
+      }
+    };
+
+    window.addEventListener("focus", bumpRelativeTimeTick);
+    window.addEventListener("pageshow", bumpRelativeTimeTick);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     onCleanup(() => {
+      window.removeEventListener("focus", bumpRelativeTimeTick);
+      window.removeEventListener("pageshow", bumpRelativeTimeTick);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       cleanupServiceWorker();
     });
   });
@@ -84,6 +104,7 @@ export function AppDataProvider(props: ParentProps) {
         comments,
         storyUi,
         isClientMounted,
+        relativeTimeTick,
       }}
     >
       {props.children}
@@ -131,6 +152,19 @@ export function useStoryUiStore() {
   return useAppData().storyUi;
 }
 
+export function useRelativeTimeTick() {
+  return useAppData().relativeTimeTick;
+}
+
+export function useRelativeTime() {
+  const relativeTimeTick = useRelativeTimeTick();
+
+  return (date: number | undefined, addAgo: boolean = false) => {
+    relativeTimeTick();
+    return timeSince(date, addAgo);
+  };
+}
+
 export function updateStoryListDataStores(
   page: TopStoriesType,
   data: StoryListResource
@@ -144,6 +178,7 @@ export function updateStoryListDataStores(
   const d = latest?.result;
 
   if (latest?.startedFromServer && d?.type === "fullData") {
+    refreshStore.setRefreshRequestedTimestamp(p);
     void dataStore.persistStoryList(p, d?.data ?? []);
   }
 
@@ -155,8 +190,6 @@ export function updateStoryListDataStores(
   messagesStore.addMessage("refresh", "setRefreshType", {
     page,
   });
-
-  refreshStore.setRefreshRequestedTimestamp(p);
 }
 
 type StoryListResult = WithServerInfo<ContentForPage>;

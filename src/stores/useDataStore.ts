@@ -54,11 +54,105 @@ export function createDataStore(params: {
   refreshStore: ReturnType<typeof createRefreshStore>;
   storyUi: ReturnType<typeof createStoryUiStore>;
 }) {
+  const wait = (delayMs: number) =>
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, delayMs);
+    });
+
+  const withLocalForageRetries = async <T>(
+    operationName: string,
+    operation: () => Promise<T>,
+    maxAttempts = 3
+  ): Promise<T> => {
+    let latestError: unknown;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await operation();
+      } catch (error) {
+        latestError = error;
+        if (attempt >= maxAttempts) {
+          break;
+        }
+        const delayMs = 250 * 2 ** (attempt - 1);
+        params.addMessage("localforage", `${operationName} retry`, {
+          attempt,
+          delayMs,
+        });
+        await wait(delayMs);
+      }
+    }
+
+    throw latestError;
+  };
+
+  const safeGetItem = async <T>(key: string): Promise<T | undefined> => {
+    try {
+      const value = await withLocalForageRetries(
+        "getItem",
+        async () => await params.localForage()?.getItem<T>(key)
+      );
+      return value ?? undefined;
+    } catch (error) {
+      console.error("*** localForage getItem failed", { key, error });
+      params.addMessage("localforage", "getItem failed", { key });
+      return undefined;
+    }
+  };
+
+  const safeSetItem = async <T>(key: string, value: T): Promise<boolean> => {
+    try {
+      await withLocalForageRetries("setItem", async () => {
+        await params.localForage()?.setItem(key, value);
+      });
+      return true;
+    } catch (error) {
+      console.error("*** localForage setItem failed", { key, error });
+      params.addMessage("localforage", "setItem failed", { key });
+      return false;
+    }
+  };
+
+  const safeRemoveItem = async (key: string): Promise<void> => {
+    try {
+      await withLocalForageRetries("removeItem", async () => {
+        await params.localForage()?.removeItem(key);
+      });
+    } catch (error) {
+      console.error("*** localForage removeItem failed", { key, error });
+      params.addMessage("localforage", "removeItem failed", { key });
+    }
+  };
+
   const [storyListStore, setStoryListStore] = createPersistedStore(
     "STORY_LIST_STORE",
     {} as StoryListStore,
     params.localForage
   );
+
+  const didStoryListChange = (
+    current: PersistedStoryList | undefined,
+    next: HnStorySummary[]
+  ) => {
+    if (!current) {
+      return true;
+    }
+
+    if (current.data.length !== next.length) {
+      return true;
+    }
+
+    return next.some((item, index) => {
+      const existing = current.data[index];
+      if (!existing) {
+        return true;
+      }
+
+      return (
+        existing.id !== item.id || existing.lastUpdated !== item.lastUpdated
+      );
+    });
+  };
 
   const persistStoryList = async (page: StoryPage, data: HnItem[]) => {
     // overall goals: update store -> saves list to local forage
@@ -85,23 +179,35 @@ export function createDataStore(params: {
       throw new Error("storySummaries is undefined");
     }
 
+    const current = storyListStore[page];
+    if (storySummaries.length === 0 && (current?.data?.length ?? 0) > 0) {
+      params.addMessage("persist", "persistStoryList skip empty overwrite", {
+        page,
+        currentCount: current?.data?.length ?? 0,
+      });
+      return;
+    }
+
     const incomingTimestamp = Math.max(
       ...storySummaries.map((item) => item.lastUpdated ?? 0),
       0
     );
 
-    const current = storyListStore[page];
-
     console.log("*** current", current);
 
-    if (!current || incomingTimestamp > (current.serverUpdateTimestamp ?? 0)) {
+    const shouldOverwrite =
+      !current ||
+      incomingTimestamp > (current.serverUpdateTimestamp ?? 0) ||
+      didStoryListChange(current, storySummaries);
+
+    if (shouldOverwrite) {
       // save if none or if the incoming timestamp is newer
       params.addMessage("persist", "persistStoryList over store", {
         page,
         incomingTimestamp,
         currentTimestamp: current?.serverUpdateTimestamp,
       });
-      setStoryListStore(page, {
+      await setStoryListStore(page, {
         serverUpdateTimestamp: incomingTimestamp,
         page,
         data: storySummaries,
@@ -119,7 +225,7 @@ export function createDataStore(params: {
         continue;
       }
 
-      const didSave = persistStoryToStorage(item.id, item);
+      const didSave = await persistStoryToStorage(item.id, item);
       if (!didSave) {
         skippedSaves++;
       }
@@ -155,7 +261,16 @@ export function createDataStore(params: {
       }
     }
 
-    const keys = await params.localForage()?.keys();
+    let keys: string[] | undefined;
+    try {
+      keys = await withLocalForageRetries(
+        "keys",
+        async () => await params.localForage()?.keys()
+      );
+    } catch (error) {
+      console.error("*** localForage keys failed", { error });
+      params.addMessage("localforage", "keys failed");
+    }
 
     if (!keys) {
       return;
@@ -165,13 +280,13 @@ export function createDataStore(params: {
     const badKeys = keys.filter((key) => key.includes("/"));
     for (const key of badKeys) {
       console.log("removing bad key", key);
-      await params.localForage()?.removeItem(key);
+      await safeRemoveItem(key);
     }
 
     // Optionally remove old list keys from previous versions
     const legacyListKeys = keys.filter((key) => key.startsWith("STORIES_"));
     for (const key of legacyListKeys) {
-      await params.localForage()?.removeItem(key);
+      await safeRemoveItem(key);
     }
 
     // Delete any raw_* entries that are not in idsToKeep
@@ -181,7 +296,7 @@ export function createDataStore(params: {
       const id = Number(key.replace("raw_", ""));
       if (!idsToKeep.has(id)) {
         console.log("deleting", id);
-        await params.localForage()?.removeItem(key);
+        await safeRemoveItem(key);
       }
     }
 
@@ -190,16 +305,14 @@ export function createDataStore(params: {
 
   const persistStoryToStorage = async (id: StoryId, content: HnItem) => {
     // attempt to load item, only save if lastUpdated is newer
-    const currentItem = await params
-      .localForage()
-      ?.getItem<HnItem>("raw_" + id);
+    const storageKey = "raw_" + id;
+    const currentItem = await safeGetItem<HnItem>(storageKey);
 
     if (currentItem && currentItem.lastUpdated >= content.lastUpdated) {
       return false;
     }
 
-    await params.localForage()?.setItem("raw_" + id, content);
-    return true;
+    return safeSetItem(storageKey, content);
   };
 
   const getContent = async (
@@ -208,7 +321,7 @@ export function createDataStore(params: {
   ) => {
     console.log("*** getContent", id, params.localForage());
 
-    const item = await params.localForage()?.getItem<HnItem>("raw_" + id);
+    const item = await safeGetItem<HnItem>("raw_" + id);
 
     console.log("*** item", item);
 
@@ -245,6 +358,7 @@ export function createDataStore(params: {
     }
 
     console.log("*** no list found, fetching from api", page);
+    params.refreshStore.setRefreshRequestedTimestamp(page);
 
     const data = await fetchAllStoryDataForPage(page, {
       addMessage: params.addMessage,
