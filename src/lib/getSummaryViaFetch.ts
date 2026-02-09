@@ -1,4 +1,4 @@
-import { revalidate } from "@solidjs/router";
+import { query } from "@solidjs/router";
 
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 import { getStoryListByType } from "~/server/queries";
@@ -20,9 +20,29 @@ export async function fetchAllStoryDataForPage(
 ): Promise<HnItem[]> {
   options?.addMessage?.("fetchPage", "init", { page });
 
+  const hasQueryCacheEntry = (key: string) => {
+    try {
+      query.get(key);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  };
+
   try {
+    const queryKey = getStoryListByType.keyFor(page);
+
     if (options?.force) {
-      await revalidate(getStoryListByType.keyFor(page));
+      // If this is the first client call after hydration, the key may still
+      // live in Solid's SSR payload and be returned once without network.
+      // Consume it now, then delete cache, then call again below for a true
+      // server fetch in this same refresh cycle.
+      if (!hasQueryCacheEntry(queryKey)) {
+        await getStoryListByType(page);
+      }
+
+      // Force a cache miss so the call below executes the server query.
+      query.delete(queryKey);
     }
     const response = await getStoryListByType(page);
     const rawData = response?.result?.data ?? [];

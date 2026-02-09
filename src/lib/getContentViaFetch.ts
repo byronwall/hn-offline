@@ -1,4 +1,4 @@
-import { revalidate } from "@solidjs/router";
+import { query } from "@solidjs/router";
 
 import { getStoryById } from "~/server/queries";
 
@@ -22,8 +22,26 @@ export async function fetchObjById(
   }
 ) {
   options?.addMessage?.("fetchObjById", "fetching", { id });
+
+  const hasQueryCacheEntry = (key: string) => {
+    try {
+      query.get(key);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  };
+
   if (options?.force) {
-    await revalidate(getStoryById.keyFor(id));
+    const queryKey = getStoryById.keyFor(id);
+
+    // Handle first post-hydration call that can resolve once from SSR payload.
+    if (!hasQueryCacheEntry(queryKey)) {
+      await getStoryById(id);
+    }
+
+    // Force a cache miss so the call below executes the server query.
+    query.delete(queryKey);
   }
   const _data = await getStoryById(id);
   const data = _data?.result;
