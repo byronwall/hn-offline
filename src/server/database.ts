@@ -1,6 +1,5 @@
 import * as fs from "fs";
-
-import _ from "lodash";
+import * as path from "path";
 
 import { _getUnixTimestamp } from "~/lib/utils";
 import { Item, ItemExt, TopStories, TopStoriesType } from "~/models/interfaces";
@@ -20,11 +19,15 @@ type ItemHash = {
 let db: ItemHash = {};
 console.log("*** server database");
 const dbPath = process.env.db_path ?? "./newdb.json";
+const maxDatabaseBytes = getMaxDatabaseBytes();
 console.log("db path", dbPath);
 
 export function saveDatabase() {
   const dataStr = JSON.stringify(db);
-  fs.writeFileSync(dbPath, dataStr);
+  ensureDatabaseDir();
+  const tmpPath = `${dbPath}.tmp`;
+  fs.writeFileSync(tmpPath, dataStr);
+  fs.renameSync(tmpPath, dbPath);
 }
 
 export function reloadDatabase() {
@@ -33,26 +36,37 @@ export function reloadDatabase() {
     saveDatabase();
   }
 
-  const dataStr = fs.readFileSync(dbPath).toString();
+  resetOversizedDatabase();
 
-  db = JSON.parse(dataStr) as ItemHash;
+  const dataStr = fs.readFileSync(dbPath, "utf8");
+
+  try {
+    db = JSON.parse(dataStr) as ItemHash;
+  } catch (error) {
+    console.error("Database JSON is unreadable; resetting local cache", error);
+    resetDatabaseFile("invalid-json");
+    db = {};
+  }
 }
 
 export async function db_clearOldStories(idsToKeep: number[]) {
   // remove the day/week items from the delete list
+  const keepIds = new Set(idsToKeep);
   const allIds = Object.keys(db)
     .map((c) => +c)
     .filter((c) => !isNaN(c));
 
+  let removeCount = 0;
   allIds.forEach((id) => {
-    const shouldKeep = _.includes(idsToKeep, id);
+    const shouldKeep = keepIds.has(id);
 
     if (!shouldKeep) {
       delete db[id];
+      removeCount++;
     }
   });
 
-  return allIds.length - idsToKeep.length;
+  return removeCount;
 }
 
 export async function db_getTopStoryIds(
@@ -206,5 +220,58 @@ function _isTimePastThreshold(itemExt: ItemExt) {
     (_getUnixTimestamp() - itemExt.lastUpdated) /
       (itemExt.lastUpdated - itemExt.time!) >
     0.25
+  );
+}
+
+function ensureDatabaseDir() {
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+}
+
+function getMaxDatabaseBytes() {
+  const value = Number(process.env.db_max_bytes);
+
+  if (Number.isFinite(value) && value > 0) {
+    return value;
+  }
+
+  return 128 * 1024 * 1024;
+}
+
+function resetOversizedDatabase() {
+  const stats = fs.statSync(dbPath);
+
+  if (stats.size <= maxDatabaseBytes) {
+    return;
+  }
+
+  console.error(
+    `Database file is ${stats.size} bytes, above limit ${maxDatabaseBytes}; resetting local cache`
+  );
+  resetDatabaseFile("oversized");
+}
+
+function resetDatabaseFile(reason: string) {
+  ensureDatabaseDir();
+
+  if (fs.existsSync(dbPath)) {
+    const backupPath = `${dbPath}.${reason}.${Date.now()}.bak`;
+
+    if (shouldDeleteResetBackup()) {
+      fs.unlinkSync(dbPath);
+      console.error("Deleted database file");
+    } else {
+      fs.renameSync(dbPath, backupPath);
+      console.error("Moved database file to", backupPath);
+    }
+  }
+
+  db = {};
+  saveDatabase();
+}
+
+function shouldDeleteResetBackup() {
+  return (
+    process.env.db_delete_reset_backup === "true" ||
+    process.env.db_delete_oversized_backup === "true"
   );
 }

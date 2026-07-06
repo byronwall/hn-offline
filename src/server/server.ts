@@ -65,7 +65,12 @@ async function loadFreshDataForStoryType(storyType: TopStoriesType) {
     log("clearing old stories");
     const idsToKeep = new Set<number>();
     for (const key of Object.keys(cachedData)) {
-      cachedData[key]!.forEach((story) => {
+      const stories = cachedData[key];
+      if (!stories) {
+        continue;
+      }
+
+      stories.forEach((story) => {
         if (story === null) {
           return;
         }
