@@ -7,6 +7,7 @@ export default function OfflinePage() {
     <>
       <Title>HN Offline: Offline</Title>
       <Meta name="description" content="Offline shell page" />
+      <Meta name="robots" content="noindex, nofollow" />
       <Offline />
     </>
   );

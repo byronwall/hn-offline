@@ -1,3 +1,4 @@
+import { Meta } from "@solidjs/meta";
 import { createAsync, useParams } from "@solidjs/router";
 import { createEffect, createMemo, untrack } from "solid-js";
 
@@ -38,10 +39,13 @@ export default function Story() {
   const story = () => data.latest?.result ?? undefined;
 
   return (
-    <HnStoryPage
-      id={id()}
-      story={story()}
-      startedFromServer={data.latest?.startedFromServer ?? false}
-    />
+    <>
+      <Meta name="robots" content="noindex, nofollow" />
+      <HnStoryPage
+        id={id()}
+        story={story()}
+        startedFromServer={data.latest?.startedFromServer ?? false}
+      />
+    </>
   );
 }

@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /day
+Disallow: /week
+Disallow: /month
+Disallow: /offline
+Disallow: /_build/
+
+Sitemap: https://hn.byroni.us/sitemap.xml

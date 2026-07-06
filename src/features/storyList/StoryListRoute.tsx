@@ -12,11 +12,14 @@ export function StoryListRoute(props: { page: TopStoriesType }) {
     props.page === "topstories"
       ? "Top"
       : props.page.charAt(0).toUpperCase() + props.page.slice(1);
+  const robots = () =>
+    props.page === "topstories" ? "index, follow" : "noindex, nofollow";
 
   return (
     <>
       <Title>HN Offline: {title()}</Title>
       <Meta name="description" content={`Hacker News ${props.page} page`} />
+      <Meta name="robots" content={robots()} />
       {/* TODO: add a suspense here to trigger the skeleton */}
       <ServerStoryList page={props.page} />
     </>
