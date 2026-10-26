@@ -6,6 +6,7 @@
  *   their last good copy. Other pages offline redirect to /offline, which
  *   routes back to them in the client.
  * - Built assets: cache first. Their file names are content-hashed.
+ * - Icons and the web manifest: cache first, refreshed with each version.
  * `pnpm build` stamps VERSION; a new version drops the old caches.
  */
 /* eslint-disable no-restricted-globals */
@@ -14,6 +15,13 @@ const VERSION = "dev";
 const PAGES = `pages-${VERSION}`;
 const ASSETS = `assets-${VERSION}`;
 const SHELL_PAGES = ["/", "/day", "/week", "/offline"];
+// Unhashed files from public/ that the shell loads.
+const STATIC_FILES = [
+  "/favicon-32x32.png",
+  "/favicon.ico",
+  "/apple-touch-icon.png",
+  "/manifest.webmanifest",
+];
 const NETWORK_TIMEOUT_MS = 3000;
 
 self.addEventListener("install", (event) => {
@@ -22,6 +30,15 @@ self.addEventListener("install", (event) => {
       await Promise.all([
         ...SHELL_PAGES.map(cachePageAndAssets),
         cacheBuildManifestAssets(),
+        caches
+          .open(ASSETS)
+          .then((assets) =>
+            Promise.all(
+              STATIC_FILES.map((f) =>
+                assets.add(new Request(f, { cache: "reload" })).catch(() => {})
+              )
+            )
+          ),
       ]);
       await self.skipWaiting();
     })()
@@ -56,7 +73,10 @@ self.addEventListener("fetch", (event) => {
 
   if (req.mode === "navigate") {
     event.respondWith(handleNavigation(req, url.pathname));
-  } else if (url.pathname.startsWith("/_build/assets/")) {
+  } else if (
+    url.pathname.startsWith("/_build/assets/") ||
+    STATIC_FILES.includes(url.pathname)
+  ) {
     event.respondWith(cacheFirst(req));
   }
 });
