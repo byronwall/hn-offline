@@ -5,8 +5,9 @@ FROM node:22-alpine AS builder
 WORKDIR /usr/src/app
 
 # Enable corepack and install dependencies with pnpm using the lockfile
-RUN corepack enable && corepack prepare pnpm@9 --activate
-COPY package.json pnpm-lock.yaml ./
+# The pnpm shim uses the version in package.json "packageManager".
+RUN corepack enable
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --no-frozen-lockfile
 
 # Build server and client
@@ -27,8 +28,9 @@ RUN apk add --no-cache curl
 ENV NODE_ENV=production
 
 # Enable corepack and install only production dependencies
-RUN corepack enable && corepack prepare pnpm@9 --activate
-COPY package.json pnpm-lock.yaml ./
+# The pnpm shim uses the version in package.json "packageManager".
+RUN corepack enable
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --prod --no-frozen-lockfile
 
 # Copy built artifacts and public assets
