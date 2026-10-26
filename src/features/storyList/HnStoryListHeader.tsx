@@ -73,7 +73,7 @@ export function HnStoryListHeader(props: HnStoryListHeaderProps) {
             )
           }
         />
-        <span class="peer-checked:bg-hn peer-focus-visible:ring-hn/40 relative h-4 w-7 rounded-full bg-slate-300 transition-colors duration-150 peer-focus-visible:ring-2 after:absolute after:top-0.5 after:left-0.5 after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-transform after:duration-150 peer-checked:after:translate-x-3" />
+        <span class="peer-checked:bg-hn peer-focus-visible:ring-hn/40 relative h-4 w-7 rounded-full bg-slate-300 transition-colors duration-150 peer-focus-visible:ring-2 after:absolute after:top-0.5 after:left-0.5 after:h-3 after:w-3 after:rounded-full after:bg-white dark:after:bg-slate-800 after:transition-transform after:duration-150 peer-checked:after:translate-x-3" />
       </label>
     </div>
   );

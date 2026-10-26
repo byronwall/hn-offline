@@ -122,6 +122,10 @@ UI:
   fills, borders, and rails, `hn-ink` for accent text, `hn-soft` for tints.
   Do not add raw orange-\* or hex colors. Orange means "OP", "new", "active",
   or a link.
+- Dark mode follows the OS. `app.css` remaps white, stone-100, and the
+  slate/gray scales (reversed) under `prefers-color-scheme: dark`, so
+  ordinary slate/white classes work in both themes. Use slate, not zinc or
+  raw colors. Use `dark:` only for a color that must not flip.
 - `app.css` rules outside `@layer` beat Tailwind utilities. Do not add bare
   element rules (an old `button { margin: 0 }` broke every button margin).
 - Motion: CSS keyframes and `lib/scroll.ts`. No animation libraries.
