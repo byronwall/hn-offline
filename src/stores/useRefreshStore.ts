@@ -16,29 +16,14 @@ export function createRefreshStore(
     localForage
   );
 
-  const [refreshRequestedTimestamps, setRefreshRequestedTimestamps] =
-    createPersistedStore(
-      "REFRESH_REQUESTED_TIMESTAMPS",
-      {} as RefreshTimestampStore,
-      localForage
-    );
-
   const setRefreshTimestamp = (page: StoryPage, ts?: number) => {
     const now = ts ?? Math.floor(Date.now() / 1000);
     addMessage("refresh", "setRefreshTimestamp", { page, ts: now });
     setRefreshTimestamps(page, now);
   };
 
-  const setRefreshRequestedTimestamp = (page: StoryPage, ts?: number) => {
-    const now = ts ?? Math.floor(Date.now() / 1000);
-    addMessage("refresh", "setRefreshRequestedTimestamp", { page, ts: now });
-    setRefreshRequestedTimestamps(page, now);
-  };
-
   return {
     refreshTimestamps,
-    refreshRequestedTimestamps,
     setRefreshTimestamp,
-    setRefreshRequestedTimestamp,
   };
 }

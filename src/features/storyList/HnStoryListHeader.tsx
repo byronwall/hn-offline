@@ -17,8 +17,8 @@ type HnStoryListHeaderProps = {
   hiddenCount: number;
 };
 
-// One line above the list: freshness + refresh on the left, hide-read toggle
-// on the right.
+// One line above the list: last refresh time + refresh on the left, hide-read
+// toggle on the right.
 export function HnStoryListHeader(props: HnStoryListHeaderProps) {
   const dataStore = useDataStore();
   const readItemsStore = useReadItemsStore();
@@ -26,17 +26,9 @@ export function HnStoryListHeader(props: HnStoryListHeaderProps) {
   const refreshStore = useRefreshStore();
   const serviceWorker = useServiceWorkerStore();
 
-  const updatedTs = () =>
+  // When the client last got this list from the server.
+  const refreshedTs = () =>
     refreshStore.refreshTimestamps[props.page as StoryPage];
-  const requestedTs = () =>
-    refreshStore.refreshRequestedTimestamps[props.page as StoryPage];
-  // Only mention the last check when it found nothing newer.
-  const checkedTs = () => {
-    const requested = requestedTs();
-    return requested && requested - (updatedTs() ?? 0) > 60
-      ? requested
-      : undefined;
-  };
 
   const hideRead = () => readItemsStore.readSettings.shouldHideReadItems;
 
@@ -57,16 +49,8 @@ export function HnStoryListHeader(props: HnStoryListHeaderProps) {
           })}
         />
         <span class="truncate">
-          <Show when={updatedTs()} fallback="Refresh">
-            {(ts) => <>Updated {relativeTime(ts(), true)}</>}
-          </Show>
-          <Show when={checkedTs()}>
-            {(ts) => (
-              <span class="text-slate-400">
-                {" "}
-                · checked {relativeTime(ts(), true)}
-              </span>
-            )}
+          <Show when={refreshedTs()} fallback="Refresh">
+            {(ts) => <>Refreshed {relativeTime(ts(), true)}</>}
           </Show>
         </span>
       </button>
