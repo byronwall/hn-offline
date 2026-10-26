@@ -284,10 +284,16 @@ export function createDataStore(params: {
       return undefined;
     }
 
-    return await fetchObjById(id, {
-      addMessage: params.addMessage,
-      persistStoryToStorage,
-    });
+    // Offline or a bad id: show "not available" instead of crashing the route.
+    try {
+      return await fetchObjById(id, {
+        addMessage: params.addMessage,
+        persistStoryToStorage,
+      });
+    } catch (error) {
+      console.error("getContent failed", { id, error });
+      return undefined;
+    }
   };
 
   const [isLoadingData, setIsLoadingData] = createSignal(false);

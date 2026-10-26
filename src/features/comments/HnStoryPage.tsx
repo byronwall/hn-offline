@@ -1,4 +1,5 @@
-import { Match, onMount, Switch } from "solid-js";
+import { A } from "@solidjs/router";
+import { Match, onMount, Show, Switch } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
 import {
@@ -22,6 +23,7 @@ interface HnStoryPageProps {
   id: number | undefined;
   story?: HnItem | undefined;
   startedFromServer: boolean;
+  notFound: boolean;
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
@@ -42,6 +44,18 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
   });
 
   const comments = () => (story()?.kidsObj || []).filter(isValidComment);
+  const notFoundMessage = (
+    <div class="py-16 text-center text-gray-600">
+      <p class="text-lg">This story is not available.</p>
+      <p class="mt-1 text-sm text-gray-500">
+        It may not be saved for offline reading yet.
+      </p>
+      <A href="/" class="mt-4 inline-block text-orange-700 hover:underline">
+        Back to top stories
+      </A>
+    </div>
+  );
+
   const showSkeleton = () => props.startedFromServer && !isClientMounted();
 
   return (
@@ -50,28 +64,30 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       onRefresh={dataStore.refreshActive}
     >
       <div class="relative pb-[70vh]">
-        <HnStoryCommentBanner story={story()} />
-        <HnStoryTitle story={story()} />
-        <HnStoryMetaRow story={story()} />
-        <HnStoryContentCard
-          story={story()}
-          firstCommentId={comments()[0]?.id}
-        />
+        <Show when={!props.notFound} fallback={notFoundMessage}>
+          <HnStoryCommentBanner story={story()} />
+          <HnStoryTitle story={story()} />
+          <HnStoryMetaRow story={story()} />
+          <HnStoryContentCard
+            story={story()}
+            firstCommentId={comments()[0]?.id}
+          />
 
-        <Switch>
-          {/* NOTE: showing a skeleton on comments to avoid complexity in hydration */}
-          <Match when={showSkeleton()}>
-            <HnCommentSkeletonList />
-          </Match>
-          <Match when={!showSkeleton()}>
-            <HnCommentList
-              childComments={comments()}
-              depth={0}
-              authorChain={[]}
-              progressive
-            />
-          </Match>
-        </Switch>
+          <Switch>
+            {/* NOTE: showing a skeleton on comments to avoid complexity in hydration */}
+            <Match when={showSkeleton()}>
+              <HnCommentSkeletonList />
+            </Match>
+            <Match when={!showSkeleton()}>
+              <HnCommentList
+                childComments={comments()}
+                depth={0}
+                authorChain={[]}
+                progressive
+              />
+            </Match>
+          </Switch>
+        </Show>
       </div>
     </PullToRefresh>
   );

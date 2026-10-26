@@ -6,6 +6,7 @@ import {
   useRelativeTime,
   useStoryUiStore,
 } from "~/contexts/AppDataContext";
+import { isLinkOrSelection } from "~/lib/isLinkOrSelection";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
 import { shareHnTextContent } from "~/lib/shareHnTextContent";
 import { cn } from "~/lib/utils";
@@ -38,8 +39,8 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
     return commentStore.collapsedTimestamps[storyId()!] === undefined;
   };
 
-  function handleStoryTextClick() {
-    if (!props.story?.text || storyId() === undefined) {
+  function handleStoryTextClick(e: MouseEvent) {
+    if (isLinkOrSelection(e) || !props.story?.text || storyId() === undefined) {
       return;
     }
 

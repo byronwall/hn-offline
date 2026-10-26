@@ -1,4 +1,4 @@
-import { Meta } from "@solidjs/meta";
+import { Meta, Title } from "@solidjs/meta";
 import { createAsync, useParams } from "@solidjs/router";
 import { createEffect, createMemo, on, untrack } from "solid-js";
 
@@ -17,6 +17,10 @@ export default function Story() {
   const data = createAsync(async () => {
     // untrack the isClientMounted signal to avoid re-processing on mount
     const isClient = untrack(() => isClientMounted());
+
+    if (!Number.isInteger(id())) {
+      return { result: null, startedFromServer: !isClient };
+    }
 
     if (isClient) {
       return {
@@ -39,11 +43,15 @@ export default function Story() {
 
   return (
     <>
+      <Title>
+        {story()?.title ? `${story()?.title} | HN Offline` : "HN Offline"}
+      </Title>
       <Meta name="robots" content="noindex, nofollow" />
       <HnStoryPage
         id={id()}
         story={story()}
         startedFromServer={data.latest?.startedFromServer ?? false}
+        notFound={data.latest !== undefined && !data.latest.result}
       />
     </>
   );

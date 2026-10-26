@@ -7,6 +7,7 @@ import {
   useStoryUiStore,
 } from "~/contexts/AppDataContext";
 import { formatCommentText } from "~/lib/commentUtils";
+import { isLinkOrSelection } from "~/lib/isLinkOrSelection";
 import { shareHnTextContent } from "~/lib/shareHnTextContent";
 import { cn } from "~/lib/utils";
 import { KidsObj3 } from "~/models/interfaces";
@@ -61,12 +62,11 @@ export function HnComment(props: HnCommentProps) {
   };
 
   function handleCardClick(e: MouseEvent) {
+    // Nested cards share this handler; only the innermost one acts.
     e.stopPropagation();
-
-    if (e.target instanceof HTMLElement && e.target.tagName === "A") {
+    if (isLinkOrSelection(e)) {
       return;
     }
-
     commentStore.handleCollapseEvent(props.comment.id, !isOpen());
   }
 

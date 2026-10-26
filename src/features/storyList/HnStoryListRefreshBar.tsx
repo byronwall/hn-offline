@@ -1,4 +1,4 @@
-import { createMemo, Show } from "solid-js";
+import { Show } from "solid-js";
 
 import { Shell } from "~/components/Icon";
 import {
@@ -7,6 +7,7 @@ import {
   useRelativeTime,
   useServiceWorkerStore,
 } from "~/contexts/AppDataContext";
+import { cn } from "~/lib/utils";
 
 import type { StoryPage, TopStoriesType } from "~/models/interfaces";
 
@@ -20,71 +21,42 @@ export function HnStoryListRefreshBar(props: HnStoryListRefreshBarProps) {
   const refreshStore = useRefreshStore();
   const serviceWorker = useServiceWorkerStore();
 
-  const isLoading = () => dataStore.isLoadingData();
-  const onRefresh = () => dataStore.refreshActive();
-  const isOffline = serviceWorker.isOfflineMode;
+  const updatedTs = () =>
+    refreshStore.refreshTimestamps[props.page as StoryPage];
+  const requestedTs = () =>
+    refreshStore.refreshRequestedTimestamps[props.page as StoryPage];
 
-  const lastUpdatedTs = createMemo(() => {
-    const page = props.page as StoryPage;
-    return refreshStore.refreshTimestamps[page];
-  });
-
-  const lastRequestedTs = createMemo(() => {
-    const page = props.page as StoryPage;
-    return refreshStore.refreshRequestedTimestamps[page];
-  });
-
-  const pullMessage = createMemo(() => {
-    return lastUpdatedTs()
-      ? `Updated ${relativeTime(lastUpdatedTs(), true)}`
-      : undefined;
-  });
-
-  const requestMessage = createMemo(() => {
-    return lastRequestedTs()
-      ? `Requested ${relativeTime(lastRequestedTs(), true)}`
-      : undefined;
-  });
+  const canRefresh = () =>
+    !serviceWorker.isOfflineMode() && !dataStore.isLoadingData();
 
   return (
-    <Show when={pullMessage() || requestMessage()}>
-      <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-[11px] text-slate-400">
-        <button
-          type="button"
-          title="Refresh now"
-          onClick={() => {
-            if (isOffline() || isLoading()) {
-              return;
-            }
-            onRefresh();
-          }}
-          class="inline-flex items-center gap-1 hover:text-orange-500 focus:outline-none active:text-orange-500"
-          aria-label="Refresh list"
+    <Show when={updatedTs() || requestedTs()}>
+      <button
+        type="button"
+        title="Refresh now"
+        aria-label="Refresh list"
+        disabled={!canRefresh()}
+        onClick={() => dataStore.refreshActive()}
+        class="mx-auto flex w-fit items-center gap-1 py-1 text-[11px] text-slate-400 hover:text-orange-500 focus:outline-none focus-visible:text-orange-500 disabled:hover:text-slate-400"
+      >
+        <span
+          class={cn("inline-flex", {
+            "animate-spin": dataStore.isLoadingData(),
+          })}
         >
-          <span
-            class={isLoading() ? "inline-flex animate-spin" : "inline-flex"}
-          >
-            <Shell width="12" height="12" />
-          </span>
-          <span>{pullMessage() ?? "Refresh"}</span>
-        </button>
-        <Show when={requestMessage()}>
-          <button
-            type="button"
-            title="Refresh now"
-            onClick={() => {
-              if (isOffline() || isLoading()) {
-                return;
-              }
-              onRefresh();
-            }}
-            class="text-[10px] text-slate-400 hover:text-orange-500 focus:outline-none active:text-orange-500"
-            aria-label="Refresh list"
-          >
-            {requestMessage()}
-          </button>
+          <Shell width="12" height="12" />
+        </span>
+        <Show when={updatedTs()} fallback="Refresh">
+          {(ts) => <span>Updated {relativeTime(ts(), true)}</span>}
         </Show>
-      </div>
+        <Show when={requestedTs()}>
+          {(ts) => (
+            <span class="text-slate-300">
+              · requested {relativeTime(ts(), true)}
+            </span>
+          )}
+        </Show>
+      </button>
     </Show>
   );
 }

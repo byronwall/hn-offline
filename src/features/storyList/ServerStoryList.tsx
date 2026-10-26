@@ -50,7 +50,11 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
 
   return (
     <>
-      <HnStoryListBody items={listItems()} page={props.page} />
+      <HnStoryListBody
+        items={listItems()}
+        page={props.page}
+        loading={data.loading}
+      />
       <HnStoryListToggle />
     </>
   );
