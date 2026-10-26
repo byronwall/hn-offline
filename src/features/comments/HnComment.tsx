@@ -9,7 +9,7 @@ import {
 import { formatCommentText } from "~/lib/commentUtils";
 import { countComments } from "~/lib/countComments";
 import { isLinkOrSelection } from "~/lib/isLinkOrSelection";
-import { flash, keepInView } from "~/lib/scroll";
+import { flash, keepInView, scrollToNextComment } from "~/lib/scroll";
 import { shareHnTextContent } from "~/lib/shareHnTextContent";
 import { cn } from "~/lib/utils";
 import { KidsObj3 } from "~/models/interfaces";
@@ -53,12 +53,15 @@ export function HnComment(props: HnCommentProps) {
     if (isLinkOrSelection(e)) {
       return;
     }
-    // Solid updates the DOM synchronously, so the header can be re-pinned in
-    // the same frame: collapsing deep inside a long thread leaves its
-    // one-line header right under the nav, with the next comment below it.
-    commentStore.updateCollapsedState(props.comment.id, isOpen());
+    // Solid updates the DOM synchronously, so the new layout can be measured
+    // right away. Collapse moves on to the next comment; expand (or a collapse
+    // with nothing after it) just keeps the header on screen.
+    const collapsing = isOpen();
+    commentStore.updateCollapsedState(props.comment.id, collapsing);
     if (headerRef && cardRef) {
-      keepInView(headerRef);
+      if (!collapsing || !scrollToNextComment(cardRef)) {
+        keepInView(headerRef);
+      }
       flash(cardRef);
     }
   }
@@ -102,6 +105,7 @@ export function HnComment(props: HnCommentProps) {
   return (
     <div
       ref={cardRef}
+      data-comment
       class={cn("bp3-card user-text relative", { collapsed: !isOpen() })}
       onClick={handleCardClick}
       style={{

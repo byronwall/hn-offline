@@ -3,7 +3,7 @@ import { Show } from "solid-js";
 import { useCommentStore } from "~/contexts/AppDataContext";
 import { isLinkOrSelection } from "~/lib/isLinkOrSelection";
 import { processHtmlAndTruncateAnchorText } from "~/lib/processHtmlAndTruncateAnchorText";
-import { flash, keepInView } from "~/lib/scroll";
+import { flash, keepInView, scrollToElement } from "~/lib/scroll";
 import { cn } from "~/lib/utils";
 
 import type { HnItem } from "~/models/interfaces";
@@ -26,11 +26,21 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
     if (isLinkOrSelection(e)) {
       return;
     }
-    commentStore.updateCollapsedState(props.story.id, isOpen());
-    if (cardRef) {
-      keepInView(cardRef);
-      flash(cardRef);
+    const collapsing = isOpen();
+    commentStore.updateCollapsedState(props.story.id, collapsing);
+    if (!cardRef) {
+      return;
     }
+    // Collapsing the post moves on to the first open comment.
+    const first = collapsing
+      ? document.querySelector("[data-comment]:not(.collapsed)")
+      : null;
+    if (first) {
+      scrollToElement(first, true);
+    } else {
+      keepInView(cardRef);
+    }
+    flash(cardRef);
   }
 
   return (
