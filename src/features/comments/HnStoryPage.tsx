@@ -82,6 +82,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
               childComments={comments()}
               depth={0}
               authorChain={[]}
+              progressive
             />
           </Match>
         </Switch>
