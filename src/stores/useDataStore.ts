@@ -17,6 +17,7 @@ import type { createStoryUiStore } from "./storyUiStore";
 import type { ReadItemsStore } from "./useReadItemsStore";
 import type { createRefreshStore } from "./useRefreshStore";
 import type { StoryPage } from "~/models/interfaces";
+import type { WithServerInfo } from "~/server/queries";
 
 export type StoryId = number;
 
@@ -188,21 +189,18 @@ export function createDataStore(params: {
       params.refreshStore.setRefreshTimestamp(page);
     }
 
-    let skippedSaves = 0;
-
-    // Persist raw items individually for detail pages
-    for (const item of data) {
+    // Persist raw items individually for detail pages, in parallel.
+    const validItems = data.filter((item) => {
       const isValid = validateHnItemWithComments(item);
       if (!isValid.success) {
         console.error("invalid item", { error: isValid.error, item });
-        continue;
       }
-
-      const didSave = await persistStoryToStorage(item.id, item);
-      if (!didSave) {
-        skippedSaves++;
-      }
-    }
+      return isValid.success;
+    });
+    const saved = await Promise.all(
+      validItems.map((item) => persistStoryToStorage(item.id, item))
+    );
+    const skippedSaves = saved.filter((didSave) => !didSave).length;
 
     params.addMessage("persist", "persistStoryList done", {
       page,
@@ -385,11 +383,40 @@ export function createDataStore(params: {
     }
   };
 
+  // Called by the list route whenever its data settles.
+  const syncStoryList = (
+    page: StoryPage,
+    latest: WithServerInfo<ContentForPage> | undefined
+  ) => {
+    // SSR data is fresh from the server, so cache it for offline use.
+    if (latest?.startedFromServer && latest.result.type === "fullData") {
+      params.refreshStore.setRefreshRequestedTimestamp(page);
+      void persistStoryList(page, latest.result.data);
+    }
+    setRefreshType({ type: "storyList", page });
+  };
+
+  // Called by the story route whenever its data settles.
+  const syncStory = (
+    id: StoryId,
+    latest: WithServerInfo<HnItem | null | undefined> | undefined
+  ) => {
+    const story = latest?.result;
+    if (!story) {
+      return;
+    }
+    if (latest.startedFromServer) {
+      void persistStoryToStorage(id, story);
+    }
+    params.storyUi.setActiveStoryData(story);
+    setRefreshType({ type: "story", id });
+  };
+
   return {
     storyListStore,
     isLoadingData,
-    refreshType,
-    setRefreshType,
+    syncStoryList,
+    syncStory,
     persistStoryList,
     persistStoryToStorage,
     purgeLocalForage,

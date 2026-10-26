@@ -1,10 +1,6 @@
 import { createEffect, createMemo, createResource, untrack } from "solid-js";
 
-import {
-  updateStoryListDataStores,
-  useAppData,
-  useDataStore,
-} from "~/contexts/AppDataContext";
+import { useAppData, useDataStore } from "~/contexts/AppDataContext";
 import { TopStoriesType } from "~/models/interfaces";
 import { getStoryListByType } from "~/server/queries";
 
@@ -30,7 +26,7 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
   });
 
   createEffect(() => {
-    updateStoryListDataStores(props.page, data);
+    dataStore.syncStoryList(props.page as StoryPage, data.latest);
   });
 
   const listItems = createMemo(() => {

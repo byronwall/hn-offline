@@ -1,8 +1,7 @@
-import { createMemo, createReaction } from "solid-js";
-import { reconcile } from "solid-js/store";
-import { isServer } from "solid-js/web";
+import { createEffect, untrack } from "solid-js";
 
 import { createPersistedStore } from "./createPersistedStore";
+import { dropOldEntries } from "./dropOldEntries";
 import { findNextSibling } from "./findNextSibling";
 
 import type { AddMessage } from "./messages";
@@ -17,53 +16,24 @@ export function createCommentStore(params: {
 }) {
   params.addMessage("commentStore", "init");
 
-  const [collapsedTimestamps, setCollapsedTimestamps] = createPersistedStore(
-    "COLLAPSED_COMMENTS",
-    {} as CollapsedTimestampMap,
-    params.localForage
-  );
+  const [collapsedTimestamps, setCollapsedTimestamps, hydrated] =
+    createPersistedStore(
+      "COLLAPSED_COMMENTS",
+      {} as CollapsedTimestampMap,
+      params.localForage
+    );
 
-  // first time the length of the store is >0, call for cleanup 1s later
-  // this will fire when the store loads
-  const hasLength = createMemo(() => Object.keys(collapsedTimestamps).length);
-  const cleanOnChange = createReaction(
-    () => !isServer && setTimeout(() => cleanUpOldEntries(), 1000)
-  );
-  cleanOnChange(hasLength);
-
-  const updateCollapsedState = (
-    commentId: number | undefined,
-    collapsed: boolean
-  ): void => {
-    if (!commentId) {
-      return;
+  // Prune week-old entries once the stored map loads.
+  createEffect(() => {
+    if (hydrated()) {
+      void setCollapsedTimestamps(
+        untrack(() => dropOldEntries(collapsedTimestamps))
+      );
     }
+  });
 
-    const next: CollapsedTimestampMap = { ...collapsedTimestamps };
-    if (collapsed) {
-      next[commentId] = Date.now();
-    } else {
-      delete next[commentId];
-    }
-
-    setCollapsedTimestamps(reconcile(next, { merge: false }));
-  };
-
-  const cleanUpOldEntries = (): void => {
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const prev = collapsedTimestamps;
-    let changed = false;
-    const next: CollapsedTimestampMap = { ...prev };
-    for (const [idStr, ts] of Object.entries(prev)) {
-      if (typeof ts === "number" && ts <= oneWeekAgo) {
-        delete next[Number(idStr)];
-        changed = true;
-      }
-    }
-
-    if (changed) {
-      setCollapsedTimestamps(reconcile(next, { merge: false }));
-    }
+  const updateCollapsedState = (commentId: number, collapsed: boolean) => {
+    void setCollapsedTimestamps(commentId, collapsed ? Date.now() : undefined);
   };
 
   const handleCollapseEvent = (id: number, newOpen: boolean): void => {
@@ -102,7 +72,6 @@ export function createCommentStore(params: {
   return {
     collapsedTimestamps,
     updateCollapsedState,
-    cleanUpOldEntries,
     handleCollapseEvent,
   };
 }

@@ -1,15 +1,12 @@
-import { createEffect, Match, onMount, Switch } from "solid-js";
+import { Match, onMount, Switch } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
 import {
   useAppData,
   useDataStore,
-  useMessagesStore,
   useReadItemsStore,
   useServiceWorkerStore,
-  useStoryUiStore,
 } from "~/contexts/AppDataContext";
-import { getColorsForStory } from "~/lib/getColorsForStory";
 import { isValidComment } from "~/lib/isValidComment";
 
 import { HnCommentList } from "./HnCommentList";
@@ -28,23 +25,12 @@ interface HnStoryPageProps {
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
-  const storyUiStore = useStoryUiStore();
-  const messagesStore = useMessagesStore();
   const serviceWorker = useServiceWorkerStore();
   const dataStore = useDataStore();
   const readItemsStore = useReadItemsStore();
 
   const story = () => props.story;
   const isClientMounted = useAppData().isClientMounted;
-
-  createEffect(() => {
-    if (!story()) {
-      return;
-    }
-
-    messagesStore.addMessage("HnStoryPage", "update color map");
-    storyUiStore.setColorMap(getColorsForStory(story()));
-  });
 
   onMount(() => {
     if (props.id === undefined) {

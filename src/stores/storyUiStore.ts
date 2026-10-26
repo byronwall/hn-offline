@@ -1,4 +1,6 @@
-import { createSelector, createSignal } from "solid-js";
+import { createMemo, createSelector, createSignal } from "solid-js";
+
+import { getColorsForStory } from "~/lib/getColorsForStory";
 
 import type { HnItem } from "~/models/interfaces";
 
@@ -7,7 +9,11 @@ export function createStoryUiStore() {
     HnItem | undefined
   >(undefined);
 
-  const [colorMap, setColorMap] = createSignal<Record<string, string>>({});
+  // Author colors for the open story; comments read this for their accent.
+  const colorMap = createMemo(() => {
+    const story = activeStoryData();
+    return story ? getColorsForStory(story) : {};
+  });
 
   const [scrollToId, setScrollToId] = createSignal<number | undefined>(
     undefined
@@ -21,7 +27,6 @@ export function createStoryUiStore() {
     activeStoryData,
     setActiveStoryData,
     colorMap,
-    setColorMap,
     isScrollTarget,
     setScrollToId,
     clearScrollToId: () => setScrollToId(undefined),

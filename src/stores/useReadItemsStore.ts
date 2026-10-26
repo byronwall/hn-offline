@@ -1,7 +1,7 @@
-import { type Accessor, createEffect, createSignal } from "solid-js";
-import { reconcile } from "solid-js/store";
+import { type Accessor, createEffect, createSignal, untrack } from "solid-js";
 
 import { createPersistedStore } from "./createPersistedStore";
+import { dropOldEntries } from "./dropOldEntries";
 
 import type { AddMessage } from "./messages";
 
@@ -31,35 +31,11 @@ export function createReadItemsStore(
     undefined
   );
 
-  const cleanUpOldReadEntries = (): void => {
-    // Keep only the 7 most recent days of read entries
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-
-    const newStore: TimestampHash = {};
-    for (const [idStr, ts] of Object.entries(readItems)) {
-      if (typeof ts !== "number" || ts < oneWeekAgo) {
-        continue;
-      }
-      newStore[Number(idStr)] = ts;
-    }
-
-    setReadItems(reconcile(newStore));
-  };
-
-  let hasDoneCleanup = false;
+  // Prune week-old entries once the stored map loads.
   createEffect(() => {
-    if (!readItemsHydrated()) {
-      return;
+    if (readItemsHydrated()) {
+      void setReadItems(untrack(() => dropOldEntries(readItems)));
     }
-    void readItems;
-    if (hasDoneCleanup) {
-      return;
-    }
-    hasDoneCleanup = true;
-
-    addMessage("readItems", "scheduleCleanup init");
-
-    setTimeout(cleanUpOldReadEntries, 1000);
   });
 
   const saveIdToReadList = async (id: number | undefined): Promise<void> => {
@@ -80,6 +56,5 @@ export function createReadItemsStore(
     recentlyReadId,
     setRecentlyReadId,
     saveIdToReadList,
-    cleanUpOldReadEntries,
   };
 }

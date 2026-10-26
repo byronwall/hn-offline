@@ -2,11 +2,7 @@ import { Meta } from "@solidjs/meta";
 import { createAsync, useParams } from "@solidjs/router";
 import { createEffect, createMemo, untrack } from "solid-js";
 
-import {
-  updateStoryDataStores,
-  useAppData,
-  useDataStore,
-} from "~/contexts/AppDataContext";
+import { useAppData, useDataStore } from "~/contexts/AppDataContext";
 import { HnStoryPage } from "~/features/comments/HnStoryPage";
 import { getStoryById } from "~/server/queries";
 
@@ -33,7 +29,7 @@ export default function Story() {
   });
 
   createEffect(() => {
-    updateStoryDataStores(id(), data);
+    dataStore.syncStory(id(), data.latest);
   });
 
   const story = () => data.latest?.result ?? undefined;
