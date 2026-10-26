@@ -105,12 +105,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
           <HnStoryTitle story={story()} />
           <HnStoryMetaRow story={story()} newCount={newCount()} />
           <Show when={story()?.text ? story() : undefined}>
-            {(s) => (
-              <HnStoryContentCard
-                story={s()}
-                firstCommentId={comments()[0]?.id}
-              />
-            )}
+            {(s) => <HnStoryContentCard story={s()} />}
           </Show>
 
           <Switch>

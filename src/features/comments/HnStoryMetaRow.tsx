@@ -2,7 +2,7 @@ import { Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import { useRelativeTime } from "~/contexts/AppDataContext";
-import { scrollToNext } from "~/lib/scrollToNext";
+import { scrollToNext } from "~/lib/scroll";
 import { shareHnTextContent } from "~/lib/shareHnTextContent";
 import { getDomain, shareSafely } from "~/lib/utils";
 

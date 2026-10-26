@@ -139,34 +139,44 @@ pre {
 
 .collapsed {
   --flash-color: #ff6600;
-  animation: flash-background 200ms;
+}
+
+/* Set by flash() in lib/scroll.ts when a card is toggled, so it never
+   plays on page load. */
+.flash {
+  animation: flash-background 420ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @keyframes flash-background {
   0% {
-    background: white;
-  }
-  /* Adding a step in the middle */
-  50% {
-    background: rgb(from var(--flash-color) r g b / 20%);
+    background: rgb(from var(--flash-color) r g b / 22%);
   }
   100% {
     background: white;
   }
 }
 
-/* Subtle fade-out for recently read story retained briefly in list */
-.fade-out {
-  animation: fade-out-keyframes 300ms ease-out forwards;
+/* The story just read fades, then its row closes so the list slides up
+   instead of jumping. The row is a one-row grid so 1fr -> 0fr animates. */
+.row-leave {
+  display: grid;
+  overflow: hidden;
+  animation: row-leave 480ms cubic-bezier(0.23, 1, 0.32, 1) 250ms both;
 }
 
-@keyframes fade-out-keyframes {
-  from {
+
+@keyframes row-leave {
+  0% {
     opacity: 1;
+    grid-template-rows: 1fr;
   }
-  to {
+  40% {
     opacity: 0;
-    transform: translateY(-100%);
+    grid-template-rows: 1fr;
+  }
+  100% {
+    opacity: 0;
+    grid-template-rows: 0fr;
   }
 }
 
@@ -181,5 +191,14 @@ pre {
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
   }
 }

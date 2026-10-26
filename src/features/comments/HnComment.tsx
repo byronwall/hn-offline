@@ -1,4 +1,4 @@
-import { createEffect, createMemo, Show } from "solid-js";
+import { createMemo, Show } from "solid-js";
 
 import { ArrowUpRightFromSquare } from "~/components/Icon";
 import {
@@ -9,7 +9,7 @@ import {
 import { formatCommentText } from "~/lib/commentUtils";
 import { countComments } from "~/lib/countComments";
 import { isLinkOrSelection } from "~/lib/isLinkOrSelection";
-import { scrollToElement } from "~/lib/scrollToNext";
+import { flash, keepInView } from "~/lib/scroll";
 import { shareHnTextContent } from "~/lib/shareHnTextContent";
 import { cn } from "~/lib/utils";
 import { KidsObj3 } from "~/models/interfaces";
@@ -29,23 +29,11 @@ export function HnComment(props: HnCommentProps) {
   const storyUiStore = useStoryUiStore();
   const commentStore = useCommentStore();
   const relativeTime = useRelativeTime();
+  let cardRef: HTMLDivElement | undefined;
   let headerRef: HTMLParagraphElement | undefined;
 
   const isOpen = () =>
     commentStore.collapsedTimestamps[props.comment.id] === undefined;
-
-  createEffect(() => {
-    if (!storyUiStore.isScrollTarget(props.comment.id)) {
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      if (headerRef) {
-        scrollToElement(headerRef);
-      }
-      storyUiStore.clearScrollToId();
-    });
-  });
 
   const handleShareClick = async (e: MouseEvent) => {
     e.stopPropagation();
@@ -65,7 +53,14 @@ export function HnComment(props: HnCommentProps) {
     if (isLinkOrSelection(e)) {
       return;
     }
-    commentStore.handleCollapseEvent(props.comment.id, !isOpen());
+    // Solid updates the DOM synchronously, so the header can be re-pinned in
+    // the same frame: collapsing deep inside a long thread leaves its
+    // one-line header right under the nav, with the next comment below it.
+    commentStore.updateCollapsedState(props.comment.id, isOpen());
+    if (headerRef && cardRef) {
+      keepInView(headerRef);
+      flash(cardRef);
+    }
   }
 
   const stickyInfo = createMemo(() => {
@@ -106,6 +101,7 @@ export function HnComment(props: HnCommentProps) {
 
   return (
     <div
+      ref={cardRef}
       class={cn("bp3-card user-text relative", { collapsed: !isOpen() })}
       onClick={handleCardClick}
       style={{

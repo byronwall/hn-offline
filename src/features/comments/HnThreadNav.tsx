@@ -1,7 +1,7 @@
 import { Show } from "solid-js";
 
 import { ChevronUp } from "~/components/Icon";
-import { scrollToNext } from "~/lib/scrollToNext";
+import { scrollToNext } from "~/lib/scroll";
 
 type HnThreadNavProps = {
   newCount: number;

@@ -1,4 +1,3 @@
-import { createAutoAnimate } from "@formkit/auto-animate/solid";
 import { createMemo, For, Match, Switch } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
@@ -18,7 +17,6 @@ interface HnStoryListBodyProps {
 export function HnStoryListBody(props: HnStoryListBodyProps) {
   const dataStore = useDataStore();
   const readItemsStore = useReadItemsStore();
-  const [listParent] = createAutoAnimate();
 
   const hideRead = () => readItemsStore.readSettings.shouldHideReadItems;
   const isRead = (id: number) => readItemsStore.readItems[id] !== undefined;
@@ -77,7 +75,7 @@ export function HnStoryListBody(props: HnStoryListBodyProps) {
           </div>
         </Match>
       </Switch>
-      <div ref={listParent}>
+      <div>
         <For each={visibleItems()}>
           {(item) => (
             <HnListItem

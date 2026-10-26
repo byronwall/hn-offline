@@ -2,17 +2,15 @@ import { createEffect, untrack } from "solid-js";
 
 import { createPersistedStore } from "./createPersistedStore";
 import { dropOldEntries } from "./dropOldEntries";
-import { findNextSibling } from "./findNextSibling";
 
 import type { AddMessage } from "./messages";
-import type { createStoryUiStore } from "./storyUiStore";
 
 type CollapsedTimestampMap = Record<number, number>;
 
+// Which comments (and story texts) the reader collapsed, by id.
 export function createCommentStore(params: {
   addMessage: AddMessage;
   localForage: () => LocalForage | undefined;
-  storyUi: ReturnType<typeof createStoryUiStore>;
 }) {
   params.addMessage("commentStore", "init");
 
@@ -36,42 +34,8 @@ export function createCommentStore(params: {
     void setCollapsedTimestamps(commentId, collapsed ? Date.now() : undefined);
   };
 
-  const handleCollapseEvent = (id: number, newOpen: boolean): void => {
-    updateCollapsedState(id, !newOpen);
-
-    if (newOpen) {
-      params.storyUi.setScrollToId(id);
-      return;
-    }
-
-    const currentActiveStoryData = params.storyUi.activeStoryData();
-    if (!currentActiveStoryData) {
-      return;
-    }
-
-    const testComments = currentActiveStoryData.kidsObj || [];
-    const nextSiblingId = findNextSibling(
-      testComments,
-      id,
-      undefined,
-      collapsedTimestamps
-    );
-
-    if (nextSiblingId === undefined) {
-      return;
-    }
-
-    // For closing, wait for DOM updates to complete before setting scroll target
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        params.storyUi.setScrollToId(nextSiblingId);
-      });
-    });
-  };
-
   return {
     collapsedTimestamps,
     updateCollapsedState,
-    handleCollapseEvent,
   };
 }

@@ -6,6 +6,7 @@ import {
   fetchAllStoryDataForPage,
   mapStoriesToSummaries,
 } from "~/lib/getSummaryViaFetch";
+import { scrollToY } from "~/lib/scroll";
 import { validateHnItemWithComments } from "~/lib/validation";
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 
@@ -336,14 +337,8 @@ export function createDataStore(params: {
       return;
     }
 
-    // Ensure we scroll to the top when a refresh is initiated from any trigger
-    try {
-      if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    } catch (_err) {
-      // noop
-    }
+    // Every refresh starts the reader at the top.
+    scrollToY(0);
 
     setIsLoadingData(true);
 

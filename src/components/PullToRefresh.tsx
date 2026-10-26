@@ -1,6 +1,7 @@
 import { createEffect, createSignal, ParentProps, Show } from "solid-js";
 
 import { useDataStore } from "~/contexts/AppDataContext";
+import { cn } from "~/lib/utils";
 
 type PullToRefreshProps = ParentProps<{
   onRefresh: () => Promise<void> | void;
@@ -72,6 +73,8 @@ export function PullToRefresh(props: PullToRefreshProps) {
         /* noop */
       }
 
+      // Hold a short "Refreshing…" strip until the data lands.
+      setPullDistance(40);
       await props.onRefresh();
     }
     setPullDistance(0);
@@ -93,15 +96,21 @@ export function PullToRefresh(props: PullToRefreshProps) {
       style={{ "touch-action": "pan-y" }}
     >
       <div
-        class="flex items-center justify-center text-sm text-slate-500 transition-[height] duration-150 ease-out select-none"
+        // Follow the finger 1:1 while pulling; ease only on release.
+        class={cn(
+          "flex items-center justify-center overflow-hidden text-sm text-slate-500 select-none",
+          { "transition-[height] duration-200 ease-out": !isPulling() }
+        )}
         style={{ height: `${pullDistance()}px` }}
       >
         <Show when={pullDistance() > 0}>
           <div class="flex flex-col items-center gap-1">
             <span>
-              {pullDistance() >= activationThreshold()
-                ? "Release to refresh"
-                : "Pull to refresh"}
+              {isRefreshing()
+                ? "Refreshing…"
+                : pullDistance() >= activationThreshold()
+                  ? "Release to refresh"
+                  : "Pull to refresh"}
             </span>
             <Show when={props.message}>
               <span class="text-[11px] text-slate-400">{props.message}</span>

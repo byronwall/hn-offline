@@ -1,9 +1,10 @@
-import { createMemo, createSelector, createSignal } from "solid-js";
+import { createMemo, createSignal } from "solid-js";
 
 import { getColorsForStory } from "~/lib/getColorsForStory";
 
 import type { HnItem } from "~/models/interfaces";
 
+// UI state for the open story page.
 export function createStoryUiStore() {
   const [activeStoryData, setActiveStoryData] = createSignal<
     HnItem | undefined
@@ -15,14 +16,6 @@ export function createStoryUiStore() {
     return story ? getColorsForStory(story) : {};
   });
 
-  const [scrollToId, setScrollToId] = createSignal<number | undefined>(
-    undefined
-  );
-
-  // Each comment checks only its own id, so a new target wakes one comment
-  // instead of every comment on the page.
-  const isScrollTarget = createSelector(scrollToId);
-
   // When the reader last opened this story (ms), to mark newer comments.
   const [lastVisitMs, setLastVisitMs] = createSignal<number | undefined>(
     undefined
@@ -32,10 +25,7 @@ export function createStoryUiStore() {
     activeStoryData,
     setActiveStoryData,
     colorMap,
-    isScrollTarget,
     lastVisitMs,
     setLastVisitMs,
-    setScrollToId,
-    clearScrollToId: () => setScrollToId(undefined),
   };
 }
