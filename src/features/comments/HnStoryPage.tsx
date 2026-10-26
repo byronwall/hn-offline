@@ -1,5 +1,5 @@
 import { A } from "@solidjs/router";
-import { Match, onMount, Show, Switch } from "solid-js";
+import { createEffect, Match, onMount, Show, Switch, untrack } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
 import {
@@ -40,7 +40,16 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     }
     // Track most recently read for list fade-out UX on back nav
     readItemsStore.setRecentlyReadId(props.id);
-    readItemsStore.saveIdToReadList(props.id);
+  });
+
+  // Mark read with the comment count seen, once the story is loaded.
+  createEffect(() => {
+    const loaded = story();
+    if (loaded) {
+      untrack(() =>
+        readItemsStore.saveIdToReadList(loaded.id, loaded.descendants)
+      );
+    }
   });
 
   const comments = () => (story()?.kidsObj || []).filter(isValidComment);

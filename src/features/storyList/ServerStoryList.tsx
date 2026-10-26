@@ -11,7 +11,6 @@ import { TopStoriesType } from "~/models/interfaces";
 import { getStorySummariesByType } from "~/server/queries";
 
 import { HnStoryListBody } from "./HnStoryListBody";
-import { HnStoryListToggle } from "./HnStoryListToggle";
 
 import type { StoryPage } from "~/models/interfaces";
 
@@ -49,13 +48,10 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
   });
 
   return (
-    <>
-      <HnStoryListBody
-        items={listItems()}
-        page={props.page}
-        loading={data.loading}
-      />
-      <HnStoryListToggle />
-    </>
+    <HnStoryListBody
+      items={listItems()}
+      page={props.page}
+      loading={data.loading}
+    />
   );
 }

@@ -27,25 +27,50 @@ export function createReadItemsStore(
     localForage
   );
 
+  // Comment count of each story when it was last read, so lists can show
+  // how many comments are new since then.
+  const [readCommentCounts, setReadCommentCounts, countsHydrated] =
+    createPersistedStore(
+      "READ_COMMENT_COUNTS",
+      {} as TimestampHash,
+      localForage
+    );
+
   const [recentlyReadId, setRecentlyReadId] = createSignal<number | undefined>(
     undefined
   );
 
-  // Prune week-old entries once the stored map loads.
+  // Prune week-old entries once both stored maps load.
   createEffect(() => {
-    if (readItemsHydrated()) {
-      void setReadItems(untrack(() => dropOldEntries(readItems)));
-    }
-  });
-
-  const saveIdToReadList = async (id: number | undefined): Promise<void> => {
-    if (!id) {
+    if (!readItemsHydrated() || !countsHydrated()) {
       return;
     }
+    untrack(() => {
+      const kept = dropOldEntries(readItems);
+      void setReadItems(kept);
+      void setReadCommentCounts(
+        Object.fromEntries(
+          Object.entries(readCommentCounts).filter(([id]) => id in kept)
+        )
+      );
+    });
+  });
 
-    addMessage("readItems", "saveIdToReadList", { id });
+  const saveIdToReadList = (id: number, commentCount: number | undefined) => {
+    addMessage("readItems", "saveIdToReadList", { id, commentCount });
+    void setReadItems(id, Date.now());
+    if (commentCount !== undefined) {
+      void setReadCommentCounts(id, commentCount);
+    }
+  };
 
-    setReadItems(id, Date.now());
+  // Comments added since the story was last read, or 0 if never read.
+  const newCommentCount = (id: number, commentCount: number | undefined) => {
+    const seen = readCommentCounts[id];
+    if (seen === undefined || commentCount === undefined) {
+      return 0;
+    }
+    return Math.max(0, commentCount - seen);
   };
 
   return {
@@ -56,5 +81,6 @@ export function createReadItemsStore(
     recentlyReadId,
     setRecentlyReadId,
     saveIdToReadList,
+    newCommentCount,
   };
 }

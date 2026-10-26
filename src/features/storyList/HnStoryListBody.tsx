@@ -5,7 +5,7 @@ import { PullToRefresh } from "~/components/PullToRefresh";
 import { useDataStore, useReadItemsStore } from "~/contexts/AppDataContext";
 
 import { HnListItem } from "./HnListItem";
-import { HnStoryListRefreshBar } from "./HnStoryListRefreshBar";
+import { HnStoryListHeader } from "./HnStoryListHeader";
 
 import type { HnStorySummary, TopStoriesType } from "~/models/interfaces";
 
@@ -25,17 +25,25 @@ export function HnStoryListBody(props: HnStoryListBodyProps) {
 
   // Sort, then drop read stories when hiding them. The story just read stays
   // long enough to fade out.
-  const visibleItems = createMemo(() => {
-    const items =
-      props.page === "topstories"
-        ? props.items
-        : props.items.slice().sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const sortedItems = createMemo(() =>
+    props.page === "topstories"
+      ? props.items
+      : props.items.slice().sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+  );
 
+  // Rank stays with the story when read stories are hidden.
+  const rankById = createMemo(
+    () => new Map(sortedItems().map((item, index) => [item.id, index + 1]))
+  );
+
+  const visibleItems = createMemo(() => {
     if (!hideRead()) {
-      return items;
+      return sortedItems();
     }
     const recentId = readItemsStore.recentlyReadId();
-    return items.filter((item) => !isRead(item.id) || item.id === recentId);
+    return sortedItems().filter(
+      (item) => !isRead(item.id) || item.id === recentId
+    );
   });
 
   const hiddenCount = () => props.items.length - visibleItems().length;
@@ -45,7 +53,7 @@ export function HnStoryListBody(props: HnStoryListBodyProps) {
       disabled={dataStore.isLoadingData()}
       onRefresh={dataStore.refreshActive}
     >
-      <HnStoryListRefreshBar page={props.page} />
+      <HnStoryListHeader page={props.page} hiddenCount={hiddenCount()} />
       <Switch>
         <Match when={props.items.length === 0}>
           <p class="py-16 text-center text-gray-500">
@@ -69,11 +77,12 @@ export function HnStoryListBody(props: HnStoryListBodyProps) {
           </div>
         </Match>
       </Switch>
-      <div class="grid grid-cols-[1fr_1fr_1fr_3fr]" ref={listParent}>
+      <div ref={listParent}>
         <For each={visibleItems()}>
           {(item) => (
             <HnListItem
               data={item}
+              rank={rankById().get(item.id) ?? 0}
               recentFadeOut={
                 hideRead() && readItemsStore.recentlyReadId() === item.id
               }
