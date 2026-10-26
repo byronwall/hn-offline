@@ -16,7 +16,7 @@ export function AppShell(props: ParentProps) {
       <NavBar />
 
       <div class="h-12 w-full" />
-      <div class="w-full flex-1 border-x border-b border-slate-300 p-1">
+      <div class="w-full flex-1 border-x border-slate-200 p-1">
         {props.children}
       </div>
       <Show when={import.meta.env.DEV}>

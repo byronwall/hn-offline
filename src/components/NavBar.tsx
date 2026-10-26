@@ -1,66 +1,68 @@
 import { A } from "@solidjs/router";
+import { For, Show } from "solid-js";
 
 import { useDataStore, useServiceWorkerStore } from "~/contexts/AppDataContext";
 import { cn } from "~/lib/utils";
 
 import { Shell } from "./Icon";
+import { SearchPopover } from "./search/SearchPopover";
+
+const tabs = [
+  { href: "/", label: "Top" },
+  { href: "/day", label: "Day" },
+  { href: "/week", label: "Week" },
+];
 
 export function NavBar() {
   const dataStore = useDataStore();
   const serviceWorker = useServiceWorkerStore();
 
   return (
-    <nav class="fixed top-0 left-1/2 z-10 flex h-12 w-full max-w-[640px] -translate-x-1/2 items-center justify-between space-x-2 border border-slate-300 bg-white p-1">
-      <div class="flex items-center">
-        <A
-          href="/"
-          class="flex items-center gap-1 hover:underline focus-visible:underline active:underline"
-          end
+    <nav class="border-t-hn fixed top-0 left-1/2 z-10 flex h-12 w-full max-w-[640px] -translate-x-1/2 items-center gap-3 border-x border-t-[3px] border-b border-x-slate-200 border-b-slate-200 bg-white px-2">
+      <A href="/" end class="flex shrink-0 items-center gap-1" title="Top">
+        <img src="/favicon-32x32.png" alt="" class="h-7 w-7" />
+        <h1 class="text-xl font-bold">Offline</h1>
+      </A>
+
+      <div class="flex h-full items-stretch gap-1 text-[15px]">
+        <For each={tabs}>
+          {(tab) => (
+            <A
+              href={tab.href}
+              end
+              class="flex items-center border-b-2 px-2 text-slate-500 transition-colors duration-150 hover:text-slate-900"
+              activeClass="border-hn font-semibold text-slate-900"
+              inactiveClass="border-transparent"
+            >
+              {tab.label}
+            </A>
+          )}
+        </For>
+      </div>
+
+      <SearchPopover />
+      <Show when={serviceWorker.isOfflineMode()}>
+        <span class="text-sm text-slate-500">Offline</span>
+      </Show>
+      <Show when={!serviceWorker.isOfflineMode()}>
+        <button
+          type="button"
+          aria-label="Refresh"
+          title="Refresh"
+          disabled={dataStore.isLoadingData()}
+          onClick={() => dataStore.refreshActive()}
+          // -my-3/py-3 grows the tap target past the icon
+          class="hover:text-hn-ink focus-visible:text-hn-ink -my-3 px-2 py-3 text-slate-700 transition-colors duration-150"
         >
-          <img
-            src="/favicon-32x32.png"
-            alt="Hacker News Logo"
-            class={cn("h-8 w-8", {
-              "animate-spin": dataStore.isLoadingData(),
+          <Shell
+            width="26"
+            height="26"
+            class={cn({
+              "text-hn-ink animate-spin": dataStore.isLoadingData(),
             })}
           />
-          <h1 class="text-2xl font-bold">Offline</h1>
-        </A>
-      </div>
-      <div class="flex items-center gap-2 text-xl">
-        <A
-          href="/day"
-          class="hover:underline focus-visible:underline active:underline"
-        >
-          day
-        </A>
-        <A
-          href="/week"
-          class="hover:underline focus-visible:underline active:underline"
-        >
-          week
-        </A>
-        <div
-          onClick={() => {
-            if (serviceWorker.isOfflineMode()) {
-              return;
-            }
-            dataStore.refreshActive();
-          }}
-          // increase hit area
-          class="-my-3 px-2 py-3"
-          hidden={serviceWorker.isOfflineMode()}
-        >
-          <div
-            class={cn(
-              "transition-colors duration-300 ease-in-out hover:cursor-pointer hover:text-blue-500",
-              { "animate-spin text-orange-500": dataStore.isLoadingData() }
-            )}
-          >
-            <Shell size="32" color="black" />
-          </div>
-        </div>
-      </div>
+        </button>
+      </Show>
     </nav>
   );
 }

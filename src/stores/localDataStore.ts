@@ -30,7 +30,6 @@ export function createLocalDataStore(params: {
   const comments = createCommentStore({
     addMessage: params.addMessage,
     localForage: localForage.localForage,
-    storyUi: params.storyUi,
   });
 
   return {

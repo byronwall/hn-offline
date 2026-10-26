@@ -18,7 +18,7 @@ export function createServiceWorkerStatusStore(addMessage: AddMessage) {
       ? "registering"
       : "unsupported";
 
-  const [serviceWorkerStatus, setServiceWorkerStatusSignal] =
+  const [serviceWorkerStatus, setServiceWorkerStatus] =
     createSignal<ServiceWorkerStatus>(initialStatus);
 
   const [serviceWorkerVersion, setServiceWorkerVersion] = createSignal<
@@ -26,11 +26,6 @@ export function createServiceWorkerStatusStore(addMessage: AddMessage) {
   >(undefined);
 
   const [isOfflineMode, setIsOfflineMode] = createSignal<boolean>(false);
-
-  const setServiceWorkerStatus = (status: ServiceWorkerStatus) => {
-    console.log("*** setting service worker status", status);
-    setServiceWorkerStatusSignal(status);
-  };
 
   const initializeServiceWorker = () => {
     const skipDev = import.meta.env.PROD;

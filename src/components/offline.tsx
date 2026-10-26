@@ -15,7 +15,7 @@ export default function Offline() {
   return (
     <div class="flex h-full w-full items-center justify-center p-4">
       <div class="mx-auto w-full max-w-[520px] rounded-md border border-slate-300 bg-white p-6 text-center">
-        <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-orange-600 ring-1 ring-orange-200">
+        <div class="bg-hn-soft text-hn-ink ring-hn/30 mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full ring-1">
           <Shell />
         </div>
         <h2 class="text-2xl font-semibold">You are offline</h2>

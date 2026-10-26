@@ -17,7 +17,12 @@ export type AddMessage = (
 export function createMessagesStore() {
   const [messages, setMessages] = createSignal<Message[]>([]);
 
+  // The feed only shows in the dev StatusBar, so skip the work in production.
   const addMessage: AddMessage = (key, message, ...args) => {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
     const entry: Message = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       key,
@@ -25,8 +30,6 @@ export function createMessagesStore() {
       args,
       timestamp: Date.now(),
     };
-
-    console.log("*** addMessage", entry);
 
     setMessages((prev) => [entry, ...prev].slice(0, 200));
   };

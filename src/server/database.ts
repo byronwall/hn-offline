@@ -2,225 +2,106 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { _getUnixTimestamp } from "~/lib/utils";
-import { Item, ItemExt, TopStories, TopStoriesType } from "~/models/interfaces";
+import {
+  type ItemExt,
+  STORY_TYPE,
+  type TopStories,
+  type TopStoriesType,
+} from "~/models/interfaces";
 
-import { AlgoliaApi, HITS_PER_PAGE } from "./algolia";
-import { HackerNewsApi } from "./api";
-
-type ItemHash = {
+// One JSON file: items keyed by id, plus one id list per story type.
+type DbShape = {
   [id: number]: ItemExt;
+} & Partial<Record<TopStoriesType, TopStories>>;
 
-  topstories?: TopStories;
-  day?: TopStories;
-  week?: TopStories;
-  month?: TopStories;
-};
+// SolidStart bundles server code twice (SSR and server functions), so this
+// module can load twice in one process. Keep the data on globalThis so both
+// copies share one DB and one refresh loop.
+type ServerState = { db: DbShape; loaded: boolean; refreshStarted: boolean };
+const shared = globalThis as typeof globalThis & { __hnServer?: ServerState };
+export const state = (shared.__hnServer ??= {
+  db: {},
+  loaded: false,
+  refreshStarted: false,
+});
 
-let db: ItemHash = {};
-console.log("*** server database");
 const dbPath = process.env.db_path ?? "./newdb.json";
 const maxDatabaseBytes = getMaxDatabaseBytes();
-console.log("db path", dbPath);
-
-export function saveDatabase() {
-  const dataStr = JSON.stringify(db);
-  ensureDatabaseDir();
-  const tmpPath = `${dbPath}.tmp`;
-  fs.writeFileSync(tmpPath, dataStr);
-  fs.renameSync(tmpPath, dbPath);
-}
 
 export function reloadDatabase() {
-  // create database if it's missing
+  state.loaded = true;
   if (!fs.existsSync(dbPath)) {
-    saveDatabase();
+    state.db = {};
+    return;
   }
 
   resetOversizedDatabase();
 
-  const dataStr = fs.readFileSync(dbPath, "utf8");
-
   try {
-    db = JSON.parse(dataStr) as ItemHash;
+    state.db = JSON.parse(fs.readFileSync(dbPath, "utf8")) as DbShape;
   } catch (error) {
     console.error("Database JSON is unreadable; resetting local cache", error);
     resetDatabaseFile("invalid-json");
-    db = {};
   }
 }
 
-export async function db_clearOldStories(idsToKeep: number[]) {
-  // remove the day/week items from the delete list
-  const keepIds = new Set(idsToKeep);
-  const allIds = Object.keys(db)
-    .map((c) => +c)
-    .filter((c) => !isNaN(c));
-
-  let removeCount = 0;
-  allIds.forEach((id) => {
-    const shouldKeep = keepIds.has(id);
-
-    if (!shouldKeep) {
-      delete db[id];
-      removeCount++;
-    }
-  });
-
-  return removeCount;
+// Write to a temp file, then rename, so a crash never leaves half a file.
+export async function saveDatabase() {
+  ensureDatabaseDir();
+  const tmpPath = `${dbPath}.tmp`;
+  await fs.promises.writeFile(tmpPath, JSON.stringify(state.db));
+  await fs.promises.rename(tmpPath, dbPath);
 }
 
-export async function db_getTopStoryIds(
-  reqType: TopStoriesType
-): Promise<number[]> {
-  const doc = db[reqType] as TopStories;
-
-  if (doc !== undefined) {
-    const shouldUpdate = _getUnixTimestamp() - doc.lastUpdated > 600;
-    if (!shouldUpdate) {
-      // same type of obj as created below
-      return doc.items;
-    }
+// An item counts as stale once its last fetch is more than 25% of its age
+// ago, so new threads refresh often and old ones rarely. `allowStale` returns
+// it anyway (to serve something while a refresh runs).
+export function getItem(
+  id: number,
+  options?: { allowStale?: boolean }
+): ItemExt | null {
+  const item = state.db[id];
+  if (!item) {
+    return null;
   }
-
-  const ids = await _getTopStories(reqType);
-
-  const topstories: TopStories = {
-    id: reqType,
-    items: ids,
-    lastUpdated: _getUnixTimestamp(),
-  };
-
-  // add to database
-  db[reqType] = topstories;
-
-  return ids;
-}
-
-async function addAllChildren(items: Item[]) {
-  let newItems: Item[] = [];
-
-  for (const item of items) {
-    // this now needs to go grab comments if they are desired
-    // TODO: consider building a giant normalized list and then doing a final denorm step... that final obj coudl be saved too as a cache.
-
-    if (item !== null) {
-      let freshItems = await addChildrenToItem(item);
-      freshItems = freshItems.filter((item) => item !== null);
-      newItems = newItems.concat(freshItems);
-    }
-
-    // all of the kids were added... check if more kids to do
+  if (options?.allowStale) {
+    return item;
   }
-
-  // console.log("new items", newItems.map(item => item.id));
-
-  if (newItems.length == 0) {
-    return true;
-  } else {
-    return addAllChildren(newItems);
-  }
+  const sinceFetch = _getUnixTimestamp() - item.lastUpdated;
+  const ageAtFetch = item.lastUpdated - (item.time ?? 0);
+  return sinceFetch / ageAtFetch > 0.25 ? null : item;
 }
 
-async function addChildrenToItem(item: Item | null): Promise<Item[]> {
-  if (item !== null && item.kids !== undefined && item.kids.length > 0) {
-    // load all the kids and then return those
-    const result = await Promise.all(
-      item.kids.map((kid) => HackerNewsApi.get().fetchItem(kid))
-    );
-
-    // result contains all of the comments loaded, run them back into the parent
-    item.kidsObj = result as Item[];
-    delete item.kids;
-
-    return item.kidsObj;
-  }
-
-  // just send  back empty array otherwise
-  return [];
+export function putItem(item: ItemExt) {
+  state.db[item.id] = item;
 }
 
-export function addItemToDb(item: ItemExt) {
-  db[item.id] = item;
-
-  return true;
+export function getList(type: TopStoriesType): TopStories | undefined {
+  return state.db[type];
 }
 
-async function _getTopStories(type: TopStoriesType): Promise<number[]> {
-  switch (type) {
-    case "topstories":
-      try {
-        return (await HackerNewsApi.get().fetchItemIds("topstories")).slice(
-          0,
-          HITS_PER_PAGE
-        );
-      } catch (err) {
-        console.warn("HN API topstories failed, falling back to Algolia", err);
-        return await AlgoliaApi.getFrontPage();
+export function putList(type: TopStoriesType, ids: number[]) {
+  state.db[type] = { id: type, items: ids, lastUpdated: _getUnixTimestamp() };
+}
+
+// Drop every item not in `keepIds`, and any list key that is no longer a
+// story type. Returns the number of items removed.
+export function pruneItems(keepIds: Set<number>) {
+  let removed = 0;
+  for (const key of Object.keys(state.db)) {
+    const id = Number(key);
+    if (Number.isNaN(id)) {
+      if (!STORY_TYPE.includes(key as TopStoriesType)) {
+        delete (state.db as Record<string, unknown>)[key];
       }
-    case "day":
-      return await AlgoliaApi.getDay();
-    case "month":
-      return await AlgoliaApi.getMonth();
-    case "week":
-      return await AlgoliaApi.getWeek();
-    default:
-      console.log("error missing type");
-      return [];
+      continue;
+    }
+    if (!keepIds.has(id)) {
+      delete state.db[id];
+      removed++;
+    }
   }
-}
-
-export function getItemFromDb(itemId: number): ItemExt | null {
-  const doc = db[itemId];
-
-  if (doc === undefined || _isTimePastThreshold(doc)) {
-    // this is caught later and used to refresh the story
-    return null;
-  }
-
-  return doc;
-}
-
-export function getTopStoriesFromDb(type: TopStoriesType): TopStories | null {
-  const doc = db[type] as TopStories;
-
-  if (doc === undefined) {
-    return null;
-  }
-
-  return doc;
-}
-
-export async function addChildrenToItemRecurse(item: Item) {
-  let newItems: Item[] = [];
-
-  // this now needs to go grab comments if they are desired
-
-  const freshItems = await addChildrenToItem(item);
-
-  newItems = newItems.concat(freshItems);
-
-  // all of the kids were added... check if more kids to do
-
-  // console.log("new items", newItems.map(item => item.id));
-
-  if (newItems.length == 0) {
-    return true;
-  } else {
-    return addAllChildren(newItems);
-  }
-}
-
-function _isTimePastThreshold(itemExt: ItemExt) {
-  if (itemExt.lastUpdated === undefined) {
-    return true;
-  }
-
-  // set up to update the story if the ratio on time marks the story old
-  return (
-    (_getUnixTimestamp() - itemExt.lastUpdated) /
-      (itemExt.lastUpdated - itemExt.time!) >
-    0.25
-  );
+  return removed;
 }
 
 function ensureDatabaseDir() {
@@ -229,23 +110,16 @@ function ensureDatabaseDir() {
 
 function getMaxDatabaseBytes() {
   const value = Number(process.env.db_max_bytes);
-
-  if (Number.isFinite(value) && value > 0) {
-    return value;
-  }
-
-  return 128 * 1024 * 1024;
+  return Number.isFinite(value) && value > 0 ? value : 128 * 1024 * 1024;
 }
 
 function resetOversizedDatabase() {
-  const stats = fs.statSync(dbPath);
-
-  if (stats.size <= maxDatabaseBytes) {
+  const { size } = fs.statSync(dbPath);
+  if (size <= maxDatabaseBytes) {
     return;
   }
-
   console.error(
-    `Database file is ${stats.size} bytes, above limit ${maxDatabaseBytes}; resetting local cache`
+    `Database file is ${size} bytes, above limit ${maxDatabaseBytes}; resetting local cache`
   );
   resetDatabaseFile("oversized");
 }
@@ -254,19 +128,18 @@ function resetDatabaseFile(reason: string) {
   ensureDatabaseDir();
 
   if (fs.existsSync(dbPath)) {
-    const backupPath = `${dbPath}.${reason}.${Date.now()}.bak`;
-
     if (shouldDeleteResetBackup()) {
       fs.unlinkSync(dbPath);
       console.error("Deleted database file");
     } else {
+      const backupPath = `${dbPath}.${reason}.${Date.now()}.bak`;
       fs.renameSync(dbPath, backupPath);
       console.error("Moved database file to", backupPath);
     }
   }
 
-  db = {};
-  saveDatabase();
+  state.db = {};
+  fs.writeFileSync(dbPath, "{}");
 }
 
 function shouldDeleteResetBackup() {

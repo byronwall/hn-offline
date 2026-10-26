@@ -1,198 +1,112 @@
-import { type Accessor, createEffect, createSignal, onCleanup } from "solid-js";
-import { createStore, unwrap } from "solid-js/store";
+import {
+  type Accessor,
+  createEffect,
+  createSignal,
+  onCleanup,
+  untrack,
+} from "solid-js";
+import { createStore, reconcile, unwrap } from "solid-js/store";
 
+import { withRetries } from "./withRetries";
+
+// A Solid store mirrored to one localForage key.
+//
+// Writes apply to memory at once. Writes made before the stored value loads
+// are queued, then replayed over the stored value, so nothing is lost.
 export function createPersistedStore<T extends object>(
   name: string,
   initialValue: T,
   localForage: Accessor<LocalForage | undefined>
 ) {
-  console.log("*** createPersistedStore", { name, initialValue, localForage });
-  const [store, rawSetStore] = createStore(initialValue);
+  const [store, rawSetStore] = createStore<T>({ ...initialValue });
+  const [hydrated, setHydrated] = createSignal(false);
+  const pending: Array<(current: T) => T> = [];
 
-  const [hasHydratedFromStorage, setHasHydratedFromStorage] =
-    createSignal(false);
-  const [storageSnapshot, setStorageSnapshot] = createSignal<{
-    value: T | undefined;
-    loaded: boolean;
-  }>({ value: undefined, loaded: false });
-
-  const pendingMutations: Array<(current: T) => T> = [];
-  const [pendingPersistValue, setPendingPersistValue] = createSignal<
-    T | undefined
-  >(undefined);
-
-  const queueMutation = (mutation: (current: T) => T) => {
-    pendingMutations.push(mutation);
-  };
-
-  const wait = (delayMs: number) =>
-    new Promise<void>((resolve) => {
-      setTimeout(resolve, delayMs);
+  const retry = <R>(operation: () => Promise<R>) =>
+    withRetries(operation, (attempt, delayMs) => {
+      console.warn("localForage retry", { name, attempt, delayMs });
     });
 
-  const withLocalForageRetries = async <R>(
-    operationName: string,
-    operation: () => Promise<R>,
-    maxAttempts = 3
-  ): Promise<R> => {
-    let latestError: unknown;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      try {
-        return await operation();
-      } catch (error) {
-        latestError = error;
-        if (attempt >= maxAttempts) {
-          break;
-        }
-
-        const delayMs = 250 * 2 ** (attempt - 1);
-        console.warn("*** localForage retry", {
-          name,
-          operationName,
-          attempt,
-          delayMs,
-        });
-        await wait(delayMs);
-      }
+  const persist = async () => {
+    const lf = localForage();
+    if (!lf || !hydrated()) {
+      return;
     }
-
-    throw latestError;
-  };
-
-  const persistSnapshot = async (
-    lf: LocalForage | undefined,
-    snapshot: T
-  ): Promise<boolean> => {
-    if (!lf) {
-      setPendingPersistValue(() => snapshot);
-      return false;
-    }
-
     try {
-      await withLocalForageRetries("setItem", async () => {
-        await lf.setItem(name, snapshot);
-      });
-      setPendingPersistValue(() => undefined);
-      return true;
+      await retry(() => lf.setItem(name, unwrap(store)));
     } catch (error) {
-      console.error("*** persist failed", { name, error });
-      setPendingPersistValue(() => snapshot);
-      return false;
+      console.error("persist failed", { name, error });
     }
   };
 
-  const setStore = async <K extends keyof T>(
-    keyOrNewStore: K | T | ((currentStore: T) => T),
+  // Set one key (undefined deletes it), or replace the whole value.
+  async function setStore<K extends keyof T>(
+    key: K,
+    value: T[K] | undefined
+  ): Promise<void>;
+  async function setStore(next: T | ((current: T) => T)): Promise<void>;
+  async function setStore<K extends keyof T>(
+    keyOrNext: K | T | ((current: T) => T),
     value?: T[K]
-  ) => {
-    console.log("*** setting store", name, keyOrNewStore, value);
+  ) {
+    const mutation =
+      typeof keyOrNext === "function"
+        ? keyOrNext
+        : typeof keyOrNext === "object"
+          ? () => keyOrNext
+          : (current: T) => {
+              const next = { ...current, [keyOrNext]: value };
+              if (value === undefined) {
+                delete next[keyOrNext];
+              }
+              return next;
+            };
 
-    // handle setting the store via a function
-    if (typeof keyOrNewStore === "function") {
-      const mutation = keyOrNewStore as (currentStore: T) => T;
-      const newStore = mutation(unwrap(store));
-      console.log("*** newStore", newStore);
-      rawSetStore(newStore);
-      if (hasHydratedFromStorage()) {
-        await persistSnapshot(localForage(), newStore);
-      } else {
-        queueMutation(mutation);
-      }
+    rawSetStore(reconcile(mutation(unwrap(store))));
+
+    if (!hydrated()) {
+      pending.push(mutation);
       return;
     }
-
-    // handle setting the whole store
-    if (typeof keyOrNewStore === "object") {
-      const newStore = unwrap(keyOrNewStore);
-      console.log("*** keyOrNewStore", newStore);
-      rawSetStore(newStore);
-      if (hasHydratedFromStorage()) {
-        await persistSnapshot(localForage(), newStore);
-      } else {
-        queueMutation(() => newStore);
-      }
-
-      return;
-    }
-
-    // handle setting a single key
-    console.log("setting store", name, keyOrNewStore, value);
-    rawSetStore(keyOrNewStore as any, value);
-    const mutation = (currentStore: T) => ({
-      ...currentStore,
-      [keyOrNewStore]: value as T[K],
-    });
-    if (hasHydratedFromStorage()) {
-      await persistSnapshot(localForage(), unwrap(store));
-    } else {
-      queueMutation(mutation);
-    }
-  };
+    await persist();
+  }
 
   createEffect(() => {
     const lf = localForage();
-    if (!lf) {
+    if (!lf || untrack(hydrated)) {
       return;
     }
 
     let cancelled = false;
+    onCleanup(() => {
+      cancelled = true;
+    });
+
     void (async () => {
-      let initialValueFromStorage: T | undefined;
+      let saved: T | null = null;
       try {
-        initialValueFromStorage = (await withLocalForageRetries(
-          "getItem",
-          async () => (await lf.getItem(name)) as T
-        )) as T;
+        saved = await retry(() => lf.getItem<T>(name));
       } catch (error) {
-        console.error("*** hydration failed", { name, error });
+        console.error("hydration failed", { name, error });
       }
       if (cancelled) {
         return;
       }
-      console.log(
-        "*** initial value from local forage in resource",
-        name,
-        initialValueFromStorage
+
+      const merged = pending.reduce(
+        (acc, mutation) => mutation(acc),
+        saved ?? initialValue
       );
-      setStorageSnapshot({ value: initialValueFromStorage, loaded: true });
-    })();
-    onCleanup(() => {
-      cancelled = true;
-    });
-  });
+      const hadPending = pending.length > 0;
+      pending.length = 0;
 
-  createEffect(() => {
-    const lf = localForage();
-    const snapshot = storageSnapshot();
-    if (!lf || !snapshot.loaded || hasHydratedFromStorage()) {
-      return;
-    }
-
-    console.log("*** creating effect to set data", name, snapshot.value);
-
-    const base = snapshot.value ?? initialValue;
-    let merged = base;
-    if (pendingMutations.length > 0) {
-      for (const mutation of pendingMutations) {
-        merged = mutation(merged);
+      rawSetStore(reconcile(merged));
+      setHydrated(true);
+      if (hadPending) {
+        await persist();
       }
-    }
-
-    rawSetStore(merged as T);
-    setHasHydratedFromStorage(true);
-
-    if (pendingMutations.length > 0) {
-      void persistSnapshot(lf, merged);
-    }
-
-    const pendingSnapshot = pendingPersistValue();
-    if (pendingSnapshot !== undefined) {
-      void persistSnapshot(lf, pendingSnapshot);
-    }
-
-    pendingMutations.length = 0;
+    })();
   });
 
-  return [store, setStore, hasHydratedFromStorage] as const;
+  return [store, setStore, hydrated] as const;
 }

@@ -44,12 +44,12 @@ describe("database startup recovery", () => {
     const database = await import("./database");
 
     database.reloadDatabase();
-    database.addItemToDb(createItem(1));
-    database.addItemToDb(createItem(2));
+    database.putItem(createItem(1));
+    database.putItem(createItem(2));
 
-    await expect(database.db_clearOldStories([1, 999])).resolves.toBe(1);
-    expect(database.getItemFromDb(1)?.id).toBe(1);
-    expect(database.getItemFromDb(2)).toBeNull();
+    expect(database.pruneItems(new Set([1, 999]))).toBe(1);
+    expect(database.getItem(1)?.id).toBe(1);
+    expect(database.getItem(2)).toBeNull();
   });
 });
 

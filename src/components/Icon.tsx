@@ -1,4 +1,8 @@
-export const Shell = (props: any) => (
+import { type JSX } from "solid-js";
+
+type IconProps = JSX.SvgSVGAttributes<SVGSVGElement>;
+
+export const Shell = (props: IconProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -12,7 +16,7 @@ export const Shell = (props: any) => (
   </svg>
 );
 
-export const ChevronUp = (props: any) => (
+export const ChevronUp = (props: IconProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -29,7 +33,7 @@ export const ChevronUp = (props: any) => (
   </svg>
 );
 
-export const MessageSquareQuote = (props: any) => (
+export const MessageSquareQuote = (props: IconProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -48,7 +52,7 @@ export const MessageSquareQuote = (props: any) => (
   </svg>
 );
 
-export const ArrowUpRightFromSquare = (props: any) => (
+export const ArrowUpRightFromSquare = (props: IconProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -65,5 +69,23 @@ export const ArrowUpRightFromSquare = (props: any) => (
     <rect width="18" height="18" x="3" y="3" rx="2" />
     <path d="M8 8h8v8" />
     <path d="m8 16 8-8" />
+  </svg>
+);
+
+export const Search = (props: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    {...props}
+  >
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
   </svg>
 );

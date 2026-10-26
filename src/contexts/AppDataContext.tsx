@@ -1,5 +1,4 @@
 // @refresh reload
-import { createAsync } from "@solidjs/router";
 import {
   Accessor,
   createContext,
@@ -11,19 +10,11 @@ import {
 } from "solid-js";
 
 import { timeSince } from "~/lib/utils";
-import {
-  type HnItem,
-  type StoryPage,
-  TopStoriesType,
-} from "~/models/interfaces";
-import { WithServerInfo } from "~/server/queries";
 import { createErrorOverlayStore } from "~/stores/errorOverlay";
 import { createLocalDataStore } from "~/stores/localDataStore";
 import { createMessagesStore } from "~/stores/messages";
 import { createServiceWorkerStatusStore } from "~/stores/serviceWorkerStatus";
 import { createStoryUiStore } from "~/stores/storyUiStore";
-
-import type { ContentForPage } from "~/stores/useDataStore";
 
 type LocalDataStore = ReturnType<typeof createLocalDataStore>;
 
@@ -31,7 +22,6 @@ type AppDataContextValue = {
   messages: ReturnType<typeof createMessagesStore>;
   errorOverlay: ReturnType<typeof createErrorOverlayStore>;
   serviceWorker: ReturnType<typeof createServiceWorkerStatusStore>;
-  localData: LocalDataStore;
   readItems: LocalDataStore["readItems"];
   refresh: LocalDataStore["refresh"];
   data: LocalDataStore["data"];
@@ -60,11 +50,6 @@ export function AppDataProvider(props: ParentProps) {
     setIsClientMounted(true);
     setRelativeTimeTick(Date.now());
   });
-
-  const readItems = localData.readItems;
-  const refresh = localData.refresh;
-  const data = localData.data;
-  const comments = localData.comments;
 
   onMount(() => {
     errorOverlay.attachGlobalErrorHandlers();
@@ -97,11 +82,10 @@ export function AppDataProvider(props: ParentProps) {
         messages,
         errorOverlay,
         serviceWorker,
-        localData,
-        readItems,
-        refresh,
-        data,
-        comments,
+        readItems: localData.readItems,
+        refresh: localData.refresh,
+        data: localData.data,
+        comments: localData.comments,
         storyUi,
         isClientMounted,
         relativeTimeTick,
@@ -152,65 +136,12 @@ export function useStoryUiStore() {
   return useAppData().storyUi;
 }
 
-export function useRelativeTimeTick() {
-  return useAppData().relativeTimeTick;
-}
-
+// Relative times ("5min") re-render when the app regains focus.
 export function useRelativeTime() {
-  const relativeTimeTick = useRelativeTimeTick();
+  const relativeTimeTick = useAppData().relativeTimeTick;
 
   return (date: number | undefined, addAgo: boolean = false) => {
     relativeTimeTick();
     return timeSince(date, addAgo);
   };
-}
-
-export function updateStoryListDataStores(
-  page: TopStoriesType,
-  data: StoryListResource
-) {
-  const dataStore = useDataStore();
-  const refreshStore = useRefreshStore();
-  const messagesStore = useMessagesStore();
-
-  const p = page as StoryPage;
-  const latest = data.latest;
-  const d = latest?.result;
-
-  if (latest?.startedFromServer && d?.type === "fullData") {
-    refreshStore.setRefreshRequestedTimestamp(p);
-    void dataStore.persistStoryList(p, d?.data ?? []);
-  }
-
-  dataStore.setRefreshType({
-    type: "storyList",
-    page: page as StoryPage,
-  });
-
-  messagesStore.addMessage("refresh", "setRefreshType", {
-    page,
-  });
-}
-
-type StoryListResult = WithServerInfo<ContentForPage>;
-type StoryListResource = ReturnType<typeof createAsync<StoryListResult>>;
-
-type StoryResult = WithServerInfo<HnItem | null | undefined>;
-type StoryResource = ReturnType<typeof createAsync<StoryResult>>;
-
-export function updateStoryDataStores(id: number, data: StoryResource) {
-  const dataStore = useDataStore();
-  const storyUiStore = useStoryUiStore();
-  const story = data.latest?.result;
-
-  if (!story) {
-    return;
-  }
-
-  if (data.latest?.startedFromServer) {
-    void dataStore.persistStoryToStorage(id, story);
-  }
-
-  storyUiStore.setActiveStoryData(story);
-  dataStore.setRefreshType({ type: "story", id });
 }

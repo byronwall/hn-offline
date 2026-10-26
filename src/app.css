@@ -1,15 +1,12 @@
 @import "tailwindcss";
 
-:root {
-  --background-rgb: 214, 219, 220;
-  --foreground-rgb: 0, 0, 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background-rgb: 0, 0, 0;
-    --foreground-rgb: 255, 255, 255;
-  }
+/* One accent: HN orange. `hn` for fills, borders, and rails; `hn-ink` for
+   accent text (AA on white); `hn-soft` for pressed tints. Everything else
+   is slate on white over a quiet stone page. */
+@theme {
+  --color-hn: #ff6600;
+  --color-hn-ink: #c2410c;
+  --color-hn-soft: #fff4ec;
 }
 
 @layer components {
@@ -18,12 +15,9 @@
     @apply font-serif;
   }
 }
+/* Links in HN text: accent-colored text, no fill, one subtle hover. */
 .user-text a {
-  @apply rounded-sm bg-slate-100 px-0.5 text-slate-700 hover:bg-slate-200 hover:text-slate-600 hover:underline focus-visible:underline active:underline;
-}
-
-a.active {
-  @apply border-b border-b-orange-200 font-bold text-slate-700;
+  @apply text-hn-ink hover:text-hn focus-visible:text-hn transition-colors duration-150;
 }
 
 pre {
@@ -41,7 +35,7 @@ pre {
 }
 
 .comment pre {
-  background-color: #f6f6f6;
+  background-color: var(--color-slate-50);
   padding: 8px 12px;
   border-radius: 4px;
   overflow-x: auto;
@@ -57,7 +51,7 @@ pre {
 }
 
 .track-visited a:visited {
-  color: var(--color-orange-500);
+  color: var(--color-slate-500);
 }
 /* used by the comment */
 .bp3-card {
@@ -142,35 +136,44 @@ pre {
 }
 
 .collapsed {
-  --flash-color: #ff6600;
-  animation: flash-background 200ms;
+  --flash-color: var(--color-hn);
+}
+
+/* Set by flash() in lib/scroll.ts when a card is toggled, so it never
+   plays on page load. */
+.flash {
+  animation: flash-background 420ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @keyframes flash-background {
   0% {
-    background: white;
-  }
-  /* Adding a step in the middle */
-  50% {
-    background: rgb(from var(--flash-color) r g b / 20%);
+    background: rgb(from var(--flash-color) r g b / 22%);
   }
   100% {
     background: white;
   }
 }
 
-/* Subtle fade-out for recently read story retained briefly in list */
-.fade-out {
-  animation: fade-out-keyframes 300ms ease-out forwards;
+/* The story just read fades, then its row closes so the list slides up
+   instead of jumping. The row is a one-row grid so 1fr -> 0fr animates. */
+.row-leave {
+  display: grid;
+  overflow: hidden;
+  animation: row-leave 480ms cubic-bezier(0.23, 1, 0.32, 1) 250ms both;
 }
 
-@keyframes fade-out-keyframes {
-  from {
+@keyframes row-leave {
+  0% {
     opacity: 1;
+    grid-template-rows: 1fr;
   }
-  to {
+  40% {
     opacity: 0;
-    transform: translateY(-100%);
+    grid-template-rows: 1fr;
+  }
+  100% {
+    opacity: 0;
+    grid-template-rows: 0fr;
   }
 }
 
@@ -188,6 +191,11 @@ pre {
   }
 }
 
-button {
-  margin: 0;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
 }

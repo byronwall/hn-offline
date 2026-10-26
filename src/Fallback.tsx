@@ -1,4 +1,3 @@
-export function Fallback(props: { label: string }) {
-  console.log("*** Fallback", props.label);
+export function Fallback() {
   return <div class="relative pb-[70vh]" />;
 }

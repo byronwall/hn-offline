@@ -72,8 +72,6 @@ export function mapStoriesToSummaries(
     return undefined;
   }
 
-  console.log("*** mapping stories to summaries", data.length);
-
   // this really exists to remove the kidsObj from the data
   // this allows us to store the info in a very compact format
   return data.filter(Boolean).map<HnStorySummary>((c) => ({

@@ -1,11 +1,11 @@
-import { type Accessor, createEffect, createSignal } from "solid-js";
-import { reconcile } from "solid-js/store";
+import { type Accessor, createEffect, createSignal, untrack } from "solid-js";
 
 import { createPersistedStore } from "./createPersistedStore";
+import { dropOldEntries } from "./dropOldEntries";
 
 import type { AddMessage } from "./messages";
 
-export type TimestampHash = Record<number, number>;
+type TimestampHash = Record<number, number>;
 
 export type ReadItemsStore = ReturnType<typeof createReadItemsStore>;
 
@@ -13,7 +13,6 @@ export function createReadItemsStore(
   addMessage: AddMessage,
   localForage: Accessor<LocalForage | undefined>
 ) {
-  console.log("*** createReadItemsStore", { addMessage, localForage });
   const [readSettings, setReadSettings] = createPersistedStore(
     "READ_SETTINGS",
     {
@@ -28,61 +27,61 @@ export function createReadItemsStore(
     localForage
   );
 
+  // Comment count of each story when it was last read, so lists can show
+  // how many comments are new since then.
+  const [readCommentCounts, setReadCommentCounts, countsHydrated] =
+    createPersistedStore(
+      "READ_COMMENT_COUNTS",
+      {} as TimestampHash,
+      localForage
+    );
+
   const [recentlyReadId, setRecentlyReadId] = createSignal<number | undefined>(
     undefined
   );
 
-  const cleanUpOldReadEntries = (): void => {
-    // Keep only the 7 most recent days of read entries
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-
-    const newStore: TimestampHash = {};
-    for (const [idStr, ts] of Object.entries(readItems)) {
-      if (typeof ts !== "number" || ts < oneWeekAgo) {
-        continue;
-      }
-      newStore[Number(idStr)] = ts;
-    }
-
-    setReadItems(reconcile(newStore));
-  };
-
-  let hasDoneCleanup = false;
+  // Prune week-old entries once both stored maps load.
   createEffect(() => {
-    if (!readItemsHydrated()) {
+    if (!readItemsHydrated() || !countsHydrated()) {
       return;
     }
-    void readItems;
-    if (hasDoneCleanup) {
-      return;
-    }
-    hasDoneCleanup = true;
-
-    addMessage("readItems", "scheduleCleanup init");
-
-    setTimeout(cleanUpOldReadEntries, 1000);
+    untrack(() => {
+      const kept = dropOldEntries(readItems);
+      void setReadItems(kept);
+      void setReadCommentCounts(
+        Object.fromEntries(
+          Object.entries(readCommentCounts).filter(([id]) => id in kept)
+        )
+      );
+    });
   });
 
-  const saveIdToReadList = async (id: number | undefined): Promise<void> => {
-    if (!id) {
-      return;
+  const saveIdToReadList = (id: number, commentCount: number | undefined) => {
+    addMessage("readItems", "saveIdToReadList", { id, commentCount });
+    void setReadItems(id, Date.now());
+    if (commentCount !== undefined) {
+      void setReadCommentCounts(id, commentCount);
     }
-
-    addMessage("readItems", "saveIdToReadList", { id });
-
-    setReadItems(id, Date.now());
   };
 
-  console.log("*** createReadItemsStore returning");
+  // Comments added since the story was last read, or 0 if never read.
+  const newCommentCount = (id: number, commentCount: number | undefined) => {
+    const seen = readCommentCounts[id];
+    if (seen === undefined || commentCount === undefined) {
+      return 0;
+    }
+    return Math.max(0, commentCount - seen);
+  };
 
   return {
     readSettings,
     setReadSettings,
     readItems,
     setReadItems,
+    readItemsHydrated,
     recentlyReadId,
     setRecentlyReadId,
     saveIdToReadList,
-    cleanUpOldReadEntries,
+    newCommentCount,
   };
 }

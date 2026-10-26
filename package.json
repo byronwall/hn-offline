@@ -17,8 +17,6 @@
     "knip:fix": "pnpm dlx knip --fix"
   },
   "dependencies": {
-    "@formkit/auto-animate": "^0.9.0",
-    "@solid-primitives/storage": "^4.3.3",
     "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.0",
     "@solidjs/start": "^1.1.0",
@@ -26,7 +24,6 @@
     "firebase": "^10.8.0",
     "html-entities": "^2.5.2",
     "localforage": "^1.10.0",
-    "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "munsell": "^1.1.5",
     "sanitize-html": "^2.12.1",
@@ -41,7 +38,6 @@
     "@tailwindcss/vite": "^4.0.7",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/user-event": "^14.6.1",
-    "@types/lodash": "^4.14.202",
     "@types/lodash-es": "^4.17.12",
     "@types/sanitize-html": "^2.11.0",
     "@typescript-eslint/eslint-plugin": "^6.7.4",

@@ -1,97 +1,74 @@
-import { ItemExt, TopStoriesType } from "~/models/interfaces";
+import { _getUnixTimestamp } from "~/lib/utils";
+import { STORY_TYPE, type TopStoriesType } from "~/models/interfaces";
 
 import {
-  db_clearOldStories,
-  db_getTopStoryIds,
-  getItemFromDb,
-  getTopStoriesFromDb,
+  getList,
+  pruneItems,
+  putList,
   reloadDatabase,
   saveDatabase,
+  state,
 } from "./database";
 import { getFullDataForIds } from "./getFullDataForIds";
+import { fetchListIds } from "./hnSources";
 
-const log = console.log;
+// How old (seconds) each list may get before a refresh. List timestamps live
+// in the DB, so the cadence survives restarts.
+const LIST_MAX_AGE_S: Record<TopStoriesType, number> = {
+  topstories: 10 * 60,
+  day: 60 * 60,
+  week: 6 * 60 * 60,
+};
+const CHECK_EVERY_MS = 5 * 60 * 1000;
 
-log("*** server starting");
-
-export const cachedData: { [key: string]: ItemExt[] | null } = {};
-
-async function populateCacheFromDatabase() {
-  const storyTypes: TopStoriesType[] = ["topstories", "day", "week", "month"];
-
-  for (const type of storyTypes) {
-    const topStories = getTopStoriesFromDb(type);
-    if (topStories && topStories.items && topStories.items.length > 0) {
-      const storyData = topStories.items.map((id) => getItemFromDb(id));
-      cachedData[type] = storyData as ItemExt[];
-    }
+// Load the DB and start the refresh loop, once per process. Every server
+// query calls this; a bare side-effect import would be tree-shaken away
+// (package.json has "sideEffects": false).
+export function ensureServerStarted() {
+  if (!state.loaded) {
+    reloadDatabase();
+  }
+  if (!state.refreshStarted) {
+    state.refreshStarted = true;
+    console.log("refresh loop started");
+    void refreshLoop();
   }
 }
 
-reloadDatabase();
-populateCacheFromDatabase().then(() => {
-  console.log("Cache populated from database");
-});
-
-setInterval(updateData, 10 * 60 * 1000);
-updateData();
-
-let index = 0;
-async function updateData() {
-  await loadFreshDataForStoryType("topstories");
-
-  if (index % 6 === 0) {
-    // every hour
-    await loadFreshDataForStoryType("day");
+// One refresh at a time: the next check is scheduled after this one ends, so
+// a slow refresh never overlaps the next.
+async function refreshLoop() {
+  try {
+    await refreshStaleLists();
+  } catch (error) {
+    console.error("refresh failed", error);
   }
-  if (index % (6 * 6) === 0) {
-    // every 6 hours
-    await loadFreshDataForStoryType("week");
-  }
-  if (index % (6 * 24) === 0) {
-    // every 24 hours -- only used to clean up history now
-    await loadFreshDataForStoryType("month");
-    index = 1;
-  }
-
-  index++;
+  setTimeout(refreshLoop, CHECK_EVERY_MS);
 }
 
-async function loadFreshDataForStoryType(storyType: TopStoriesType) {
-  log(new Date(), "calling for update to", storyType);
+async function refreshStaleLists() {
+  const now = _getUnixTimestamp();
+  const stale = STORY_TYPE.filter(
+    (type) => now - (getList(type)?.lastUpdated ?? 0) > LIST_MAX_AGE_S[type]
+  );
 
-  // clear out old stories as needed -- will happen daily
-  if (storyType === "month") {
-    log("clearing old stories");
-    const idsToKeep = new Set<number>();
-    for (const key of Object.keys(cachedData)) {
-      const stories = cachedData[key];
-      if (!stories) {
-        continue;
-      }
-
-      stories.forEach((story) => {
-        if (story === null) {
-          return;
-        }
-        idsToKeep.add(story.id);
-      });
-    }
-
-    const idArr = Array.from(idsToKeep);
-    log("keeping IDs", idArr);
-    const removeCount = await db_clearOldStories(idArr);
-    log("removed stories: " + removeCount);
-  } else {
-    // get the data
-    const results = await db_getTopStoryIds(storyType).then((ids) => {
-      return getFullDataForIds(ids);
-    });
-
-    // save result to local cache... will be served
-    cachedData[storyType] = results as ItemExt[];
+  for (const type of stale) {
+    console.log(`refreshing ${type}`);
+    const started = Date.now();
+    const ids = await fetchListIds(type);
+    await getFullDataForIds(ids);
+    putList(type, ids);
+    console.log(
+      `refreshed ${type}: ${ids.length} stories in ${Date.now() - started}ms`
+    );
   }
 
-  saveDatabase();
-  log(new Date(), "update complete", storyType);
+  // Keep only stories still on a list; comments live inside their story.
+  const keep = new Set(
+    STORY_TYPE.flatMap((type) => getList(type)?.items ?? [])
+  );
+  const removed = pruneItems(keep);
+  if (stale.length > 0 || removed > 0) {
+    await saveDatabase();
+  }
 }

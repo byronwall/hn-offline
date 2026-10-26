@@ -1,4 +1,4 @@
-import { type Accessor, createSignal } from "solid-js";
+import { type Accessor, createEffect, createSignal } from "solid-js";
 
 import { convertPathToStoryPage } from "~/lib/convertPathToStoryPage";
 import { fetchObjById } from "~/lib/getContentViaFetch";
@@ -6,26 +6,31 @@ import {
   fetchAllStoryDataForPage,
   mapStoriesToSummaries,
 } from "~/lib/getSummaryViaFetch";
+import { scrollToY } from "~/lib/scroll";
 import { validateHnItemWithComments } from "~/lib/validation";
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 
 import { createPersistedStore } from "./createPersistedStore";
+import { withRetries } from "./withRetries";
 
 import type { AddMessage } from "./messages";
 import type { createStoryUiStore } from "./storyUiStore";
 import type { ReadItemsStore } from "./useReadItemsStore";
 import type { createRefreshStore } from "./useRefreshStore";
 import type { StoryPage } from "~/models/interfaces";
+import type { WithServerInfo } from "~/server/queries";
 
 export type StoryId = number;
 
+// A list page is only an ordered list of ids. The story data itself lives
+// once, in STORY_SUMMARIES, so Top/Day/Week always show the same numbers.
 type PersistedStoryList = {
   serverUpdateTimestamp: number;
   page: StoryPage;
-  data: HnStorySummary[];
+  ids: number[];
 };
 
-export type StoryListStore = Record<StoryPage, PersistedStoryList>;
+type StoryListStore = Record<StoryPage, PersistedStoryList>;
 
 export type ContentForPage =
   | {
@@ -54,41 +59,17 @@ export function createDataStore(params: {
   refreshStore: ReturnType<typeof createRefreshStore>;
   storyUi: ReturnType<typeof createStoryUiStore>;
 }) {
-  const wait = (delayMs: number) =>
-    new Promise<void>((resolve) => {
-      setTimeout(resolve, delayMs);
+  const retry = <T>(operationName: string, operation: () => Promise<T>) =>
+    withRetries(operation, (attempt, delayMs) => {
+      params.addMessage("localforage", `${operationName} retry`, {
+        attempt,
+        delayMs,
+      });
     });
-
-  const withLocalForageRetries = async <T>(
-    operationName: string,
-    operation: () => Promise<T>,
-    maxAttempts = 3
-  ): Promise<T> => {
-    let latestError: unknown;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      try {
-        return await operation();
-      } catch (error) {
-        latestError = error;
-        if (attempt >= maxAttempts) {
-          break;
-        }
-        const delayMs = 250 * 2 ** (attempt - 1);
-        params.addMessage("localforage", `${operationName} retry`, {
-          attempt,
-          delayMs,
-        });
-        await wait(delayMs);
-      }
-    }
-
-    throw latestError;
-  };
 
   const safeGetItem = async <T>(key: string): Promise<T | undefined> => {
     try {
-      const value = await withLocalForageRetries(
+      const value = await retry(
         "getItem",
         async () => await params.localForage()?.getItem<T>(key)
       );
@@ -102,7 +83,7 @@ export function createDataStore(params: {
 
   const safeSetItem = async <T>(key: string, value: T): Promise<boolean> => {
     try {
-      await withLocalForageRetries("setItem", async () => {
+      await retry("setItem", async () => {
         await params.localForage()?.setItem(key, value);
       });
       return true;
@@ -115,7 +96,7 @@ export function createDataStore(params: {
 
   const safeRemoveItem = async (key: string): Promise<void> => {
     try {
-      await withLocalForageRetries("removeItem", async () => {
+      await retry("removeItem", async () => {
         await params.localForage()?.removeItem(key);
       });
     } catch (error) {
@@ -124,112 +105,94 @@ export function createDataStore(params: {
     }
   };
 
-  const [storyListStore, setStoryListStore] = createPersistedStore(
-    "STORY_LIST_STORE",
-    {} as StoryListStore,
-    params.localForage
-  );
+  const [storyListStore, setStoryListStore, listsHydrated] =
+    createPersistedStore(
+      "STORY_LIST_STORE",
+      {} as StoryListStore,
+      params.localForage
+    );
 
-  const didStoryListChange = (
-    current: PersistedStoryList | undefined,
-    next: HnStorySummary[]
-  ) => {
-    if (!current) {
-      return true;
-    }
+  // One record per story, shared by every list and the story page.
+  const [storySummaries, setStorySummaries, summariesHydrated] =
+    createPersistedStore(
+      "STORY_SUMMARIES",
+      {} as Record<number, HnStorySummary>,
+      params.localForage
+    );
 
-    if (current.data.length !== next.length) {
-      return true;
-    }
-
-    return next.some((item, index) => {
-      const existing = current.data[index];
-      if (!existing) {
-        return true;
+  // Merge fresh story data into the shared records; newest lastUpdated wins.
+  const upsertSummaries = (stories: (HnItem | HnStorySummary)[]) => {
+    const changed: Record<number, HnStorySummary> = {};
+    for (const story of mapStoriesToSummaries(stories) ?? []) {
+      const current = storySummaries[story.id];
+      if (!current || (story.lastUpdated ?? 0) >= (current.lastUpdated ?? 0)) {
+        changed[story.id] = story;
       }
-
-      return (
-        existing.id !== item.id || existing.lastUpdated !== item.lastUpdated
-      );
-    });
+    }
+    if (Object.keys(changed).length > 0) {
+      void setStorySummaries((current) => ({ ...current, ...changed }));
+    }
   };
 
+  // The stories on a list page, in list order, from the shared records.
+  const listStories = (page: StoryPage) =>
+    (storyListStore[page]?.ids ?? [])
+      .map((id) => storySummaries[id])
+      .filter((story): story is HnStorySummary => story !== undefined);
+
+  // Save a list page: its stories into the shared records, its order here.
+  const saveListSummaries = async (
+    page: StoryPage,
+    stories: (HnItem | HnStorySummary)[]
+  ) => {
+    if (stories.length === 0) {
+      return;
+    }
+    upsertSummaries(stories);
+
+    const ids = stories.map((story) => story.id);
+    const incomingTimestamp = Math.max(
+      ...stories.map((story) => story.lastUpdated ?? 0),
+      0
+    );
+    const current = storyListStore[page];
+    const changed =
+      !current?.ids ||
+      incomingTimestamp > current.serverUpdateTimestamp ||
+      ids.join() !== current.ids.join();
+    if (!changed) {
+      return;
+    }
+
+    await setStoryListStore(page, {
+      serverUpdateTimestamp: incomingTimestamp,
+      page,
+      ids,
+    });
+    params.refreshStore.setRefreshTimestamp(page);
+  };
+
+  // Save a list page and every full story on it for offline reading.
   const persistStoryList = async (page: StoryPage, data: HnItem[]) => {
-    // overall goals: update store -> saves list to local forage
-    // then go through all items and save them to local forage
     params.addMessage("persist", "persistStoryList init", {
       page,
       count: data.length,
     });
 
-    // Do not persist if provided list is empty
-    if (!data || data.length === 0) {
-      params.addMessage("persist", "persistStoryList skip empty list", {
-        page,
-      });
-      return;
-    }
+    await saveListSummaries(page, data);
 
-    // Map raw items to summaries for list storage
-    const storySummaries = mapStoriesToSummaries(data);
-
-    console.log("*** storySummaries", storySummaries);
-
-    if (!storySummaries) {
-      throw new Error("storySummaries is undefined");
-    }
-
-    const current = storyListStore[page];
-    if (storySummaries.length === 0 && (current?.data?.length ?? 0) > 0) {
-      params.addMessage("persist", "persistStoryList skip empty overwrite", {
-        page,
-        currentCount: current?.data?.length ?? 0,
-      });
-      return;
-    }
-
-    const incomingTimestamp = Math.max(
-      ...storySummaries.map((item) => item.lastUpdated ?? 0),
-      0
-    );
-
-    console.log("*** current", current);
-
-    const shouldOverwrite =
-      !current ||
-      incomingTimestamp > (current.serverUpdateTimestamp ?? 0) ||
-      didStoryListChange(current, storySummaries);
-
-    if (shouldOverwrite) {
-      // save if none or if the incoming timestamp is newer
-      params.addMessage("persist", "persistStoryList over store", {
-        page,
-        incomingTimestamp,
-        currentTimestamp: current?.serverUpdateTimestamp,
-      });
-      await setStoryListStore(page, {
-        serverUpdateTimestamp: incomingTimestamp,
-        page,
-        data: storySummaries,
-      });
-      params.refreshStore.setRefreshTimestamp(page);
-    }
-
-    let skippedSaves = 0;
-
-    // Persist raw items individually for detail pages
-    for (const item of data) {
+    // Persist raw items individually for detail pages, in parallel.
+    const validItems = data.filter((item) => {
       const isValid = validateHnItemWithComments(item);
       if (!isValid.success) {
         console.error("invalid item", { error: isValid.error, item });
-        continue;
       }
-
-      const didSave = await persistStoryToStorage(item.id, item);
-      if (!didSave) {
-        skippedSaves++;
-      }
-    }
+      return isValid.success;
+    });
+    const saved = await Promise.all(
+      validItems.map((item) => persistStoryToStorage(item.id, item))
+    );
+    const skippedSaves = saved.filter((didSave) => !didSave).length;
 
     params.addMessage("persist", "persistStoryList done", {
       page,
@@ -240,16 +203,12 @@ export function createDataStore(params: {
 
   // Remove stories that are not in current lists or recently read
   const purgeLocalForage = async () => {
-    console.log("*** purging localforage");
-
     params.addMessage("purge", "purgeLocalForage init");
 
     const idsToKeep = new Set<number>();
-    for (const page in storyListStore) {
-      const persistedList = storyListStore[page as StoryPage];
-
-      for (const item of persistedList.data) {
-        idsToKeep.add(item.id);
+    for (const list of Object.values(storyListStore)) {
+      for (const id of list?.ids ?? []) {
+        idsToKeep.add(id);
       }
     }
 
@@ -263,7 +222,7 @@ export function createDataStore(params: {
 
     let keys: string[] | undefined;
     try {
-      keys = await withLocalForageRetries(
+      keys = await retry(
         "keys",
         async () => await params.localForage()?.keys()
       );
@@ -279,7 +238,6 @@ export function createDataStore(params: {
     // Remove legacy/accidental keys that contain a slash
     const badKeys = keys.filter((key) => key.includes("/"));
     for (const key of badKeys) {
-      console.log("removing bad key", key);
       await safeRemoveItem(key);
     }
 
@@ -291,14 +249,19 @@ export function createDataStore(params: {
 
     // Delete any raw_* entries that are not in idsToKeep
     const rawKeys = keys.filter((key) => key.startsWith("raw_"));
-    console.log("raw keys:", rawKeys.length, "ids to keep:", idsToKeep.size);
     for (const key of rawKeys) {
       const id = Number(key.replace("raw_", ""));
       if (!idsToKeep.has(id)) {
-        console.log("deleting", id);
         await safeRemoveItem(key);
       }
     }
+
+    // Shared story records follow the same rule.
+    void setStorySummaries((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([id]) => idsToKeep.has(Number(id)))
+      )
+    );
 
     params.addMessage("purge", "purgeLocalForage done");
   };
@@ -319,15 +282,10 @@ export function createDataStore(params: {
     id: StoryId,
     options?: { allowNetwork?: boolean }
   ) => {
-    console.log("*** getContent", id, params.localForage());
-
     const item = await safeGetItem<HnItem>("raw_" + id);
-
-    console.log("*** item", item);
 
     if (item) {
       params.addMessage("getContent", "found item in localforage", { id });
-      console.log("found item in localforage", item);
       return item;
     }
 
@@ -335,10 +293,18 @@ export function createDataStore(params: {
       return undefined;
     }
 
-    return await fetchObjById(id, {
-      addMessage: params.addMessage,
-      persistStoryToStorage,
-    });
+    // Offline or a bad id: show "not available" instead of crashing the route.
+    try {
+      const story = await fetchObjById(id, {
+        addMessage: params.addMessage,
+        persistStoryToStorage,
+      });
+      upsertSummaries([story]);
+      return story;
+    } catch (error) {
+      console.error("getContent failed", { id, error });
+      return undefined;
+    }
   };
 
   const [isLoadingData, setIsLoadingData] = createSignal(false);
@@ -352,12 +318,11 @@ export function createDataStore(params: {
 
     const list = storyListStore[page as StoryPage];
 
-    if (list) {
+    if (list?.ids) {
       params.addMessage("getContentForPage", "found list in store", { page });
-      return { type: "summaryOnly", data: list.data };
+      return { type: "summaryOnly", data: listStories(page) };
     }
 
-    console.log("*** no list found, fetching from api", page);
     params.refreshStore.setRefreshRequestedTimestamp(page);
 
     const data = await fetchAllStoryDataForPage(page, {
@@ -373,7 +338,6 @@ export function createDataStore(params: {
   );
 
   const refreshActive = async () => {
-    console.log("*** refreshActive", refreshType());
     params.addMessage("refreshActive", "refreshActive", {
       refreshType: refreshType(),
     });
@@ -383,14 +347,8 @@ export function createDataStore(params: {
       return;
     }
 
-    // Ensure we scroll to the top when a refresh is initiated from any trigger
-    try {
-      if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    } catch (_err) {
-      // noop
-    }
+    // Every refresh starts the reader at the top.
+    scrollToY(0);
 
     setIsLoadingData(true);
 
@@ -417,6 +375,7 @@ export function createDataStore(params: {
           addMessage: params.addMessage,
           persistStoryToStorage,
         });
+        upsertSummaries([storyData]);
         params.storyUi.setActiveStoryData(storyData);
       }
     } finally {
@@ -424,11 +383,66 @@ export function createDataStore(params: {
     }
   };
 
+  // Called by the list route whenever its data settles.
+  const syncStoryList = (
+    page: StoryPage,
+    latest: WithServerInfo<ContentForPage> | undefined
+  ) => {
+    setRefreshType({ type: "storyList", page });
+    if (!latest?.startedFromServer) {
+      return;
+    }
+
+    // SSR ships summaries only, to keep the HTML small. Show them now, then
+    // fetch the full stories in the background for offline reading.
+    params.refreshStore.setRefreshRequestedTimestamp(page);
+    void saveListSummaries(page, latest.result.data);
+    void fetchAllStoryDataForPage(page, {
+      addMessage: params.addMessage,
+      persistStoryList,
+    });
+  };
+
+  // Called by the story route whenever its data settles.
+  const syncStory = (
+    id: StoryId,
+    latest: WithServerInfo<HnItem | null | undefined> | undefined
+  ) => {
+    const story = latest?.result;
+    if (!story) {
+      return;
+    }
+    if (latest.startedFromServer) {
+      void persistStoryToStorage(id, story);
+    }
+    upsertSummaries([story]);
+    params.storyUi.setActiveStoryData(story);
+    setRefreshType({ type: "story", id });
+  };
+
+  // Drop cached stories that left every list and were not read recently,
+  // once per session after the stored lists load.
+  let purgeScheduled = false;
+  createEffect(() => {
+    if (
+      purgeScheduled ||
+      !listsHydrated() ||
+      !summariesHydrated() ||
+      !params.readItemsStore.readItemsHydrated()
+    ) {
+      return;
+    }
+    purgeScheduled = true;
+    setTimeout(() => void purgeLocalForage(), 10_000);
+  });
+
   return {
     storyListStore,
+    storySummaries,
+    listStories,
     isLoadingData,
-    refreshType,
-    setRefreshType,
+    syncStoryList,
+    syncStory,
     persistStoryList,
     persistStoryToStorage,
     purgeLocalForage,

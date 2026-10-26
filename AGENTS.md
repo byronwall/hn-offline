@@ -1,361 +1,132 @@
-# AGENTS.md - Visual Notes + Base Component System
+# AGENTS.md — HN Offline
 
-This file combines the repo-level agent instructions with the SolidJS code
-guidelines from comp_refs.
+HN Offline is a read-only Hacker News reader built for reading comment threads,
+online or offline. SolidStart (SolidJS + vinxi/nitro), TypeScript, Tailwind v4,
+pnpm. One server, one client, no accounts.
 
-## Visual Notes Agent Instructions
+## Commands
 
-## Working in this repo
+| Task           | Command                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| Install        | `pnpm install` (pnpm 11; native builds are approved in `pnpm-workspace.yaml`)                           |
+| Types          | `pnpm typecheck`                                                                                        |
+| Lint           | `pnpm lint` (the remaining warnings are old ones in `src/server`, `lib/validation.ts`, `app.config.ts`) |
+| Tests          | `pnpm test` (Vitest: stores, comment formatting, server DB)                                             |
+| Build          | `pnpm build` (also stamps the version into `public/sw.js`; revert that file before you commit)          |
+| Run prod build | `PORT=3219 node .output/server/index.mjs`                                                               |
+| Dev            | `pnpm dev`                                                                                              |
 
-### Quick rules
+Verify UI against the production build. In dev, a HEAD request that races a
+lazy route (the Claude browser pane sends one) can render
+"useAppData must be used within AppDataProvider". That is a dev-only race,
+not a bug in the app. curl and real browsers do not hit it.
 
-- Props
-  - Avoid accessor functions in props; pass the object/value directly when possible.
+The refresh loop starts on the first server query after boot. From an empty
+DB it takes ~8 s for top, ~4 s for day, ~40 s for week; the JSON path comes
+from `db_path`. When you benchmark or wait on the server, watch its log
+("refreshing <list>", "refreshed <list>: N stories in Xms") and give up after
+~60 s with no new line. Do not wait minutes on a silent process.
 
-- Generated output
-  - If styles/types look wrong, run `pnpm prepare` (or `pnpm dev`, which runs it first).
-- Data loading (SolidStart)
-  - Reads: `query()` + `createAsync()`
-  - Writes: server actions
-  - Avoid `fetch()` in UI components for app data, and avoid adding React Query/SWR/etc.
-- Component size & composition
-  - Prefer small components; keep files ~200 lines when feasible and split early.
-  - Split into separate files for subcomponents/hooks/helpers/types when possible.
-  - Avoid excessive prop drilling; use shared context or a small store when needed.
-  - Keep styles next to their users; do not extract CSS-in-JSS unless reused.
-- UI + styling
-  - Prefer `~/components/ui/*` wrappers over direct Ark UI usage in routes.
-  - Token usage only; avoid raw hex codes or arbitrary spacing unless a token is missing.
-- Routes are routes
-  - Do not create reusable UI under `app/src/routes/`.
-  - Keep route modules focused on routing + data + page composition; move reusable UI to `app/src/components/` (or `~/components/*`).
+## How data flows
 
-## Skills
-
-A skill is a set of local instructions to follow that is stored in a
-`SKILL.md` file. Below is the list of skills that can be used. Each entry
-includes a name, description, and file path so you can open the source for
-full instructions when using a specific skill.
-
-### Available skills
-
-- skill-creator: Guide for creating effective skills. This skill should be
-  used when users want to create a new skill (or update an existing skill)
-  that extends Codex's capabilities with specialized knowledge, workflows,
-  or tool integrations.
-  (file: /Users/byronwall/.codex/skills/.system/skill-creator/SKILL.md)
-- skill-installer: Install Codex skills into $CODEX_HOME/skills from a
-  curated list or a GitHub repo path. Use when a user asks to list
-  installable skills, install a curated skill, or install a skill from
-  another repo (including private repos).
-  (file: /Users/byronwall/.codex/skills/.system/skill-installer/SKILL.md)
-
-### How to use skills
-
-- Discovery: The list above is the skills available in this session (name +
-  description + file path). Skill bodies live on disk at the listed paths.
-- Trigger rules: If the user names a skill (with $SkillName or plain text)
-  OR the task clearly matches a skill's description shown above, you must use
-  that skill for that turn. Multiple mentions mean use them all. Do not carry
-  skills across turns unless re-mentioned.
-- Missing/blocked: If a named skill isn't in the list or the path can't be
-  read, say so briefly and continue with the best fallback.
-- How to use a skill (progressive disclosure):
-  1. After deciding to use a skill, open its SKILL.md. Read only enough to
-     follow the workflow.
-  2. If SKILL.md points to extra folders such as references/, load only the
-     specific files needed for the request; don't bulk-load everything.
-  3. If scripts/ exist, prefer running or patching them instead of retyping
-     large code blocks.
-  4. If assets/ or templates exist, reuse them instead of recreating from
-     scratch.
-- Coordination and sequencing:
-  - If multiple skills apply, choose the minimal set that covers the request
-    and state the order you'll use them.
-  - Announce which skill(s) you're using and why (one short line). If you
-    skip an obvious skill, say why.
-- Context hygiene:
-  - Keep context small: summarize long sections instead of pasting them; only
-    load extra files when needed.
-  - Avoid deep reference-chasing: prefer opening only files directly linked
-    from SKILL.md unless you're blocked.
-  - When variants exist (frameworks, providers, domains), pick only the
-    relevant reference file(s) and note that choice.
-- Safety and fallback: If a skill can't be applied cleanly (missing files,
-  unclear instructions), state the issue, pick the next-best approach, and
-  continue.
-
-## SolidJS Code Guidelines (from comp_refs)
-
-This repo prioritizes predictable SolidJS reactivity, clear TypeScript types,
-and maintainable component boundaries.
-
-If a guideline conflicts with existing code patterns, follow this doc for new
-code and refactors unless explicitly told otherwise.
-
-### Goals
-
-- Keep components easy to reason about.
-  - Prefer local clarity over clever abstractions.
-  - Prefer explicit control-flow components (Show, Switch/Match, Suspense)
-    over JS shortcuts.
-- Keep files small and scannable.
-  - Aim for < 200 LOC per file.
-  - Prefer 1 component per file, unless multiple components are tiny and
-    tightly related.
-
-### General UI patterns
-
-- Highlight matches in search results.
-
-  - Users should be able to visually scan why an item matched without rereading the whole row/card.
-  - Highlight both the main text and secondary fields that participate in matching (title/body/tags/etc.) and keep the highlight styling consistent across the app.
-  - Prefer safe text segmentation (rendering plain text with highlighted spans) over injecting HTML.
-  - Prefer the shared helper `renderHighlighted` from `app/src/features/docs-index/utils/highlight.tsx` for search-result highlighting so styling stays consistent across the app.
-
-- Icons as buttons
-
-  - If an icon is meant to behave like a button (clickable action), always wrap it with `IconButton` (don’t attach click handlers directly to the icon).
-
-- Maintain a stable (often fixed) height for dynamic lists and streaming/async content.
-  - Avoid layout shift when new items arrive, results load, or panels expand; reserve space up-front with a fixed height or a min-height + skeleton/loading row strategy.
-  - Prefer scrollable regions (`overflow: auto`) for results panes so the surrounding layout stays anchored and the user's cursor/scroll position doesn't jump.
-  - When inserting items at the top (e.g. newest-first), consider scroll anchoring so content doesn't “push down” unexpectedly. If that’s non-trivial, add `TODO:EDGE_CASE, scroll anchoring when prepending items`.
-  - Exceptions (use judgment; default is still “avoid shift”):
-    - When the element is effectively the only thing on the page (no adjacent content to disturb), a natural expanding height is often fine.
-    - When there’s no surrounding modal/dialog/panel layout that would be pushed/reflowed by the content (i.e. expansion won’t cause secondary UI to jump).
-    - When it’s known that the shift is expected and non-jarring (e.g. a single results page that replaces a loading state in-place), prefer simplicity over over-constraining the layout.
-
-### File structure and organization
-
-- One component per file by default.
-  - Exception: a small set of private helper components (icons, tiny
-    subcomponents) that are only used by the parent component.
-- Types live with their consumer.
-  - Props types MUST be defined in the same file as the component.
-  - General-purpose/shared types belong in a common types module.
-- Helpers
-  - If a helper is reusable, move it to a common place (src/utils/_,
-    src/lib/_, etc.).
-  - Component-specific helpers can stay local, but if they grow or become
-    shared, promote them.
-
-### Imports and exports
-
-- Imports occur at the top of the file.
-  - No lazy/deferred imports.
-  - No inline imports in functions.
-- Prefer named exports over default exports.
-- Type imports:
-  - Good: import { type Foo } from "./foo"
-  - Avoid: typeof import("./foo").Foo
-
-### TypeScript rules
-
-- Avoid any.
-  - If any is unavoidable, add a comment explaining why.
-- Avoid as any to silence lint/type issues.
-  - If you must, mark it clearly:
-    - TODO:AS_ANY, <reason>
-- Avoid creating "mirror types" that duplicate an object's structure.
-  - Prefer deriving types from existing values/returns when possible.
-  - If blocked by tooling or an inference issue:
-    - TODO:TYPE_MIRROR, <reason>
-- Prefer type over interface.
-  - Use intersection composition where needed:
-    - type Props = BaseProps & { extra: string }
-
-### Debugging
-
-- Use console.log for debugging.
-- For large code changes/chunks, add a couple logs to clarify:
-  - entry/exit
-  - important branch decisions
-  - key data shape/ids
-- Do not wrap console.log in try/catch.
-
-### Control flow and readability
-
-- Prefer early returns over deeply nested conditionals.
-- Prefer Solid control-flow components:
-  - Use Show over && for conditional rendering.
-  - Prefer Switch/Match for top-level forks when multiple branches exist.
-
-### Conditional rendering rules
-
-- Use Show to narrow types safely.
-  - Prefer function children when you want narrowed typing.
-
-Good:
-<Show when={user()}>{(u) => <UserCard user={u} />}</Show>
-
-Avoid:
-{ user() && <UserCard user={user()!} />; }
-
-### SolidJS reactivity fundamentals
-
-Signals vs stores
-
-- Single independent value: createSignal
-- Multiple related values: createStore
-- If state fields conceptually belong together, make a store.
-
-Derived values: inline thunks vs createMemo
-
-- Inline thunks are fine for most derived values:
-  - const label = () => props.title ?? "Untitled"
-- Only use createMemo when there's likely a performance hit:
-  - sorting, filtering, heavy mapping, expensive formatting, large lists
-
-Effects
-
-- Prefer createEffect. Do not use createComputed.
-- Effects should be for side effects, not for pure derivations.
-
-Batching updates
-
-- Use batch(() => { ... }) when updating multiple signals or multiple store
-  paths in a tight sequence.
-
-### Props handling
-
-- Do not destructure props (neither in parameters nor inside the body).
-  - Solid props are reactive; destructuring breaks reactivity.
-- Use splitProps when you need "local names".
-- mergeProps is allowed.
-
-### Client ↔ server communication (SolidStart)
-
-Use SolidStart’s SSR-friendly data APIs:
-
-- Reads: `query()` (server) + `createAsync()` (client)
-- Writes: server actions
-- Avoid raw `fetch(...)` inside UI components for app data
-
-Example (read via `query`):
-
-```ts
-import { query, createAsync } from "@solidjs/router";
-
-// server-side fetcher; args must be JSON-serializable
-export const getThing = query(async (id: string) => {
-  "use server";
-  // ... load data (db/service/etc) ...
-  return { id };
-}, "thing");
-
-// client usage (route/component)
-const thing = createAsync(() => getThing("123"));
+```
+hnSources.ts (HN Firebase items, Algolia lists) ──> server.ts refresh loop
+  (checks every 5 min; refreshes a list when older than top 10 min,
+   day 1 h, week 6 h; one run at a time; prunes to stories on a list)
+  └─> database.ts: one JSON file, one record per story id, lists = ids
+src/server/queries.ts (query() + "use server"; each calls ensureServerStarted)
+  getStorySummariesByType  ── list pages, SSR: summaries only (~100 KB HTML)
+  getStoryListByType       ── full stories + comment trees, client background fetch
+  getStoryById             ── one story with comments
+  searchStories.ts         ── Algolia full-text search for the nav popover
+Client stores (src/stores, created in contexts/AppDataContext.tsx)
+  useDataStore      STORY_SUMMARIES (one record per story), STORY_LIST_STORE
+                    (ids per page), raw_<id> full stories, refresh, purge
+  createPersistedStore  Solid store mirrored to one localForage key
+  useReadItemsStore READ_ITEMS, READ_COMMENT_COUNTS, READ_SETTINGS
+  useCommentStore   COLLAPSED_COMMENTS
+  useRefreshStore   refresh timestamps per page
+  storyUiStore      open story, author colors (memo), last visit time
 ```
 
-Example (write via server action):
+- One story, one record, on both sides. The server DB keys items by id and
+  lists hold ids. The client keeps `STORY_SUMMARIES` keyed by id (newest
+  `lastUpdated` wins) and `STORY_LIST_STORE` holds only ids. Never store a
+  per-list copy of story data; Top/Day/Week must show the same numbers.
+- Server state lives on `globalThis.__hnServer`. SolidStart bundles server
+  code twice (SSR and server functions); without this there are two DBs and
+  two refresh loops. Start work with `ensureServerStarted()`; bare
+  side-effect imports are dropped (`"sideEffects": false`).
+- List page: SSR shows summaries. After hydration, `syncStoryList` saves them
+  and fetches the full stories in the background so every story on the page
+  reads offline.
+- Story page: on the client, `getContent` reads IndexedDB first, then the
+  network. A failure returns `undefined`, and the page shows "not available".
+  It never throws to the root error boundary.
+- `createPersistedStore` writes go to memory at once. Writes made before
+  IndexedDB loads are queued and replayed over the stored value. Set one key
+  with `set(key, value)`; `undefined` deletes the key.
 
-```ts
-import { action } from "@solidjs/router";
+## Where things live
 
-export const saveThing = action(
-  async (payload: { id: string; name: string }) => {
-    "use server";
-    // ... write to db/service ...
-    return { ok: true };
-  },
-  "save-thing"
-);
-```
+- `src/routes/` holds thin route files only. List pages use
+  `features/storyList/StoryListRoute`.
+- `src/features/storyList/`: `ServerStoryList` (data), `HnStoryListBody`
+  (sort, hide-read filter, empty states), `HnStoryListHeader`, `HnListItem`.
+- `src/features/comments/`: `HnStoryPage`, `HnComment` (collapse, sticky
+  reply connector), `HnCommentList` (top level renders 8 threads per frame;
+  nested lists render all), `HnThreadNav` (next thread / next new).
+- `src/lib/scroll.ts` handles every programmatic scroll: `scrollToY` (a short
+  glide, never a long ride), `keepInView` (after collapse/expand), and `flash`.
+- `src/createClickGuard.tsx` is one body click handler. HN item links open
+  in the app; external links open in a new tab.
+- `docs/` holds Byron's blog drafts about the build (Coolify, PWA, the React
+  port, threaded comments) and the open backend review. They are background
+  reading, not specs, and parts are out of date.
 
-### Event handlers and callbacks
+## Rules that matter here
 
-- Inline handlers are OK if short (<= 3 lines).
-- If longer than 3 lines, pull into a named function in parent scope.
-- Avoid preventDefault and stopPropagation unless there is a strong reason.
+Solid:
 
-### Lists: <For> rules
+- Do not destructure props. Use `<Show>`/`<Switch>`/`<For>`, not `&&` or `.map`.
+- Call `useX()` hooks in the component body, never inside effects or handlers.
+- Derive with thunks or `createMemo`. Do not write a signal from an effect.
+- If an effect calls store code that reads other state, wrap the call in
+  `on(source, fn)` or `untrack`. Without it, the effect re-runs on every
+  write it causes.
+- When many rows watch one value, use `createSelector` so a change wakes one
+  row, not all of them.
+- Comments render from `kidsObj`; filter with `isValidComment` (a type guard).
 
-- Prefer <For> over .map() in JSX.
-- No need to set keyed by default.
-- When creating render functions inside a <For>, all variables must be
-  reactive functions.
+UI:
 
-### Resources: createResource + Suspense
+- Keep pages dense and stable, with no layout shift. Mobile first; the column
+  is 640px max.
+- Use one accent, HN orange, from the theme tokens in `app.css`: `hn` for
+  fills, borders, and rails, `hn-ink` for accent text, `hn-soft` for tints.
+  Do not add raw orange-\* or hex colors. Orange means "OP", "new", "active",
+  or a link.
+- `app.css` rules outside `@layer` beat Tailwind utilities. Do not add bare
+  element rules (an old `button { margin: 0 }` broke every button margin).
+- Motion: CSS keyframes and `lib/scroll.ts`. No animation libraries.
+  `prefers-reduced-motion` is honored globally.
+- SSR: the comment list shows a skeleton until the client mounts. Keep
+  server and client markup the same up to that point.
 
-- If createResource is involved, ALWAYS use Suspense with a fallback.
-- Avoid using Show as the primary loading gate for resources.
-- Prefer handling empty states inside the resolved UI rather than branching around the resource.
+General:
 
-### Error boundaries
+- Keep files under ~200 lines. Use named exports and type props in the same
+  file.
+- Do not log in hot paths. `addMessage` feeds the dev-only StatusBar and is
+  a no-op in production.
+- Write few tests, and only for real behavior (store hydration, comment
+  formatting, DB limits).
 
-- Every major page/feature "island" MUST be wrapped in an <ErrorBoundary>.
-- Keep fallbacks user-friendly; logging in the fallback is OK.
+## Known issues
 
-### Global state and Context API
-
-- Avoid prop drilling beyond 3 levels.
-- Prefer using an exported Provider from a module.
-- Context consumers MUST go through a useX() helper that throws if used
-  outside the Provider.
-- Prefer stores for related context state. Keep Provider logic small; move non-UI logic to a shared module if it grows.
-
-### DOM refs and component communication
-
-- For DOM refs:
-  - Use let myRef; and ref={myRef}.
-  - Avoid document.getElementById entirely.
-
-### Mounting, cleanup, and subscriptions
-
-- When pairing onMount with onCleanup, place onCleanup inside the onMount
-  callback.
-
-### Components and composition
-
-- Avoid IIFEs for Solid components.
-- SVG icons: put inline SVG into its own component with a good name.
-
-### Error handling
-
-- Avoid wrapping code in try/catch unless clearly justified or requested.
-
-### Prisma rules (server-side)
-
-- Only modify the Prisma schema.
-- Always generate migrations via CLI.
-- Never manually author a migration file.
-- Follow the repo’s standard scripts/commands for generating and applying migrations.
-
-### Thinking and planning conventions
-
-- When designing new components, consider key edge cases and handle them if
-  simple. If handling is non-trivial, add:
-  - TODO:EDGE_CASE, <describe the case>
-
-### TODO tags (standardized)
-
-- TODO:AS_ANY, <reason>
-- TODO:TYPE_MIRROR, <reason>
-- TODO:EDGE_CASE, <reason>
-
-### Testing and verification
-
-- Run `pnpm typecheck` to verify TypeScript types without building.
-- Run `pnpm build` to verify the build passes after making changes.
-- Run `pnpm test` to execute unit tests via Vitest.
-- Verification is done via successful type check, build, tests, and manual testing.
-
-### Quick checklist (before you finish)
-
-- File is < 200 LOC (or intentionally justified)
-- No props destructuring; used splitProps if needed
-- Used createStore for related state
-- Derived values use thunks; createMemo only when it matters
-- Used batch when updating multiple signals/store paths together
-- Show instead of &&
-- Switch/Match for multi-branch top-level forks
-- <For> render locals are reactive functions
-- createResource is gated by Suspense fallback
-- Major feature islands wrapped in <ErrorBoundary>
-- Context uses exported Provider + exported useX() hook
-- Refs via let ref + ref={ref}; no document.getElementById
-- Cleanup paired with mount is inside onMount
-- No any without a comment; no as any without TODO:AS_ANY
-- Named exports; imports at top; no typeof import(...)
-- Large changes include a few console.log breadcrumbs
+- The service worker never registers in production. `serviceWorkerStatus.ts`
+  registers `/_build/sw.js`, but that file is not built since VitePWA was
+  commented out in `app.config.ts`. `public/sw.js` is served at `/sw.js`.
+  Pick one before you rely on offline first loads.
+- `docs/backend-review-2026-01-27.md` is historical. The server rework fixed
+  its refresh overlap, non-atomic writes, and uptime-based cadence.

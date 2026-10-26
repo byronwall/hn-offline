@@ -1,86 +1,90 @@
 import { _getUnixTimestamp } from "~/lib/utils";
 
-import { HackerNewsApi } from "./api";
-import {
-  addChildrenToItemRecurse,
-  addItemToDb,
-  getItemFromDb,
-} from "./database";
+import { getItem, putItem } from "./database";
+import { fetchItem } from "./hnSources";
 
 import type { Item, ItemExt } from "~/models/interfaces";
 
-export async function getFullDataForIds(itemIDs: number[]) {
-  const itemObjects = await Promise.all(itemIDs.map(getItemFromDb));
+// Stories loaded at once. Each one already fans out a level of comments at a
+// time, so a few stories keep the connection busy without flooding it.
+const STORY_CONCURRENCY = 6;
 
-  for (let i = 0; i < itemObjects.length; i++) {
-    const obj = itemObjects[i];
-
-    if (obj === null) {
-      // item is null if it is not in the database -- need to fetch
-      const item = await HackerNewsApi.get().fetchItem(itemIDs[i]);
-      if (item === null) {
-        continue;
-      }
-      await addChildrenToItemRecurse(item);
-      item.lastUpdated = _getUnixTimestamp();
-      await addItemToDb(item); // initial add ensures available for root check
-
-      // set these properties here to ensure DB has them
-      const root = await resolveRootId(item.id);
-      item.root = root;
-
-      // add to db again to update lastUpdated and root
-      await addItemToDb(item);
-      itemObjects[i] = item;
+// Fresh items from the DB; anything missing or stale is fetched with its
+// whole comment tree and saved. Keeps the input order; null for dead ids.
+export async function getFullDataForIds(ids: number[]) {
+  return mapWithLimit(ids, STORY_CONCURRENCY, async (id) => {
+    const cached = getItem(id);
+    if (cached) {
+      return cached;
     }
-  }
 
-  return itemObjects;
+    const item = await fetchItem(id);
+    if (!item) {
+      return null;
+    }
+    await loadCommentTree(item);
+
+    const full: ItemExt = {
+      ...item,
+      lastUpdated: _getUnixTimestamp(),
+      root: await resolveRootId(item),
+    };
+    putItem(full);
+    return full;
+  });
 }
 
-async function resolveRootId(startId: number): Promise<number> {
-  let currentId: number = startId;
-  const visited = new Set<number>();
-
-  // walk up via parent until no parent exists (story or top-level comment)
-  for (let depth = 0; depth < 1000; depth++) {
-    if (visited.has(currentId)) {
-      // cycle safety; return the current id
-      return currentId;
-    }
-    visited.add(currentId);
-
-    const current = await getItemOrFetchNoCache(currentId);
-    if (current === null) {
-      return currentId;
-    }
-
-    if (current.parent === undefined) {
-      // reached story or top-level comment
-      return currentId;
-    }
-
-    currentId = current.parent;
+// Fill `kidsObj` through the whole tree. Every fetch in one level runs in
+// parallel; the next level starts when it lands.
+async function loadCommentTree(root: Item) {
+  let level: Item[] = [root];
+  while (level.length > 0) {
+    const children = await Promise.all(
+      level.map(async (item) => {
+        if (!item.kids?.length) {
+          return [];
+        }
+        const kids = await Promise.all(item.kids.map(fetchItem));
+        item.kidsObj = kids.filter((kid): kid is Item => kid !== null);
+        delete item.kids;
+        return item.kidsObj;
+      })
+    );
+    level = children.flat();
   }
-
-  // depth guard fallback
-  return currentId;
 }
 
-async function getItemOrFetchNoCache(id: number): Promise<ItemExt | null> {
-  const fromDb = getItemFromDb(id);
-  if (fromDb !== null) {
-    return fromDb;
+// Walk up `parent` links to the story (or top-level comment). Only comments
+// opened directly need this; stories have no parent.
+async function resolveRootId(item: Item): Promise<number> {
+  let current: Item = item;
+  for (let depth = 0; depth < 100 && current.parent !== undefined; depth++) {
+    const parent =
+      getItem(current.parent, { allowStale: true }) ??
+      (await fetchItem(current.parent));
+    if (!parent) {
+      return current.parent;
+    }
+    current = parent;
   }
+  return current.id;
+}
 
-  const fetched: Item | null = await HackerNewsApi.get().fetchItem(id);
-  if (fetched === null) {
-    return null;
-  }
-
-  // do not actually add to db, this does not have all the children
-  return {
-    ...fetched,
-    lastUpdated: _getUnixTimestamp(),
+async function mapWithLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await fn(items[index]);
+    }
   };
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, worker)
+  );
+  return results;
 }

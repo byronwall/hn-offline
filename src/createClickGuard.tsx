@@ -1,47 +1,38 @@
 import { useNavigate } from "@solidjs/router";
 import { onCleanup, onMount } from "solid-js";
 
+const HN_ITEM_URL = /^https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/;
+
+// One click handler for every link in the app, including links inside
+// comment HTML: HN item links open in this app, other external links open in
+// a new tab.
 export function createClickGuard() {
+  const navigate = useNavigate();
+
   onMount(() => {
-    const navigate = useNavigate();
-    const anchorClickHandler = (e: MouseEvent) => {
-      if (e.target instanceof HTMLElement && e.target.tagName !== "A") {
+    const handleClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || !(e.target instanceof Element)) {
+        return;
+      }
+      const link = e.target.closest("a");
+      if (!link?.href) {
         return;
       }
 
-      const link = e.target as HTMLAnchorElement;
-
-      if (!link || !link.href) {
+      const hnItem = link.href.match(HN_ITEM_URL);
+      if (hnItem) {
+        e.preventDefault();
+        navigate("/story/" + hnItem[1]);
         return;
       }
 
-      const pathName = new URL(link.href).pathname;
-
-      const internalPaths = ["/story", "/day", "/week", "/month"];
-      if (internalPaths.some((path) => pathName.startsWith(path))) {
-        // let the navigation happen
-        return;
-      }
-
-      const regex = /https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/;
-      const matches = link.href.match(regex);
-
-      if (matches === null) {
-        // external link = open in new tab
+      if (new URL(link.href).origin !== window.location.origin) {
         link.target = "_blank";
-        return;
+        link.rel = "noopener noreferrer";
       }
-
-      // we have an HN link - reroute internally
-      navigate("/story/" + matches[1]);
-      e.preventDefault();
-      return false;
     };
 
-    document.body.addEventListener("click", anchorClickHandler);
-
-    onCleanup(() => {
-      document.body.removeEventListener("click", anchorClickHandler);
-    });
+    document.body.addEventListener("click", handleClick);
+    onCleanup(() => document.body.removeEventListener("click", handleClick));
   });
 }
