@@ -22,7 +22,7 @@ export function HnThreadNav(props: HnThreadNavProps) {
           onClick={() => scrollToNext("[data-new-comment]")}
           title="Next new comment"
         >
-          <span class="font-medium text-hn-ink">{props.newCount} new</span>
+          <span class="text-hn-ink font-medium">{props.newCount} new</span>
           <ChevronUp width="16" height="16" class="rotate-180" />
         </button>
       </Show>

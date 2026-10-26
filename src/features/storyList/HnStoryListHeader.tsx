@@ -47,13 +47,13 @@ export function HnStoryListHeader(props: HnStoryListHeaderProps) {
         title="Refresh now"
         disabled={serviceWorker.isOfflineMode() || dataStore.isLoadingData()}
         onClick={() => dataStore.refreshActive()}
-        class="flex min-w-0 items-center gap-1.5 transition-colors duration-150 hover:text-hn-ink disabled:hover:text-slate-500"
+        class="hover:text-hn-ink flex min-w-0 items-center gap-1.5 transition-colors duration-150 disabled:hover:text-slate-500"
       >
         <Shell
           width="14"
           height="14"
           class={cn("shrink-0", {
-            "animate-spin text-hn-ink": dataStore.isLoadingData(),
+            "text-hn-ink animate-spin": dataStore.isLoadingData(),
           })}
         />
         <span class="truncate">
@@ -89,7 +89,7 @@ export function HnStoryListHeader(props: HnStoryListHeaderProps) {
             )
           }
         />
-        <span class="relative h-4 w-7 rounded-full bg-slate-300 transition-colors duration-150 peer-checked:bg-hn peer-focus-visible:ring-2 peer-focus-visible:ring-hn/40 after:absolute after:top-0.5 after:left-0.5 after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-transform after:duration-150 peer-checked:after:translate-x-3" />
+        <span class="peer-checked:bg-hn peer-focus-visible:ring-hn/40 relative h-4 w-7 rounded-full bg-slate-300 transition-colors duration-150 peer-focus-visible:ring-2 after:absolute after:top-0.5 after:left-0.5 after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-transform after:duration-150 peer-checked:after:translate-x-3" />
       </label>
     </div>
   );

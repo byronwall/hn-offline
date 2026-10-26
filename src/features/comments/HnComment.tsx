@@ -149,7 +149,7 @@ export function HnComment(props: HnCommentProps) {
               "truncate",
               isOpen()
                 ? {
-                    "font-bold text-hn-ink":
+                    "text-hn-ink font-bold":
                       storyUiStore.activeStoryData()?.by === props.comment.by,
                     "font-medium":
                       storyUiStore.activeStoryData()?.by !== props.comment.by,
@@ -168,14 +168,14 @@ export function HnComment(props: HnCommentProps) {
             <span class="text-slate-300 select-none">|</span>
             <span>{relativeTime(props.comment.time)}</span>
             <Show when={isNew()}>
-              <span class="text-[14px] font-medium text-hn-ink">new</span>
+              <span class="text-hn-ink text-[14px] font-medium">new</span>
             </Show>
             <span class="pointer-events-none text-slate-300 opacity-0 transition-opacity select-none group-hover:opacity-100 [@media(hover:none)]:opacity-100">
               |
             </span>
             <button
               onClick={handleShareClick}
-              class="text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-hn-ink [@media(hover:none)]:opacity-100"
+              class="hover:text-hn-ink text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100"
               aria-label="Share"
             >
               <ArrowUpRightFromSquare width={16} />

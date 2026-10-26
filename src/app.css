@@ -17,7 +17,7 @@
 }
 /* Links in HN text: accent-colored text, no fill, one subtle hover. */
 .user-text a {
-  @apply text-hn-ink transition-colors duration-150 hover:text-hn focus-visible:text-hn;
+  @apply text-hn-ink hover:text-hn focus-visible:text-hn transition-colors duration-150;
 }
 
 pre {
@@ -161,7 +161,6 @@ pre {
   overflow: hidden;
   animation: row-leave 480ms cubic-bezier(0.23, 1, 0.32, 1) 250ms both;
 }
-
 
 @keyframes row-leave {
   0% {

@@ -6,7 +6,7 @@ export default function NotFound() {
     <main class="mx-auto p-4 text-center text-gray-700">
       <Title>HN Offline: Not Found</Title>
       <Meta name="robots" content="noindex, nofollow" />
-      <h1 class="max-6-xs my-16 text-6xl font-thin text-hn-ink uppercase">
+      <h1 class="max-6-xs text-hn-ink my-16 text-6xl font-thin uppercase">
         Page not found
       </h1>
       <p class="mt-8">The page you requested doesn't exist.</p>

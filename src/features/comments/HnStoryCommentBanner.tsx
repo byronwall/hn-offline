@@ -23,7 +23,7 @@ export const HnStoryCommentBanner = (props: HnStoryCommentBannerProps) => {
           <span>
             <span class="mr-1">{isRootParentSame() ? "root" : "parent"}:</span>
             <a
-              class="text-hn-ink underline hover:text-hn-ink focus-visible:text-hn-ink"
+              class="text-hn-ink hover:text-hn-ink focus-visible:text-hn-ink underline"
               href={`/story/${parent}`}
             >
               {parent}
@@ -31,7 +31,7 @@ export const HnStoryCommentBanner = (props: HnStoryCommentBannerProps) => {
             <Show when={rootId() !== undefined && !isRootParentSame()}>
               <span class="mr-1 ml-3">root:</span>
               <a
-                class="text-hn-ink underline hover:text-hn-ink focus-visible:text-hn-ink"
+                class="text-hn-ink hover:text-hn-ink focus-visible:text-hn-ink underline"
                 href={`/story/${rootId()}`}
               >
                 {rootId()}

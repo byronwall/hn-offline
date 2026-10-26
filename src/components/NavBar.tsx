@@ -17,7 +17,7 @@ export function NavBar() {
   const serviceWorker = useServiceWorkerStore();
 
   return (
-    <nav class="fixed top-0 left-1/2 z-10 flex h-12 w-full max-w-[640px] -translate-x-1/2 items-center gap-3 border-x border-t-[3px] border-b border-x-slate-200 border-t-hn border-b-slate-200 bg-white px-2">
+    <nav class="border-t-hn fixed top-0 left-1/2 z-10 flex h-12 w-full max-w-[640px] -translate-x-1/2 items-center gap-3 border-x border-t-[3px] border-b border-x-slate-200 border-b-slate-200 bg-white px-2">
       <A href="/" end class="flex shrink-0 items-center gap-1" title="Top">
         <img src="/favicon-32x32.png" alt="" class="h-7 w-7" />
         <h1 class="text-xl font-bold">Offline</h1>
@@ -50,13 +50,13 @@ export function NavBar() {
           disabled={dataStore.isLoadingData()}
           onClick={() => dataStore.refreshActive()}
           // -my-3/py-3 grows the tap target past the icon
-          class="-my-3 ml-auto px-2 py-3 text-slate-700 transition-colors duration-150 hover:text-hn-ink focus-visible:text-hn-ink"
+          class="hover:text-hn-ink focus-visible:text-hn-ink -my-3 ml-auto px-2 py-3 text-slate-700 transition-colors duration-150"
         >
           <Shell
             width="26"
             height="26"
             class={cn({
-              "animate-spin text-hn-ink": dataStore.isLoadingData(),
+              "text-hn-ink animate-spin": dataStore.isLoadingData(),
             })}
           />
         </button>

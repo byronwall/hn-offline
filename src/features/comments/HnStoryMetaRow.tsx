@@ -40,7 +40,7 @@ export const HnStoryMetaRow = (props: HnStoryMetaRowProps) => {
         <span class="text-slate-700">{props.story?.score} points</span>
         <Dot />
       </Show>
-      <span class="font-medium text-hn-ink">{props.story?.by}</span>
+      <span class="text-hn-ink font-medium">{props.story?.by}</span>
       <Dot />
       <span>{relativeTime(props.story?.time, true)}</span>
       <Show when={props.story?.descendants !== undefined}>
@@ -51,7 +51,7 @@ export const HnStoryMetaRow = (props: HnStoryMetaRowProps) => {
             {" "}
             <button
               type="button"
-              class="font-medium text-hn-ink hover:underline"
+              class="text-hn-ink font-medium hover:underline"
               onClick={() => scrollToNext("[data-new-comment]")}
             >
               ({props.newCount} new)
@@ -66,7 +66,7 @@ export const HnStoryMetaRow = (props: HnStoryMetaRowProps) => {
       <button
         type="button"
         onClick={handleShareClick}
-        class="ml-1 text-slate-400 transition-colors duration-150 hover:text-hn-ink"
+        class="hover:text-hn-ink ml-1 text-slate-400 transition-colors duration-150"
         aria-label="Share"
       >
         <ArrowUpRightFromSquare width={16} height={16} />
