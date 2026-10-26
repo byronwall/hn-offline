@@ -57,7 +57,7 @@ export function createServiceWorkerStatusStore(addMessage: AddMessage) {
 
       void (async () => {
         try {
-          const reg = await navigator.serviceWorker.register("/_build/sw.js", {
+          const reg = await navigator.serviceWorker.register("/sw.js", {
             scope: "/",
           });
 
@@ -73,7 +73,7 @@ export function createServiceWorkerStatusStore(addMessage: AddMessage) {
             .then(() => setServiceWorkerStatus("active"))
             .catch(() => {});
 
-          // Optional: prompt flow (replace with your toast UI)
+          // A new worker calls skipWaiting itself; this only tracks status.
           reg.addEventListener("updatefound", () => {
             const sw = reg.installing;
             if (!sw) {
@@ -81,12 +81,6 @@ export function createServiceWorkerStatusStore(addMessage: AddMessage) {
             }
             setServiceWorkerStatus("installing");
             sw.addEventListener("statechange", () => {
-              const isUpdate =
-                sw.state === "installed" && navigator.serviceWorker.controller;
-              if (isUpdate) {
-                // Auto-activate; or show a toast and do this on confirm:
-                sw.postMessage({ type: "SKIP_WAITING" });
-              }
               if (sw.state === "installed") {
                 setServiceWorkerStatus("installed");
               }
@@ -99,10 +93,15 @@ export function createServiceWorkerStatusStore(addMessage: AddMessage) {
             });
           });
 
+          // The first install also fires controllerchange (clients.claim);
+          // reload only when a new version replaces an old one.
+          let hadController = !!navigator.serviceWorker.controller;
           const handleControllerChange = () => {
-            // New SW has taken control — reload to pick up fresh HTML/asset graph
             setServiceWorkerStatus("controllerchanged");
-            window.location.reload();
+            if (hadController) {
+              window.location.reload();
+            }
+            hadController = true;
           };
           controllerChangeHandler = handleControllerChange;
 

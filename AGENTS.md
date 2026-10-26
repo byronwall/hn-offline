@@ -12,7 +12,7 @@ pnpm. One server, one client, no accounts.
 | Types          | `pnpm typecheck`                                                                                        |
 | Lint           | `pnpm lint` (the remaining warnings are old ones in `src/server`, `lib/validation.ts`, `app.config.ts`) |
 | Tests          | `pnpm test` (Vitest: stores, comment formatting, server DB)                                             |
-| Build          | `pnpm build` (also stamps the version into `public/sw.js`; revert that file before you commit)          |
+| Build          | `pnpm build` (first writes `public/sw.js` from `src/sw.js` with a new version; that file is gitignored) |
 | Run prod build | `PORT=3219 node .output/server/index.mjs`                                                               |
 | Dev            | `pnpm dev`                                                                                              |
 
@@ -60,6 +60,12 @@ Client stores (src/stores, created in contexts/AppDataContext.tsx)
 - List page: SSR shows summaries. After hydration, `syncStoryList` saves them
   and fetches the full stories in the background so every story on the page
   reads offline.
+- Service worker (`src/sw.js`, plain JS, production only): Top, Day, Week,
+  and `/offline` are network first with a cached copy. Built assets are
+  cache first, and install precaches every chunk in the Vite manifest. An
+  uncached page offline redirects to `/offline?next=<path>`, which routes
+  back in the client so the story reads from IndexedDB. Test it against the
+  production build: stop the server to go offline.
 - Story page: on the client, `getContent` reads IndexedDB first, then the
   network. A failure returns `undefined`, and the page shows "not available".
   It never throws to the root error boundary.
@@ -124,9 +130,5 @@ General:
 
 ## Known issues
 
-- The service worker never registers in production. `serviceWorkerStatus.ts`
-  registers `/_build/sw.js`, but that file is not built since VitePWA was
-  commented out in `app.config.ts`. `public/sw.js` is served at `/sw.js`.
-  Pick one before you rely on offline first loads.
 - `docs/backend-review-2026-01-27.md` is historical. The server rework fixed
   its refresh overlap, non-atomic writes, and uptime-based cadence.

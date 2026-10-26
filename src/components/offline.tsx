@@ -1,4 +1,4 @@
-import { A } from "@solidjs/router";
+import { A, useNavigate, useSearchParams } from "@solidjs/router";
 import { onMount } from "solid-js";
 
 import { useMessagesStore } from "~/contexts/AppDataContext";
@@ -8,8 +8,16 @@ import { Shell } from "./Icon";
 export default function Offline() {
   const messagesStore = useMessagesStore();
 
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+
   onMount(() => {
     messagesStore.addMessage("Offline", "Loading offline shell");
+    // The service worker sends uncached pages here; route back in the client.
+    const next = params.next;
+    if (typeof next === "string" && /^\/(?!\/)/.test(next)) {
+      navigate(next, { replace: true });
+    }
   });
 
   return (
