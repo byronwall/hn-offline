@@ -86,7 +86,7 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       <p class="mt-1 text-sm text-gray-500">
         It may not be saved for offline reading yet.
       </p>
-      <A href="/" class="mt-4 inline-block text-orange-700 hover:underline">
+      <A href="/" class="mt-4 inline-block text-hn-ink hover:underline">
         Back to top stories
       </A>
     </div>

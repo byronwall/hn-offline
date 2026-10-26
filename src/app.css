@@ -1,15 +1,12 @@
 @import "tailwindcss";
 
-:root {
-  --background-rgb: 214, 219, 220;
-  --foreground-rgb: 0, 0, 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background-rgb: 0, 0, 0;
-    --foreground-rgb: 255, 255, 255;
-  }
+/* One accent: HN orange. `hn` for fills, borders, and rails; `hn-ink` for
+   accent text (AA on white); `hn-soft` for pressed tints. Everything else
+   is slate on white over a quiet stone page. */
+@theme {
+  --color-hn: #ff6600;
+  --color-hn-ink: #c2410c;
+  --color-hn-soft: #fff4ec;
 }
 
 @layer components {
@@ -18,8 +15,9 @@
     @apply font-serif;
   }
 }
+/* Links in HN text: accent-colored text, no fill, one subtle hover. */
 .user-text a {
-  @apply rounded-sm bg-slate-100 px-0.5 text-slate-700 hover:bg-slate-200 hover:text-slate-600 hover:underline focus-visible:underline active:underline;
+  @apply text-hn-ink transition-colors duration-150 hover:text-hn focus-visible:text-hn;
 }
 
 pre {
@@ -37,7 +35,7 @@ pre {
 }
 
 .comment pre {
-  background-color: #f6f6f6;
+  background-color: var(--color-slate-50);
   padding: 8px 12px;
   border-radius: 4px;
   overflow-x: auto;
@@ -53,7 +51,7 @@ pre {
 }
 
 .track-visited a:visited {
-  color: var(--color-orange-500);
+  color: var(--color-slate-500);
 }
 /* used by the comment */
 .bp3-card {
@@ -138,7 +136,7 @@ pre {
 }
 
 .collapsed {
-  --flash-color: #ff6600;
+  --flash-color: var(--color-hn);
 }
 
 /* Set by flash() in lib/scroll.ts when a card is toggled, so it never

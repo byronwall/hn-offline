@@ -65,7 +65,7 @@ export function HnListItem(props: HnListItemProps) {
               </span>
               <A
                 href={storyHref()}
-                class="-my-1 flex items-center gap-1 py-1 tabular-nums transition-colors duration-150 hover:text-orange-700"
+                class="-my-1 flex items-center gap-1 py-1 tabular-nums transition-colors duration-150 hover:text-hn-ink"
                 aria-label={`${props.data.descendants ?? 0} comments`}
               >
                 <MessageSquareQuote
@@ -75,7 +75,7 @@ export function HnListItem(props: HnListItemProps) {
                 />
                 {props.data.descendants ?? 0}
                 <Show when={newComments() > 0}>
-                  <span class="font-medium text-orange-700">
+                  <span class="font-medium text-hn-ink">
                     +{newComments()} new
                   </span>
                 </Show>

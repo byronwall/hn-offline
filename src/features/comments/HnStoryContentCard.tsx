@@ -38,7 +38,7 @@ export const HnStoryContentCard = (props: HnStoryContentCardProps) => {
       ref={cardRef}
       class={cn("bp3-card mb-2 cursor-pointer pl-4", { collapsed: !isOpen() })}
       onClick={handleClick}
-      style={{ "--flash-color": "var(--color-orange-400)" }}
+      style={{ "--flash-color": "var(--color-hn)" }}
     >
       <Show
         when={isOpen()}

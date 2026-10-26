@@ -65,7 +65,7 @@ export function HnStoryListBody(props: HnStoryListBodyProps) {
             <p>You have read all {hiddenCount()} stories on this page.</p>
             <button
               type="button"
-              class="text-orange-700 hover:underline"
+              class="text-hn-ink hover:underline"
               onClick={() =>
                 readItemsStore.setReadSettings("shouldHideReadItems", false)
               }
