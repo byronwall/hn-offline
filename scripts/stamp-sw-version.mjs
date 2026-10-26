@@ -28,11 +28,8 @@ async function stampFile(swPath, timestamp) {
 
 async function main() {
   const timestamp = Date.now();
-  const candidates = [
-    path.join(process.cwd(), ".output", "public", "sw.js"),
-    path.join(process.cwd(), ".output", "public", "_build", "sw.js"),
-    path.join(process.cwd(), "public", "sw.js"),
-  ];
+  // Stamp only the build output, so a build never edits public/sw.js.
+  const candidates = [path.join(process.cwd(), ".output", "public", "sw.js")];
 
   const results = await Promise.all(
     candidates.map((p) => stampFile(p, timestamp))

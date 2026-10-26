@@ -12,7 +12,6 @@
     "strict": true,
     "types": [
       "vinxi/types/client",
-      "vite-plugin-pwa/pwa-assets",
       "@testing-library/jest-dom"
     ],
     "isolatedModules": true,

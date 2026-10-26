@@ -18,7 +18,10 @@ const NETWORK_TIMEOUT_MS = 3000;
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
-      await Promise.all(SHELL_PAGES.map(cachePageAndAssets));
+      await Promise.all([
+        ...SHELL_PAGES.map(cachePageAndAssets),
+        cacheBuildManifestAssets(),
+      ]);
       await self.skipWaiting();
     })()
   );
@@ -114,6 +117,29 @@ async function cachePageAndAssets(pathname) {
     );
   } catch {
     // a missing page only weakens the offline shell
+  }
+}
+
+// Every client chunk and stylesheet, so routes not linked from the shell
+// pages (like /story/:id) also load offline.
+async function cacheBuildManifestAssets() {
+  try {
+    const res = await fetch("/_build/.vite/manifest.json", { cache: "reload" });
+    if (!res.ok) {
+      return;
+    }
+    const files = Object.values(await res.json()).flatMap((entry) => [
+      entry.file,
+      ...(entry.css ?? []),
+    ]);
+    const assets = await caches.open(ASSETS);
+    await Promise.all(
+      [...new Set(files)].map((file) =>
+        assets.add(`/_build/${file}`).catch(() => {})
+      )
+    );
+  } catch {
+    // the shell pages still cache what they link to
   }
 }
 
