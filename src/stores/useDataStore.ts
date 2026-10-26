@@ -205,9 +205,16 @@ export function createDataStore(params: {
   const purgeLocalForage = async () => {
     params.addMessage("purge", "purgeLocalForage init");
 
+    // A list saved before lists held ids would look empty and delete its
+    // cached stories. Wait until every list has been re-saved.
+    const lists = Object.values(storyListStore);
+    if (lists.some((list) => !list?.ids)) {
+      return;
+    }
+
     const idsToKeep = new Set<number>();
-    for (const list of Object.values(storyListStore)) {
-      for (const id of list?.ids ?? []) {
+    for (const list of lists) {
+      for (const id of list.ids) {
         idsToKeep.add(id);
       }
     }
