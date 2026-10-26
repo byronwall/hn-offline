@@ -9,6 +9,49 @@
   --color-hn-soft: #fff4ec;
 }
 
+/* Dark mode follows the OS. Instead of `dark:` on every class, it remaps
+   the neutral palette: white is the column, stone-100 the page, and the
+   slate/gray scales run in reverse, so `text-slate-500` stays "secondary"
+   and `bg-slate-50` stays "a step off the surface" in both themes. Keep
+   using slate and white; only reach for `dark:` when a color must not
+   flip (the toggle knob). */
+@layer base {
+  /* Thread rails need more strength on a dark surface. */
+  :root {
+    --rail-alpha: 0.45;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --rail-alpha: 0.75;
+      color: var(--color-slate-900);
+
+      --color-hn-ink: #fb923c;
+      --color-hn-soft: #35200f;
+
+      --color-white: #16191e;
+      --color-stone-100: #0c0e11;
+
+      --color-slate-50: #1c2027;
+      --color-slate-100: #232831;
+      --color-slate-200: #2d333d;
+      --color-slate-300: #3c4451;
+      --color-slate-400: #6d7787;
+      --color-slate-500: #8d97a6;
+      --color-slate-600: #a6afbc;
+      --color-slate-700: #c4cbd5;
+      --color-slate-800: #d9dee5;
+      --color-slate-900: #e7eaef;
+      --color-slate-950: #f3f5f8;
+
+      --color-gray-500: #8d97a6;
+      --color-gray-600: #a6afbc;
+      --color-gray-700: #c4cbd5;
+    }
+  }
+}
+
 @layer components {
   /* give some decent looking anchor tags */
   .user-text {
@@ -64,7 +107,7 @@ pre {
   padding-bottom: 10px;
   padding-right: 6px;
 
-  background-color: white;
+  background-color: var(--color-white);
 
   transition: box-shadow 0.3s ease-in-out;
 }
@@ -86,8 +129,8 @@ pre {
   /* soft edge rail */
   background: linear-gradient(
     to right,
-    rgb(from var(--flash-color) r g b / 0.45),
-    rgb(from var(--flash-color) r g b / 0.15) 60%,
+    rgb(from var(--flash-color) r g b / var(--rail-alpha)),
+    rgb(from var(--flash-color) r g b / calc(var(--rail-alpha) / 3)) 60%,
     rgb(from var(--flash-color) r g b / 0)
   );
 
@@ -115,8 +158,8 @@ pre {
   pointer-events: none;
   background: linear-gradient(
     to bottom,
-    rgb(from var(--flash-color) r g b / 0.45),
-    rgb(from var(--flash-color) r g b / 0.15) 60%,
+    rgb(from var(--flash-color) r g b / var(--rail-alpha)),
+    rgb(from var(--flash-color) r g b / calc(var(--rail-alpha) / 3)) 60%,
     rgb(from var(--flash-color) r g b / 0)
   );
   -webkit-mask-image: linear-gradient(
@@ -150,7 +193,7 @@ pre {
     background: rgb(from var(--flash-color) r g b / 22%);
   }
   100% {
-    background: white;
+    background: var(--color-white);
   }
 }
 

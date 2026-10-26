@@ -37,7 +37,7 @@ export default function GlobalErrorOverlay() {
 
   return (
     <Show when={isVisible()}>
-      <div class="fixed inset-0 z-[9999] bg-black/70 p-4 text-white">
+      <div class="fixed inset-0 z-[9999] bg-black/70 p-4 text-zinc-100">
         <div class="mx-auto max-w-[900px] rounded-md bg-zinc-900 p-4 shadow-lg">
           <div class="mb-2 flex items-center justify-between">
             <h2 class="text-lg font-semibold">Error</h2>
