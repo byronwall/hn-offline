@@ -132,38 +132,16 @@ export function createDataStore(params: {
     });
   };
 
-  const persistStoryList = async (page: StoryPage, data: HnItem[]) => {
-    // overall goals: update store -> saves list to local forage
-    // then go through all items and save them to local forage
-    params.addMessage("persist", "persistStoryList init", {
-      page,
-      count: data.length,
-    });
-
-    // Do not persist if provided list is empty
-    if (!data || data.length === 0) {
-      params.addMessage("persist", "persistStoryList skip empty list", {
-        page,
-      });
+  // Save the list of summaries shown on a list page, if it is new.
+  const saveListSummaries = async (
+    page: StoryPage,
+    storySummaries: HnStorySummary[]
+  ) => {
+    if (storySummaries.length === 0) {
       return;
-    }
-
-    // Map raw items to summaries for list storage
-    const storySummaries = mapStoriesToSummaries(data);
-
-    if (!storySummaries) {
-      throw new Error("storySummaries is undefined");
     }
 
     const current = storyListStore[page];
-    if (storySummaries.length === 0 && (current?.data?.length ?? 0) > 0) {
-      params.addMessage("persist", "persistStoryList skip empty overwrite", {
-        page,
-        currentCount: current?.data?.length ?? 0,
-      });
-      return;
-    }
-
     const incomingTimestamp = Math.max(
       ...storySummaries.map((item) => item.lastUpdated ?? 0),
       0
@@ -188,6 +166,16 @@ export function createDataStore(params: {
       });
       params.refreshStore.setRefreshTimestamp(page);
     }
+  };
+
+  // Save a list page and every full story on it for offline reading.
+  const persistStoryList = async (page: StoryPage, data: HnItem[]) => {
+    params.addMessage("persist", "persistStoryList init", {
+      page,
+      count: data.length,
+    });
+
+    await saveListSummaries(page, mapStoriesToSummaries(data) ?? []);
 
     // Persist raw items individually for detail pages, in parallel.
     const validItems = data.filter((item) => {
@@ -388,12 +376,22 @@ export function createDataStore(params: {
     page: StoryPage,
     latest: WithServerInfo<ContentForPage> | undefined
   ) => {
-    // SSR data is fresh from the server, so cache it for offline use.
-    if (latest?.startedFromServer && latest.result.type === "fullData") {
-      params.refreshStore.setRefreshRequestedTimestamp(page);
-      void persistStoryList(page, latest.result.data);
-    }
     setRefreshType({ type: "storyList", page });
+    if (!latest?.startedFromServer) {
+      return;
+    }
+
+    // SSR ships summaries only, to keep the HTML small. Show them now, then
+    // fetch the full stories in the background for offline reading.
+    params.refreshStore.setRefreshRequestedTimestamp(page);
+    void saveListSummaries(
+      page,
+      mapStoriesToSummaries(latest.result.data) ?? []
+    );
+    void fetchAllStoryDataForPage(page, {
+      addMessage: params.addMessage,
+      persistStoryList,
+    });
   };
 
   // Called by the story route whenever its data settles.
