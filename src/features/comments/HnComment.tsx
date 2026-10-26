@@ -7,7 +7,9 @@ import {
   useStoryUiStore,
 } from "~/contexts/AppDataContext";
 import { formatCommentText } from "~/lib/commentUtils";
+import { countComments } from "~/lib/countComments";
 import { isLinkOrSelection } from "~/lib/isLinkOrSelection";
+import { scrollToElement } from "~/lib/scrollToNext";
 import { shareHnTextContent } from "~/lib/shareHnTextContent";
 import { cn } from "~/lib/utils";
 import { KidsObj3 } from "~/models/interfaces";
@@ -38,13 +40,9 @@ export function HnComment(props: HnCommentProps) {
     }
 
     requestAnimationFrame(() => {
-      if (!headerRef) {
-        return;
+      if (headerRef) {
+        scrollToElement(headerRef);
       }
-
-      // leave room for the fixed nav bar
-      const top = window.scrollY + headerRef.getBoundingClientRect().top - 88;
-      window.scrollTo({ top, behavior: "smooth" });
       storyUiStore.clearScrollToId();
     });
   });
@@ -98,6 +96,13 @@ export function HnComment(props: HnCommentProps) {
   const borderColor = () =>
     storyUiStore.colorMap()[props.comment.by ?? ""] ?? "transparent";
   const showBar = () => stickyInfo().shouldShowBar && isOpen();
+  const isNew = () => {
+    const since = storyUiStore.lastVisitMs();
+    return since !== undefined && props.comment.time * 1000 > since;
+  };
+  // Only counted while collapsed, where it replaces the hidden replies.
+  const replyCount = () =>
+    isOpen() ? 0 : countComments(props.comment.kidsObj);
 
   return (
     <div
@@ -136,6 +141,8 @@ export function HnComment(props: HnCommentProps) {
             "margin-top": `${showBar() ? -stickyInfo().stickyHeight : 0}px`,
           }}
           ref={headerRef}
+          data-thread-start={props.depth === 0 ? "" : undefined}
+          data-new-comment={isNew() ? "" : undefined}
           class={cn(
             "flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[16px]",
             isOpen() ? "text-slate-700" : "text-slate-500"
@@ -156,9 +163,17 @@ export function HnComment(props: HnCommentProps) {
           >
             {props.comment.by}
           </span>
+          <Show when={!isOpen() && replyCount() > 0}>
+            <span class="text-slate-400">
+              +{replyCount()} {replyCount() === 1 ? "reply" : "replies"}
+            </span>
+          </Show>
           <Show when={isOpen()}>
             <span class="text-slate-300 select-none">|</span>
             <span>{relativeTime(props.comment.time)}</span>
+            <Show when={isNew()}>
+              <span class="text-[14px] font-medium text-orange-700">new</span>
+            </Show>
             <span class="pointer-events-none text-slate-300 opacity-0 transition-opacity select-none group-hover:opacity-100 [@media(hover:none)]:opacity-100">
               |
             </span>

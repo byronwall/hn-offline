@@ -23,11 +23,18 @@ export function createStoryUiStore() {
   // instead of every comment on the page.
   const isScrollTarget = createSelector(scrollToId);
 
+  // When the reader last opened this story (ms), to mark newer comments.
+  const [lastVisitMs, setLastVisitMs] = createSignal<number | undefined>(
+    undefined
+  );
+
   return {
     activeStoryData,
     setActiveStoryData,
     colorMap,
     isScrollTarget,
+    lastVisitMs,
+    setLastVisitMs,
     setScrollToId,
     clearScrollToId: () => setScrollToId(undefined),
   };

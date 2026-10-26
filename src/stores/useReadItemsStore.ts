@@ -78,6 +78,7 @@ export function createReadItemsStore(
     setReadSettings,
     readItems,
     setReadItems,
+    readItemsHydrated,
     recentlyReadId,
     setRecentlyReadId,
     saveIdToReadList,
