@@ -5,6 +5,7 @@ import { useDataStore, useServiceWorkerStore } from "~/contexts/AppDataContext";
 import { cn } from "~/lib/utils";
 
 import { Shell } from "./Icon";
+import { SearchPopover } from "./search/SearchPopover";
 
 const tabs = [
   { href: "/", label: "Top" },
@@ -39,8 +40,9 @@ export function NavBar() {
         </For>
       </div>
 
+      <SearchPopover />
       <Show when={serviceWorker.isOfflineMode()}>
-        <span class="ml-auto text-sm text-slate-500">Offline</span>
+        <span class="text-sm text-slate-500">Offline</span>
       </Show>
       <Show when={!serviceWorker.isOfflineMode()}>
         <button
@@ -50,7 +52,7 @@ export function NavBar() {
           disabled={dataStore.isLoadingData()}
           onClick={() => dataStore.refreshActive()}
           // -my-3/py-3 grows the tap target past the icon
-          class="hover:text-hn-ink focus-visible:text-hn-ink -my-3 ml-auto px-2 py-3 text-slate-700 transition-colors duration-150"
+          class="hover:text-hn-ink focus-visible:text-hn-ink -my-3 px-2 py-3 text-slate-700 transition-colors duration-150"
         >
           <Shell
             width="26"
