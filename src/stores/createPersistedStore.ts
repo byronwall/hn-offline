@@ -7,12 +7,15 @@ import {
 } from "solid-js";
 import { createStore, reconcile, unwrap } from "solid-js/store";
 
-import { withRetries } from "./withRetries";
+import { dropConnection } from "./localforage";
+import { wait, withRetries } from "./withRetries";
 
 // A Solid store mirrored to one localForage key.
 //
 // Writes apply to memory at once. Writes made before the stored value loads
-// are queued, then replayed over the stored value, so nothing is lost.
+// are queued, then replayed over the stored value, so nothing is lost. A
+// failed load retries until it works: hydrating with the initial value would
+// let the next write overwrite the saved data.
 export function createPersistedStore<T extends object>(
   name: string,
   initialValue: T,
@@ -22,8 +25,9 @@ export function createPersistedStore<T extends object>(
   const [hydrated, setHydrated] = createSignal(false);
   const pending: Array<(current: T) => T> = [];
 
-  const retry = <R>(operation: () => Promise<R>) =>
-    withRetries(operation, (attempt, delayMs) => {
+  const retry = <R>(lf: LocalForage, operation: () => Promise<R>) =>
+    withRetries(operation, (attempt, delayMs, error) => {
+      dropConnection(lf, error);
       console.warn("localForage retry", { name, attempt, delayMs });
     });
 
@@ -33,7 +37,7 @@ export function createPersistedStore<T extends object>(
       return;
     }
     try {
-      await retry(() => lf.setItem(name, unwrap(store)));
+      await retry(lf, () => lf.setItem(name, unwrap(store)));
     } catch (error) {
       console.error("persist failed", { name, error });
     }
@@ -84,10 +88,17 @@ export function createPersistedStore<T extends object>(
 
     void (async () => {
       let saved: T | null = null;
-      try {
-        saved = await retry(() => lf.getItem<T>(name));
-      } catch (error) {
-        console.error("hydration failed", { name, error });
+      for (let delayMs = 1000; ; delayMs = Math.min(delayMs * 2, 30_000)) {
+        try {
+          saved = await retry(lf, () => lf.getItem<T>(name));
+          break;
+        } catch (error) {
+          console.error("hydration failed; will retry", { name, error });
+          await wait(delayMs);
+        }
+        if (cancelled) {
+          return;
+        }
       }
       if (cancelled) {
         return;

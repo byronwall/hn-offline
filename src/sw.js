@@ -27,19 +27,10 @@ const NETWORK_TIMEOUT_MS = 3000;
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
-      await Promise.all([
-        ...SHELL_PAGES.map(cachePageAndAssets),
-        cacheBuildManifestAssets(),
-        caches
-          .open(ASSETS)
-          .then((assets) =>
-            Promise.all(
-              STATIC_FILES.map((f) =>
-                assets.add(new Request(f, { cache: "reload" })).catch(() => {})
-              )
-            )
-          ),
-      ]);
+      // All or nothing. If any file fails, the install fails, the old
+      // worker and its caches stay, and the browser tries again on its next
+      // update check. A partial cache would break offline loads.
+      await Promise.all([cacheAssets(), ...SHELL_PAGES.map(cachePage)]);
       await self.skipWaiting();
     })()
   );
@@ -129,48 +120,37 @@ async function cacheFirst(req) {
   return res;
 }
 
-// Cache a page and the scripts and styles its HTML loads.
-async function cachePageAndAssets(pathname) {
-  try {
-    const res = await fetch(pathname, { cache: "reload" });
-    if (!res.ok) {
-      return;
-    }
-    await (await caches.open(PAGES)).put(pathname, res.clone());
-    const html = await res.text();
-    const urls = [
-      ...html.matchAll(/(?:href|src)="(\/_build\/assets\/[^"]+)"/g),
-    ].map((m) => m[1]);
-    const assets = await caches.open(ASSETS);
-    await Promise.all(
-      [...new Set(urls)].map((u) => assets.add(u).catch(() => {}))
-    );
-  } catch {
-    // a missing page only weakens the offline shell
+// Fail on any non-200 response. Unhashed files skip the HTTP cache, so a
+// new version never stores an old copy.
+async function fetchOk(url) {
+  const hashed = url.startsWith("/_build/assets/");
+  const res = await fetch(url, { cache: hashed ? "default" : "reload" });
+  if (!res.ok) {
+    throw new Error(`${url}: ${res.status}`);
   }
+  return res;
 }
 
-// Every client chunk and stylesheet, so routes not linked from the shell
-// pages (like /story/:id) also load offline.
-async function cacheBuildManifestAssets() {
-  try {
-    const res = await fetch("/_build/.vite/manifest.json", { cache: "reload" });
-    if (!res.ok) {
-      return;
-    }
-    const files = Object.values(await res.json()).flatMap((entry) => [
-      entry.file,
-      ...(entry.css ?? []),
-    ]);
-    const assets = await caches.open(ASSETS);
-    await Promise.all(
-      [...new Set(files)].map((file) =>
-        assets.add(`/_build/${file}`).catch(() => {})
-      )
-    );
-  } catch {
-    // the shell pages still cache what they link to
-  }
+// Every client chunk and stylesheet in the Vite manifest, so routes not
+// linked from the shell pages (like /story/:id) also load offline.
+async function cacheAssets() {
+  const manifest = await (await fetchOk("/_build/.vite/manifest.json")).json();
+  const files = Object.values(manifest).flatMap((entry) => [
+    entry.file,
+    ...(entry.css ?? []),
+  ]);
+  const urls = [...new Set(files)].map((file) => `/_build/${file}`);
+  const assets = await caches.open(ASSETS);
+  await Promise.all(
+    [...urls, ...STATIC_FILES].map(async (url) =>
+      assets.put(url, await fetchOk(url))
+    )
+  );
+}
+
+async function cachePage(pathname) {
+  const pages = await caches.open(PAGES);
+  await pages.put(pathname, await fetchOk(pathname));
 }
 
 function withTimeout(promise, ms) {

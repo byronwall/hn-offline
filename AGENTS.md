@@ -66,6 +66,14 @@ Client stores (src/stores, created in contexts/AppDataContext.tsx)
   uncached page offline redirects to `/offline?next=<path>`, which routes
   back in the client so the story reads from IndexedDB. Test it against the
   production build: stop the server to go offline.
+- Deploys: install is all or nothing, so a failed precache keeps the old
+  worker. The client checks for a new worker each time the app becomes
+  visible. When one takes over, the page reloads the next time it is hidden,
+  never mid-read. A failed chunk load (`vite:preloadError`) reloads once.
+- IndexedDB: story reads and writes wait for `whenReady()`. Never call
+  `localForage()?.setItem`: before storage opens, it skips the write and
+  reports success. A persisted store whose load fails keeps retrying, and
+  never hydrates with defaults that the next write would save over real data.
 - Story page: on the client, `getContent` reads IndexedDB first, then the
   network. A failure returns `undefined`, and the page shows "not available".
   It never throws to the root error boundary.

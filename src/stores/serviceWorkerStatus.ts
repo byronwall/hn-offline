@@ -6,183 +6,107 @@ export type ServiceWorkerStatus =
   | "unsupported"
   | "registering"
   | "installing"
-  | "installed"
-  | "activating"
   | "active"
-  | "controllerchanged"
+  | "update-pending"
   | "error";
 
+const PRELOAD_RELOAD_KEY = "hn-preload-reload-at";
+
 export function createServiceWorkerStatusStore(addMessage: AddMessage) {
-  const initialStatus: ServiceWorkerStatus =
-    typeof navigator !== "undefined" && "serviceWorker" in navigator
-      ? "registering"
-      : "unsupported";
-
   const [serviceWorkerStatus, setServiceWorkerStatus] =
-    createSignal<ServiceWorkerStatus>(initialStatus);
-
+    createSignal<ServiceWorkerStatus>("registering");
   const [serviceWorkerVersion, setServiceWorkerVersion] = createSignal<
     string | undefined
   >(undefined);
-
   const [isOfflineMode, setIsOfflineMode] = createSignal<boolean>(false);
 
   const initializeServiceWorker = () => {
-    const skipDev = import.meta.env.PROD;
-    let cleanupServiceWorkerListeners: (() => void) | null = null;
-    let cleanupOnlineListeners: (() => void) | null = null;
-
-    if (typeof window === "undefined") {
-      return () => {};
-    }
-
-    if ("serviceWorker" in navigator && skipDev) {
-      let controllerChangeHandler: (() => void) | null = null;
-      let messageHandler: ((event: MessageEvent) => void) | null = null;
-
-      cleanupServiceWorkerListeners = () => {
-        if (controllerChangeHandler) {
-          navigator.serviceWorker.removeEventListener(
-            "controllerchange",
-            controllerChangeHandler
-          );
-        }
-        if (messageHandler) {
-          navigator.serviceWorker.removeEventListener(
-            "message",
-            messageHandler
-          );
-        }
-      };
-
-      void (async () => {
-        try {
-          const reg = await navigator.serviceWorker.register("/sw.js", {
-            scope: "/",
-          });
-
-          setServiceWorkerStatus("registering");
-
-          // If an active worker already exists (e.g., after reload), mark active immediately
-          if (reg.active || navigator.serviceWorker.controller) {
-            setServiceWorkerStatus("active");
-          }
-
-          // Ensure we mark active as soon as the SW is ready/controlling
-          navigator.serviceWorker.ready
-            .then(() => setServiceWorkerStatus("active"))
-            .catch(() => {});
-
-          // A new worker calls skipWaiting itself; this only tracks status.
-          reg.addEventListener("updatefound", () => {
-            const sw = reg.installing;
-            if (!sw) {
-              return;
-            }
-            setServiceWorkerStatus("installing");
-            sw.addEventListener("statechange", () => {
-              if (sw.state === "installed") {
-                setServiceWorkerStatus("installed");
-              }
-              if (sw.state === "activating") {
-                setServiceWorkerStatus("activating");
-              }
-              if (sw.state === "activated") {
-                setServiceWorkerStatus("active");
-              }
-            });
-          });
-
-          // The first install also fires controllerchange (clients.claim);
-          // reload only when a new version replaces an old one.
-          let hadController = !!navigator.serviceWorker.controller;
-          const handleControllerChange = () => {
-            setServiceWorkerStatus("controllerchanged");
-            if (hadController) {
-              window.location.reload();
-            }
-            hadController = true;
-          };
-          controllerChangeHandler = handleControllerChange;
-
-          navigator.serviceWorker.addEventListener(
-            "controllerchange",
-            handleControllerChange
-          );
-
-          const handleMessage = (event: MessageEvent) => {
-            const data = event.data as
-              | { type?: string; version?: string; online?: boolean }
-              | undefined;
-            if (!data || typeof data !== "object") {
-              return;
-            }
-            switch (data.type) {
-              case "SW_READY":
-                setServiceWorkerStatus("active");
-                break;
-              case "SW_VERSION":
-                if (data.version) {
-                  setServiceWorkerVersion(data.version);
-                }
-                break;
-              default:
-                break;
-            }
-          };
-          messageHandler = handleMessage;
-
-          navigator.serviceWorker.addEventListener("message", handleMessage);
-
-          // Request SW version proactively once controlling or ready
-          const requestVersion = () => {
-            try {
-              if (navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
-                  type: "GET_VERSION",
-                });
-              }
-            } catch (_) {
-              // no-op
-            }
-          };
-
-          if (navigator.serviceWorker.controller) {
-            requestVersion();
-          }
-          navigator.serviceWorker.ready.then(requestVersion).catch(() => {});
-        } catch (e) {
-          setServiceWorkerStatus("error");
-          // eslint-disable-next-line no-console
-          console.error("Service worker registration failed", e);
-        }
-      })();
-    } else {
-      setServiceWorkerStatus("unsupported");
-    }
-
-    // Track browser online/offline to toggle offline mode
-    try {
-      const onlineHandler = () => setIsOfflineMode(false);
-      const offlineHandler = () => setIsOfflineMode(true);
-
-      // Initialize from current navigator state
-      setIsOfflineMode(!navigator.onLine);
-      window.addEventListener("online", onlineHandler);
-      window.addEventListener("offline", offlineHandler);
-
-      cleanupOnlineListeners = () => {
-        window.removeEventListener("online", onlineHandler);
-        window.removeEventListener("offline", offlineHandler);
-      };
-    } catch (_) {
-      // no-op
-    }
-
-    return () => {
-      cleanupServiceWorkerListeners?.();
-      cleanupOnlineListeners?.();
+    const cleanups: Array<() => void> = [];
+    const listen = (
+      target: EventTarget,
+      type: string,
+      handler: (event: Event) => void
+    ) => {
+      target.addEventListener(type, handler);
+      cleanups.push(() => target.removeEventListener(type, handler));
     };
+
+    setIsOfflineMode(!navigator.onLine);
+    listen(window, "online", () => setIsOfflineMode(false));
+    listen(window, "offline", () => setIsOfflineMode(true));
+
+    // After a deploy, an old page asks for chunks the server no longer has.
+    // Reload once to get the new HTML; the timestamp stops a reload loop.
+    listen(window, "vite:preloadError", (event) => {
+      const last = Number(sessionStorage.getItem(PRELOAD_RELOAD_KEY) ?? 0);
+      if (Date.now() - last > 10_000) {
+        event.preventDefault();
+        sessionStorage.setItem(PRELOAD_RELOAD_KEY, String(Date.now()));
+        window.location.reload();
+      }
+    });
+
+    if (!("serviceWorker" in navigator) || !import.meta.env.PROD) {
+      setServiceWorkerStatus("unsupported");
+      return () => cleanups.forEach((cleanup) => cleanup());
+    }
+    const sw = navigator.serviceWorker;
+    const requestVersion = () =>
+      sw.controller?.postMessage({ type: "GET_VERSION" });
+
+    // A new worker means a new deploy: this page's code and server function
+    // ids are stale. Reload, but only while the page is hidden, so a reader
+    // is never yanked mid-thread. The first install (no old controller) also
+    // fires controllerchange and needs no reload.
+    let hadController = !!sw.controller;
+    let reloadPending = false;
+    listen(sw, "controllerchange", () => {
+      if (hadController) {
+        reloadPending = true;
+        setServiceWorkerStatus("update-pending");
+        if (document.visibilityState === "hidden") {
+          window.location.reload();
+        }
+      }
+      hadController = true;
+      requestVersion();
+    });
+
+    listen(sw, "message", (event) => {
+      const data = (event as MessageEvent).data as
+        | { type?: string; version?: string }
+        | undefined;
+      if (data?.type === "SW_VERSION" && data.version) {
+        setServiceWorkerVersion(data.version);
+      }
+    });
+
+    void sw
+      .register("/sw.js", { scope: "/" })
+      .then((reg) => {
+        setServiceWorkerStatus(reg.active ? "active" : "installing");
+        void sw.ready.then(() => {
+          setServiceWorkerStatus((s) => (s === "installing" ? "active" : s));
+          requestVersion();
+        });
+
+        // An installed PWA can stay open for days with no navigation, and
+        // browsers check for a new worker only on navigation. Check each time
+        // the app comes back to the front.
+        listen(document, "visibilitychange", () => {
+          if (document.visibilityState === "hidden" && reloadPending) {
+            window.location.reload();
+          } else if (document.visibilityState === "visible") {
+            void reg.update().catch(() => {});
+          }
+        });
+      })
+      .catch((error: unknown) => {
+        setServiceWorkerStatus("error");
+        console.error("Service worker registration failed", error);
+      });
+
+    return () => cleanups.forEach((cleanup) => cleanup());
   };
 
   createEffect(() => {
@@ -190,10 +114,9 @@ export function createServiceWorkerStatusStore(addMessage: AddMessage) {
   });
 
   createEffect(() => {
-    const offline = isOfflineMode();
     addMessage(
       "offline",
-      offline ? "Entered offline mode" : "Exited offline mode"
+      isOfflineMode() ? "Entered offline mode" : "Exited offline mode"
     );
   });
 
@@ -201,9 +124,6 @@ export function createServiceWorkerStatusStore(addMessage: AddMessage) {
     serviceWorkerStatus,
     serviceWorkerVersion,
     isOfflineMode,
-    setServiceWorkerStatus,
-    setServiceWorkerVersion,
-    setIsOfflineMode,
     initializeServiceWorker,
   };
 }
