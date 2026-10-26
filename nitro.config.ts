@@ -1,8 +1,8 @@
 export default {
   routeRules: {
-    "/_build/sw.js": {
+    // Always revalidate the service worker so new versions install.
+    "/sw.js": {
       headers: {
-        "Service-Worker-Allowed": "/",
         "Cache-Control": "no-cache",
       },
     },

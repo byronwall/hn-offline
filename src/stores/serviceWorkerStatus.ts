@@ -57,7 +57,7 @@ export function createServiceWorkerStatusStore(addMessage: AddMessage) {
 
       void (async () => {
         try {
-          const reg = await navigator.serviceWorker.register("/_build/sw.js", {
+          const reg = await navigator.serviceWorker.register("/sw.js", {
             scope: "/",
           });
 
