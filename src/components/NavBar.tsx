@@ -57,7 +57,7 @@ export function NavBar() {
               { "animate-spin text-orange-500": dataStore.isLoadingData() }
             )}
           >
-            <Shell size="32" color="black" />
+            <Shell width="32" height="32" />
           </div>
         </div>
       </div>

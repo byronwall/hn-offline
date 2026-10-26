@@ -152,12 +152,9 @@ export function useStoryUiStore() {
   return useAppData().storyUi;
 }
 
-export function useRelativeTimeTick() {
-  return useAppData().relativeTimeTick;
-}
-
+// Relative times ("5min") re-render when the app regains focus.
 export function useRelativeTime() {
-  const relativeTimeTick = useRelativeTimeTick();
+  const relativeTimeTick = useAppData().relativeTimeTick;
 
   return (date: number | undefined, addAgo: boolean = false) => {
     relativeTimeTick();

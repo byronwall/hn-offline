@@ -4,7 +4,7 @@ import type { AddMessage } from "./messages";
 import type { Accessor } from "solid-js";
 import type { StoryPage } from "~/models/interfaces";
 
-export type RefreshTimestampStore = Record<StoryPage, number>;
+type RefreshTimestampStore = Record<StoryPage, number>;
 
 export function createRefreshStore(
   addMessage: AddMessage,

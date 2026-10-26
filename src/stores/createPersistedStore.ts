@@ -1,12 +1,13 @@
 import { type Accessor, createEffect, createSignal, onCleanup } from "solid-js";
 import { createStore, unwrap } from "solid-js/store";
 
+import { withRetries } from "./withRetries";
+
 export function createPersistedStore<T extends object>(
   name: string,
   initialValue: T,
   localForage: Accessor<LocalForage | undefined>
 ) {
-  console.log("*** createPersistedStore", { name, initialValue, localForage });
   const [store, rawSetStore] = createStore(initialValue);
 
   const [hasHydratedFromStorage, setHasHydratedFromStorage] =
@@ -25,40 +26,10 @@ export function createPersistedStore<T extends object>(
     pendingMutations.push(mutation);
   };
 
-  const wait = (delayMs: number) =>
-    new Promise<void>((resolve) => {
-      setTimeout(resolve, delayMs);
+  const retry = <R>(operation: () => Promise<R>) =>
+    withRetries(operation, (attempt, delayMs) => {
+      console.warn("localForage retry", { name, attempt, delayMs });
     });
-
-  const withLocalForageRetries = async <R>(
-    operationName: string,
-    operation: () => Promise<R>,
-    maxAttempts = 3
-  ): Promise<R> => {
-    let latestError: unknown;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      try {
-        return await operation();
-      } catch (error) {
-        latestError = error;
-        if (attempt >= maxAttempts) {
-          break;
-        }
-
-        const delayMs = 250 * 2 ** (attempt - 1);
-        console.warn("*** localForage retry", {
-          name,
-          operationName,
-          attempt,
-          delayMs,
-        });
-        await wait(delayMs);
-      }
-    }
-
-    throw latestError;
-  };
 
   const persistSnapshot = async (
     lf: LocalForage | undefined,
@@ -70,9 +41,7 @@ export function createPersistedStore<T extends object>(
     }
 
     try {
-      await withLocalForageRetries("setItem", async () => {
-        await lf.setItem(name, snapshot);
-      });
+      await retry(() => lf.setItem(name, snapshot));
       setPendingPersistValue(() => undefined);
       return true;
     } catch (error) {
@@ -86,13 +55,10 @@ export function createPersistedStore<T extends object>(
     keyOrNewStore: K | T | ((currentStore: T) => T),
     value?: T[K]
   ) => {
-    console.log("*** setting store", name, keyOrNewStore, value);
-
     // handle setting the store via a function
     if (typeof keyOrNewStore === "function") {
       const mutation = keyOrNewStore as (currentStore: T) => T;
       const newStore = mutation(unwrap(store));
-      console.log("*** newStore", newStore);
       rawSetStore(newStore);
       if (hasHydratedFromStorage()) {
         await persistSnapshot(localForage(), newStore);
@@ -105,7 +71,6 @@ export function createPersistedStore<T extends object>(
     // handle setting the whole store
     if (typeof keyOrNewStore === "object") {
       const newStore = unwrap(keyOrNewStore);
-      console.log("*** keyOrNewStore", newStore);
       rawSetStore(newStore);
       if (hasHydratedFromStorage()) {
         await persistSnapshot(localForage(), newStore);
@@ -117,7 +82,6 @@ export function createPersistedStore<T extends object>(
     }
 
     // handle setting a single key
-    console.log("setting store", name, keyOrNewStore, value);
     rawSetStore(keyOrNewStore as any, value);
     const mutation = (currentStore: T) => ({
       ...currentStore,
@@ -140,21 +104,14 @@ export function createPersistedStore<T extends object>(
     void (async () => {
       let initialValueFromStorage: T | undefined;
       try {
-        initialValueFromStorage = (await withLocalForageRetries(
-          "getItem",
-          async () => (await lf.getItem(name)) as T
-        )) as T;
+        initialValueFromStorage =
+          (await retry(() => lf.getItem<T>(name))) ?? undefined;
       } catch (error) {
         console.error("*** hydration failed", { name, error });
       }
       if (cancelled) {
         return;
       }
-      console.log(
-        "*** initial value from local forage in resource",
-        name,
-        initialValueFromStorage
-      );
       setStorageSnapshot({ value: initialValueFromStorage, loaded: true });
     })();
     onCleanup(() => {
@@ -168,8 +125,6 @@ export function createPersistedStore<T extends object>(
     if (!lf || !snapshot.loaded || hasHydratedFromStorage()) {
       return;
     }
-
-    console.log("*** creating effect to set data", name, snapshot.value);
 
     const base = snapshot.value ?? initialValue;
     let merged = base;

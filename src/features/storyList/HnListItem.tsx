@@ -16,11 +16,9 @@ export function HnListItem(props: HnStoryProps) {
   const relativeTime = useRelativeTime();
   const isRead = () => readItemsStore.readItems[props.data.id] !== undefined;
 
-  const handleAnimationEnd = (e: AnimationEvent) => {
-    console.warn("*** handleAnimationEnd", props.recentFadeOut);
-    if (props.recentFadeOut && props.onFadeComplete) {
-      console.log("*** handleAnimationEnd", props.recentFadeOut);
-      props.onFadeComplete();
+  const handleAnimationEnd = () => {
+    if (props.recentFadeOut) {
+      props.onFadeComplete?.();
     }
   };
 

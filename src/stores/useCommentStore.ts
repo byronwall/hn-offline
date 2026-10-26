@@ -8,7 +8,7 @@ import { findNextSibling } from "./findNextSibling";
 import type { AddMessage } from "./messages";
 import type { createStoryUiStore } from "./storyUiStore";
 
-export type CollapsedTimestampMap = Record<number, number>;
+type CollapsedTimestampMap = Record<number, number>;
 
 export function createCommentStore(params: {
   addMessage: AddMessage;

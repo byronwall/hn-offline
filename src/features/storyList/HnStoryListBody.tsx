@@ -3,7 +3,6 @@ import { createMemo, Show } from "solid-js";
 
 import { PullToRefresh } from "~/components/PullToRefresh";
 import { useDataStore } from "~/contexts/AppDataContext";
-import { useSortFunction } from "~/hooks/useSortFunction";
 
 import { HnStoryListItems } from "./HnStoryListItems";
 import { HnStoryListRefreshBar } from "./HnStoryListRefreshBar";
@@ -31,8 +30,11 @@ export function HnStoryListBody(props: HnStoryListBodyProps) {
     if (!items) {
       return undefined;
     }
-    const sortType = props.page === "topstories" ? undefined : "score";
-    return useSortFunction(items, sortType) ?? [];
+    // top stories keep HN's rank; day and week lists sort by score
+    if (props.page === "topstories") {
+      return items;
+    }
+    return items.slice().sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   });
 
   return (

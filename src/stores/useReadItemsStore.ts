@@ -5,7 +5,7 @@ import { createPersistedStore } from "./createPersistedStore";
 
 import type { AddMessage } from "./messages";
 
-export type TimestampHash = Record<number, number>;
+type TimestampHash = Record<number, number>;
 
 export type ReadItemsStore = ReturnType<typeof createReadItemsStore>;
 
@@ -13,7 +13,6 @@ export function createReadItemsStore(
   addMessage: AddMessage,
   localForage: Accessor<LocalForage | undefined>
 ) {
-  console.log("*** createReadItemsStore", { addMessage, localForage });
   const [readSettings, setReadSettings] = createPersistedStore(
     "READ_SETTINGS",
     {
@@ -72,8 +71,6 @@ export function createReadItemsStore(
 
     setReadItems(id, Date.now());
   };
-
-  console.log("*** createReadItemsStore returning");
 
   return {
     readSettings,

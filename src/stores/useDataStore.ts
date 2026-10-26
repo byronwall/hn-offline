@@ -10,6 +10,7 @@ import { validateHnItemWithComments } from "~/lib/validation";
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 
 import { createPersistedStore } from "./createPersistedStore";
+import { withRetries } from "./withRetries";
 
 import type { AddMessage } from "./messages";
 import type { createStoryUiStore } from "./storyUiStore";
@@ -25,7 +26,7 @@ type PersistedStoryList = {
   data: HnStorySummary[];
 };
 
-export type StoryListStore = Record<StoryPage, PersistedStoryList>;
+type StoryListStore = Record<StoryPage, PersistedStoryList>;
 
 export type ContentForPage =
   | {
@@ -54,41 +55,17 @@ export function createDataStore(params: {
   refreshStore: ReturnType<typeof createRefreshStore>;
   storyUi: ReturnType<typeof createStoryUiStore>;
 }) {
-  const wait = (delayMs: number) =>
-    new Promise<void>((resolve) => {
-      setTimeout(resolve, delayMs);
+  const retry = <T>(operationName: string, operation: () => Promise<T>) =>
+    withRetries(operation, (attempt, delayMs) => {
+      params.addMessage("localforage", `${operationName} retry`, {
+        attempt,
+        delayMs,
+      });
     });
-
-  const withLocalForageRetries = async <T>(
-    operationName: string,
-    operation: () => Promise<T>,
-    maxAttempts = 3
-  ): Promise<T> => {
-    let latestError: unknown;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      try {
-        return await operation();
-      } catch (error) {
-        latestError = error;
-        if (attempt >= maxAttempts) {
-          break;
-        }
-        const delayMs = 250 * 2 ** (attempt - 1);
-        params.addMessage("localforage", `${operationName} retry`, {
-          attempt,
-          delayMs,
-        });
-        await wait(delayMs);
-      }
-    }
-
-    throw latestError;
-  };
 
   const safeGetItem = async <T>(key: string): Promise<T | undefined> => {
     try {
-      const value = await withLocalForageRetries(
+      const value = await retry(
         "getItem",
         async () => await params.localForage()?.getItem<T>(key)
       );
@@ -102,7 +79,7 @@ export function createDataStore(params: {
 
   const safeSetItem = async <T>(key: string, value: T): Promise<boolean> => {
     try {
-      await withLocalForageRetries("setItem", async () => {
+      await retry("setItem", async () => {
         await params.localForage()?.setItem(key, value);
       });
       return true;
@@ -115,7 +92,7 @@ export function createDataStore(params: {
 
   const safeRemoveItem = async (key: string): Promise<void> => {
     try {
-      await withLocalForageRetries("removeItem", async () => {
+      await retry("removeItem", async () => {
         await params.localForage()?.removeItem(key);
       });
     } catch (error) {
@@ -173,8 +150,6 @@ export function createDataStore(params: {
     // Map raw items to summaries for list storage
     const storySummaries = mapStoriesToSummaries(data);
 
-    console.log("*** storySummaries", storySummaries);
-
     if (!storySummaries) {
       throw new Error("storySummaries is undefined");
     }
@@ -192,8 +167,6 @@ export function createDataStore(params: {
       ...storySummaries.map((item) => item.lastUpdated ?? 0),
       0
     );
-
-    console.log("*** current", current);
 
     const shouldOverwrite =
       !current ||
@@ -240,8 +213,6 @@ export function createDataStore(params: {
 
   // Remove stories that are not in current lists or recently read
   const purgeLocalForage = async () => {
-    console.log("*** purging localforage");
-
     params.addMessage("purge", "purgeLocalForage init");
 
     const idsToKeep = new Set<number>();
@@ -263,7 +234,7 @@ export function createDataStore(params: {
 
     let keys: string[] | undefined;
     try {
-      keys = await withLocalForageRetries(
+      keys = await retry(
         "keys",
         async () => await params.localForage()?.keys()
       );
@@ -279,7 +250,6 @@ export function createDataStore(params: {
     // Remove legacy/accidental keys that contain a slash
     const badKeys = keys.filter((key) => key.includes("/"));
     for (const key of badKeys) {
-      console.log("removing bad key", key);
       await safeRemoveItem(key);
     }
 
@@ -291,11 +261,9 @@ export function createDataStore(params: {
 
     // Delete any raw_* entries that are not in idsToKeep
     const rawKeys = keys.filter((key) => key.startsWith("raw_"));
-    console.log("raw keys:", rawKeys.length, "ids to keep:", idsToKeep.size);
     for (const key of rawKeys) {
       const id = Number(key.replace("raw_", ""));
       if (!idsToKeep.has(id)) {
-        console.log("deleting", id);
         await safeRemoveItem(key);
       }
     }
@@ -319,15 +287,10 @@ export function createDataStore(params: {
     id: StoryId,
     options?: { allowNetwork?: boolean }
   ) => {
-    console.log("*** getContent", id, params.localForage());
-
     const item = await safeGetItem<HnItem>("raw_" + id);
-
-    console.log("*** item", item);
 
     if (item) {
       params.addMessage("getContent", "found item in localforage", { id });
-      console.log("found item in localforage", item);
       return item;
     }
 
@@ -357,7 +320,6 @@ export function createDataStore(params: {
       return { type: "summaryOnly", data: list.data };
     }
 
-    console.log("*** no list found, fetching from api", page);
     params.refreshStore.setRefreshRequestedTimestamp(page);
 
     const data = await fetchAllStoryDataForPage(page, {
@@ -373,7 +335,6 @@ export function createDataStore(params: {
   );
 
   const refreshActive = async () => {
-    console.log("*** refreshActive", refreshType());
     params.addMessage("refreshActive", "refreshActive", {
       refreshType: refreshType(),
     });

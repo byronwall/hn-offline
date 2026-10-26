@@ -51,7 +51,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       return;
     }
     // Track most recently read for list fade-out UX on back nav
-    console.warn("*** setting recently read id", props.id);
     readItemsStore.setRecentlyReadId(props.id);
     readItemsStore.saveIdToReadList(props.id);
   });

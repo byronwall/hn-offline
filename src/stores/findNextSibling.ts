@@ -42,7 +42,6 @@ export function findNextSibling(
 
     if (nextSiblingId === -2) {
       if (!collapsedTimestamps[comment.id]) {
-        console.log("next parent", nextParentId, comment.id);
         return comment.id;
       }
       continue;
