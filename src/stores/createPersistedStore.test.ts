@@ -110,13 +110,17 @@ describe("createPersistedStore", () => {
     cleanup();
   });
 
-  it("does not throw when hydration or persistence fails", async () => {
-    const getItem = vi.fn().mockRejectedValue(new Error("indexedDB failed"));
-    const setItem = vi.fn().mockRejectedValue(new Error("indexedDB failed"));
-    const mockLocalForage = {
-      getItem,
-      setItem,
-    } as unknown as LocalForage;
+  it("keeps saved data when the first loads fail", async () => {
+    const fail = new Error("indexedDB failed");
+    const getItem = vi
+      .fn()
+      .mockRejectedValueOnce(fail)
+      .mockRejectedValueOnce(fail)
+      .mockRejectedValueOnce(fail)
+      .mockRejectedValueOnce(fail)
+      .mockResolvedValue({ a: 7, b: 0 });
+    const setItem = vi.fn().mockResolvedValue(undefined);
+    const mockLocalForage = { getItem, setItem } as unknown as LocalForage;
 
     const { result, owner, cleanup } = renderHook(() => {
       const [localForage, setLocalForage] = createSignal<
@@ -124,21 +128,16 @@ describe("createPersistedStore", () => {
       >(undefined);
       const [store, setStore, hasHydrated] = createPersistedStore(
         "TEST_STORE_FAIL",
-        { a: 0 },
+        { a: 0, b: 0 },
         localForage
       );
-
-      return {
-        store,
-        setStore,
-        hasHydrated,
-        setLocalForage,
-      };
+      return { store, setStore, hasHydrated, setLocalForage };
     });
 
     runWithOwner(owner, () => {
       result.setLocalForage(mockLocalForage);
     });
+    await result.setStore("b", 5);
 
     await new Promise<void>((resolve) => {
       runWithOwner(owner, () => {
@@ -150,9 +149,12 @@ describe("createPersistedStore", () => {
       });
     });
 
-    await expect(result.setStore("a", 5)).resolves.toBeUndefined();
-    expect(result.store.a).toBe(5);
+    // The write waited for the real value instead of replacing it.
+    expect(getItem).toHaveBeenCalledTimes(5);
+    expect(result.store).toEqual({ a: 7, b: 5 });
+    expect(setItem).toHaveBeenCalledTimes(1);
+    expect(setItem).toHaveBeenCalledWith("TEST_STORE_FAIL", { a: 7, b: 5 });
 
     cleanup();
-  });
+  }, 10_000);
 });

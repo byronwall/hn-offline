@@ -23,6 +23,7 @@ export function createLocalDataStore(params: {
   const data = createDataStore({
     addMessage: params.addMessage,
     localForage: localForage.localForage,
+    whenReady: localForage.whenReady,
     readItemsStore: readItems,
     refreshStore: refresh,
     storyUi: params.storyUi,

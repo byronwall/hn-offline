@@ -1,47 +1,22 @@
-import { readFile, writeFile, stat } from "node:fs/promises";
-import path from "node:path";
+// Write public/sw.js from src/sw.js with a fresh VERSION, before the build.
+// A new version makes browsers install the new worker, which precaches the
+// new build's chunks and drops the old caches. Nitro then serves, compresses,
+// and fingerprints the stamped file like any other public asset.
+import { readFile, writeFile } from "node:fs/promises";
 
-async function stampFile(swPath, timestamp) {
-  try {
-    await stat(swPath);
-  } catch (_) {
-    return false;
-  }
+const src = await readFile("src/sw.js", "utf8");
+const version = `v${Date.now()}`;
+const out = src.replace(
+  /const VERSION = "dev";/,
+  `const VERSION = "${version}";`
+);
 
-  const content = await readFile(swPath, "utf8");
-  const replaced = content.replace(
-    /const\s+VERSION\s*=\s*(['"])\S*\1;/,
-    (_m, quote) => `const VERSION = ${quote}v${timestamp}${quote};`
+if (out === src) {
+  throw new Error(
+    'stamp-sw-version: `const VERSION = "dev";` not found in src/sw.js'
   );
-
-  if (replaced === content) {
-    // eslint-disable-next-line no-console
-    console.warn(`stamp-sw-version: VERSION pattern not found in ${swPath}`);
-    return false;
-  }
-
-  await writeFile(swPath, replaced);
-  // eslint-disable-next-line no-console
-  console.log(`Stamped service worker version in ${swPath}: v${timestamp}`);
-  return true;
 }
 
-async function main() {
-  const timestamp = Date.now();
-  const candidates = [
-    path.join(process.cwd(), ".output", "public", "sw.js"),
-    path.join(process.cwd(), ".output", "public", "_build", "sw.js"),
-    path.join(process.cwd(), "public", "sw.js"),
-  ];
-
-  const results = await Promise.all(
-    candidates.map((p) => stampFile(p, timestamp))
-  );
-
-  if (!results.some(Boolean)) {
-    // eslint-disable-next-line no-console
-    console.warn("stamp-sw-version: skipping (no sw.js found or no matches)");
-  }
-}
-
-main();
+await writeFile("public/sw.js", out);
+// eslint-disable-next-line no-console
+console.log(`Stamped public/sw.js: ${version}`);

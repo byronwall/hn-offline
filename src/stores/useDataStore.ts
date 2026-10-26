@@ -11,6 +11,7 @@ import { validateHnItemWithComments } from "~/lib/validation";
 import { HnItem, HnStorySummary } from "~/models/interfaces";
 
 import { createPersistedStore } from "./createPersistedStore";
+import { dropConnection } from "./localforage";
 import { withRetries } from "./withRetries";
 
 import type { AddMessage } from "./messages";
@@ -55,24 +56,35 @@ type RefreshType =
 export function createDataStore(params: {
   addMessage: AddMessage;
   localForage: Accessor<LocalForage | undefined>;
+  whenReady: () => Promise<LocalForage | undefined>;
   readItemsStore: ReadItemsStore;
   refreshStore: ReturnType<typeof createRefreshStore>;
   storyUi: ReturnType<typeof createStoryUiStore>;
 }) {
-  const retry = <T>(operationName: string, operation: () => Promise<T>) =>
-    withRetries(operation, (attempt, delayMs) => {
-      params.addMessage("localforage", `${operationName} retry`, {
-        attempt,
-        delayMs,
-      });
-    });
+  // Wait for storage to open, then run with retries.
+  const retry = async <T>(
+    operationName: string,
+    operation: (lf: LocalForage) => Promise<T>
+  ) => {
+    const lf = await params.whenReady();
+    if (!lf) {
+      throw new Error("IndexedDB did not open");
+    }
+    return withRetries(
+      () => operation(lf),
+      (attempt, delayMs, error) => {
+        dropConnection(lf, error);
+        params.addMessage("localforage", `${operationName} retry`, {
+          attempt,
+          delayMs,
+        });
+      }
+    );
+  };
 
   const safeGetItem = async <T>(key: string): Promise<T | undefined> => {
     try {
-      const value = await retry(
-        "getItem",
-        async () => await params.localForage()?.getItem<T>(key)
-      );
+      const value = await retry("getItem", (lf) => lf.getItem<T>(key));
       return value ?? undefined;
     } catch (error) {
       console.error("*** localForage getItem failed", { key, error });
@@ -83,9 +95,7 @@ export function createDataStore(params: {
 
   const safeSetItem = async <T>(key: string, value: T): Promise<boolean> => {
     try {
-      await retry("setItem", async () => {
-        await params.localForage()?.setItem(key, value);
-      });
+      await retry("setItem", (lf) => lf.setItem(key, value));
       return true;
     } catch (error) {
       console.error("*** localForage setItem failed", { key, error });
@@ -96,9 +106,7 @@ export function createDataStore(params: {
 
   const safeRemoveItem = async (key: string): Promise<void> => {
     try {
-      await retry("removeItem", async () => {
-        await params.localForage()?.removeItem(key);
-      });
+      await retry("removeItem", (lf) => lf.removeItem(key));
     } catch (error) {
       console.error("*** localForage removeItem failed", { key, error });
       params.addMessage("localforage", "removeItem failed", { key });
@@ -222,10 +230,7 @@ export function createDataStore(params: {
 
     let keys: string[] | undefined;
     try {
-      keys = await retry(
-        "keys",
-        async () => await params.localForage()?.keys()
-      );
+      keys = await retry("keys", (lf) => lf.keys());
     } catch (error) {
       console.error("*** localForage keys failed", { error });
       params.addMessage("localforage", "keys failed");
