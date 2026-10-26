@@ -33,20 +33,22 @@ This is a simple web app to read Hacker News comments by storing a local copy. A
   - There is logic to minimize collisions within a tree and between nearby comments.
 - There is a "subway style" connector to show when comments are replying to each other.
 - List of already read stories is saved to local storage.
-  - Default view will hide already read stories from lists.
+  - A toggle at the top of each list hides read stories.
+  - Read stories show how many comments are new since you read them.
+- Comments posted since your last visit are marked "new". A floating button jumps to the next new comment, and another skips to the next thread.
 
 ## How It Works
 
-This is a simple web app. Currently built in Remix. There are two APIs which are consumed:
+This is a simple web app built with SolidStart. There are two APIs which are consumed:
 
 - Official HN API, via Firebase - used to load front page list, story, and comment details
 - Algolia HN search results - for the top day and week stories
 
 The server has a simple timer which triggers every 10 minutes to check for updates for the front page. The day and week lists update less frequently. There's additional logic to only reload the comments for a story if enough time has elapsed from the previous update.
 
-The client is a MPA built in React with Remix. The bulk of the code is data management and controlling the view when comments are collapsed.
+The client is SolidJS. List pages render story summaries on the server, then the client fetches every story with its comments in the background and stores them in IndexedDB for offline reading. The bulk of the code is data management and controlling the view when comments are collapsed.
 
-Built in Typescript.
+Built in TypeScript. See `AGENTS.md` for commands and the code map.
 
 ## Self Host
 
