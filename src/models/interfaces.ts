@@ -13,14 +13,12 @@ export interface TopStories extends HasTime {
   id: TopStoriesType;
 }
 
-export interface ItemExt extends Item, HasTime {
-  firstLayerOnly?: boolean;
-}
+export interface ItemExt extends Item, HasTime {}
 
-export const STORY_TYPE = ["topstories", "day", "week", "month"] as const;
+export const STORY_TYPE = ["topstories", "day", "week"] as const;
 export type TopStoriesType = (typeof STORY_TYPE)[number];
 
-export type StoryPage = "topstories" | "day" | "week";
+export type StoryPage = TopStoriesType;
 
 export interface Item {
   /**

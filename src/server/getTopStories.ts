@@ -1,18 +1,18 @@
-import { STORY_TYPE } from "~/models/interfaces";
+import { STORY_TYPE, type TopStoriesType } from "~/models/interfaces";
 
-import { cachedData } from "./server";
+import { getItem, getList } from "./database";
 
-export async function getTopStories(type: string) {
-  "use server";
-
-  if (!type || STORY_TYPE.indexOf(type as any) === -1) {
-    console.log("sending 500", type);
+// The stories on a list, straight from the DB. Stale stories are still
+// served; the refresh loop replaces them.
+export function getTopStories(type: TopStoriesType) {
+  if (!STORY_TYPE.includes(type)) {
     throw new Error(
-      "Invalid type " + type + " expected one of " + STORY_TYPE.join(", ")
+      `Invalid type ${type}, expected one of ${STORY_TYPE.join(", ")}`
     );
   }
 
-  const results = cachedData[type] ?? [];
-
-  return results;
+  const ids = getList(type)?.items ?? [];
+  return ids
+    .map((id) => getItem(id, { allowStale: true }))
+    .filter((item) => item !== null);
 }
