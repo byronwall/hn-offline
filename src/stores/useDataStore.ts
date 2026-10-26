@@ -177,7 +177,6 @@ export function createDataStore(params: {
       page,
       ids,
     });
-    params.refreshStore.setRefreshTimestamp(page);
   };
 
   // Save a list page and every full story on it for offline reading.
@@ -188,6 +187,10 @@ export function createDataStore(params: {
     });
 
     await saveListSummaries(page, data);
+    // The client just got this list from the server, changed or not.
+    if (data.length > 0) {
+      params.refreshStore.setRefreshTimestamp(page);
+    }
 
     // Persist raw items individually for detail pages, in parallel.
     const validItems = data.filter((item) => {
@@ -328,8 +331,6 @@ export function createDataStore(params: {
       return { type: "summaryOnly", data: listStories(page) };
     }
 
-    params.refreshStore.setRefreshRequestedTimestamp(page);
-
     const data = await fetchAllStoryDataForPage(page, {
       addMessage: params.addMessage,
       persistStoryList,
@@ -359,10 +360,6 @@ export function createDataStore(params: {
 
     try {
       if (type.type === "storyList") {
-        params.addMessage("refresh", "refreshRequested init", {
-          page: type.page,
-        });
-        params.refreshStore.setRefreshRequestedTimestamp(type.page);
         params.addMessage("refresh", "refreshRequested", { page: type.page });
         const pageData = await fetchAllStoryDataForPage(type.page, {
           force: true,
@@ -400,7 +397,6 @@ export function createDataStore(params: {
 
     // SSR ships summaries only, to keep the HTML small. Show them now, then
     // fetch the full stories in the background for offline reading.
-    params.refreshStore.setRefreshRequestedTimestamp(page);
     void saveListSummaries(page, latest.result.data);
     void fetchAllStoryDataForPage(page, {
       addMessage: params.addMessage,
