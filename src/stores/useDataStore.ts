@@ -1,4 +1,4 @@
-import { type Accessor, createSignal } from "solid-js";
+import { type Accessor, createEffect, createSignal } from "solid-js";
 
 import { convertPathToStoryPage } from "~/lib/convertPathToStoryPage";
 import { fetchObjById } from "~/lib/getContentViaFetch";
@@ -22,10 +22,12 @@ import type { WithServerInfo } from "~/server/queries";
 
 export type StoryId = number;
 
+// A list page is only an ordered list of ids. The story data itself lives
+// once, in STORY_SUMMARIES, so Top/Day/Week always show the same numbers.
 type PersistedStoryList = {
   serverUpdateTimestamp: number;
   page: StoryPage;
-  data: HnStorySummary[];
+  ids: number[];
 };
 
 type StoryListStore = Record<StoryPage, PersistedStoryList>;
@@ -103,70 +105,71 @@ export function createDataStore(params: {
     }
   };
 
-  const [storyListStore, setStoryListStore] = createPersistedStore(
-    "STORY_LIST_STORE",
-    {} as StoryListStore,
-    params.localForage
-  );
+  const [storyListStore, setStoryListStore, listsHydrated] =
+    createPersistedStore(
+      "STORY_LIST_STORE",
+      {} as StoryListStore,
+      params.localForage
+    );
 
-  const didStoryListChange = (
-    current: PersistedStoryList | undefined,
-    next: HnStorySummary[]
-  ) => {
-    if (!current) {
-      return true;
-    }
+  // One record per story, shared by every list and the story page.
+  const [storySummaries, setStorySummaries, summariesHydrated] =
+    createPersistedStore(
+      "STORY_SUMMARIES",
+      {} as Record<number, HnStorySummary>,
+      params.localForage
+    );
 
-    if (current.data.length !== next.length) {
-      return true;
-    }
-
-    return next.some((item, index) => {
-      const existing = current.data[index];
-      if (!existing) {
-        return true;
+  // Merge fresh story data into the shared records; newest lastUpdated wins.
+  const upsertSummaries = (stories: (HnItem | HnStorySummary)[]) => {
+    const changed: Record<number, HnStorySummary> = {};
+    for (const story of mapStoriesToSummaries(stories) ?? []) {
+      const current = storySummaries[story.id];
+      if (!current || (story.lastUpdated ?? 0) >= (current.lastUpdated ?? 0)) {
+        changed[story.id] = story;
       }
-
-      return (
-        existing.id !== item.id || existing.lastUpdated !== item.lastUpdated
-      );
-    });
+    }
+    if (Object.keys(changed).length > 0) {
+      void setStorySummaries((current) => ({ ...current, ...changed }));
+    }
   };
 
-  // Save the list of summaries shown on a list page, if it is new.
+  // The stories on a list page, in list order, from the shared records.
+  const listStories = (page: StoryPage) =>
+    (storyListStore[page]?.ids ?? [])
+      .map((id) => storySummaries[id])
+      .filter((story): story is HnStorySummary => story !== undefined);
+
+  // Save a list page: its stories into the shared records, its order here.
   const saveListSummaries = async (
     page: StoryPage,
-    storySummaries: HnStorySummary[]
+    stories: (HnItem | HnStorySummary)[]
   ) => {
-    if (storySummaries.length === 0) {
+    if (stories.length === 0) {
+      return;
+    }
+    upsertSummaries(stories);
+
+    const ids = stories.map((story) => story.id);
+    const incomingTimestamp = Math.max(
+      ...stories.map((story) => story.lastUpdated ?? 0),
+      0
+    );
+    const current = storyListStore[page];
+    const changed =
+      !current?.ids ||
+      incomingTimestamp > current.serverUpdateTimestamp ||
+      ids.join() !== current.ids.join();
+    if (!changed) {
       return;
     }
 
-    const current = storyListStore[page];
-    const incomingTimestamp = Math.max(
-      ...storySummaries.map((item) => item.lastUpdated ?? 0),
-      0
-    );
-
-    const shouldOverwrite =
-      !current ||
-      incomingTimestamp > (current.serverUpdateTimestamp ?? 0) ||
-      didStoryListChange(current, storySummaries);
-
-    if (shouldOverwrite) {
-      // save if none or if the incoming timestamp is newer
-      params.addMessage("persist", "persistStoryList over store", {
-        page,
-        incomingTimestamp,
-        currentTimestamp: current?.serverUpdateTimestamp,
-      });
-      await setStoryListStore(page, {
-        serverUpdateTimestamp: incomingTimestamp,
-        page,
-        data: storySummaries,
-      });
-      params.refreshStore.setRefreshTimestamp(page);
-    }
+    await setStoryListStore(page, {
+      serverUpdateTimestamp: incomingTimestamp,
+      page,
+      ids,
+    });
+    params.refreshStore.setRefreshTimestamp(page);
   };
 
   // Save a list page and every full story on it for offline reading.
@@ -176,7 +179,7 @@ export function createDataStore(params: {
       count: data.length,
     });
 
-    await saveListSummaries(page, mapStoriesToSummaries(data) ?? []);
+    await saveListSummaries(page, data);
 
     // Persist raw items individually for detail pages, in parallel.
     const validItems = data.filter((item) => {
@@ -203,11 +206,9 @@ export function createDataStore(params: {
     params.addMessage("purge", "purgeLocalForage init");
 
     const idsToKeep = new Set<number>();
-    for (const page in storyListStore) {
-      const persistedList = storyListStore[page as StoryPage];
-
-      for (const item of persistedList.data) {
-        idsToKeep.add(item.id);
+    for (const list of Object.values(storyListStore)) {
+      for (const id of list?.ids ?? []) {
+        idsToKeep.add(id);
       }
     }
 
@@ -255,6 +256,13 @@ export function createDataStore(params: {
       }
     }
 
+    // Shared story records follow the same rule.
+    void setStorySummaries((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([id]) => idsToKeep.has(Number(id)))
+      )
+    );
+
     params.addMessage("purge", "purgeLocalForage done");
   };
 
@@ -287,10 +295,12 @@ export function createDataStore(params: {
 
     // Offline or a bad id: show "not available" instead of crashing the route.
     try {
-      return await fetchObjById(id, {
+      const story = await fetchObjById(id, {
         addMessage: params.addMessage,
         persistStoryToStorage,
       });
+      upsertSummaries([story]);
+      return story;
     } catch (error) {
       console.error("getContent failed", { id, error });
       return undefined;
@@ -308,9 +318,9 @@ export function createDataStore(params: {
 
     const list = storyListStore[page as StoryPage];
 
-    if (list) {
+    if (list?.ids) {
       params.addMessage("getContentForPage", "found list in store", { page });
-      return { type: "summaryOnly", data: list.data };
+      return { type: "summaryOnly", data: listStories(page) };
     }
 
     params.refreshStore.setRefreshRequestedTimestamp(page);
@@ -365,6 +375,7 @@ export function createDataStore(params: {
           addMessage: params.addMessage,
           persistStoryToStorage,
         });
+        upsertSummaries([storyData]);
         params.storyUi.setActiveStoryData(storyData);
       }
     } finally {
@@ -385,10 +396,7 @@ export function createDataStore(params: {
     // SSR ships summaries only, to keep the HTML small. Show them now, then
     // fetch the full stories in the background for offline reading.
     params.refreshStore.setRefreshRequestedTimestamp(page);
-    void saveListSummaries(
-      page,
-      mapStoriesToSummaries(latest.result.data) ?? []
-    );
+    void saveListSummaries(page, latest.result.data);
     void fetchAllStoryDataForPage(page, {
       addMessage: params.addMessage,
       persistStoryList,
@@ -407,12 +415,31 @@ export function createDataStore(params: {
     if (latest.startedFromServer) {
       void persistStoryToStorage(id, story);
     }
+    upsertSummaries([story]);
     params.storyUi.setActiveStoryData(story);
     setRefreshType({ type: "story", id });
   };
 
+  // Drop cached stories that left every list and were not read recently,
+  // once per session after the stored lists load.
+  let purgeScheduled = false;
+  createEffect(() => {
+    if (
+      purgeScheduled ||
+      !listsHydrated() ||
+      !summariesHydrated() ||
+      !params.readItemsStore.readItemsHydrated()
+    ) {
+      return;
+    }
+    purgeScheduled = true;
+    setTimeout(() => void purgeLocalForage(), 10_000);
+  });
+
   return {
     storyListStore,
+    storySummaries,
+    listStories,
     isLoadingData,
     syncStoryList,
     syncStory,

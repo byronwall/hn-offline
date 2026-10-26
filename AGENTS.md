@@ -21,21 +21,27 @@ lazy route (the Claude browser pane sends one) can render
 "useAppData must be used within AppDataProvider". That is a dev-only race,
 not a bug in the app. curl and real browsers do not hit it.
 
-The server fetches live HN data on startup, so the first request after start
-can take a few seconds. The JSON database path comes from `db_path`.
+The refresh loop starts on the first server query after boot. From an empty
+DB it takes ~8 s for top, ~4 s for day, ~40 s for week; the JSON path comes
+from `db_path`. When you benchmark or wait on the server, watch its log
+("refreshing <list>", "refreshed <list>: N stories in Xms") and give up after
+~60 s with no new line. Do not wait minutes on a silent process.
 
 ## How data flows
 
 ```
-HN Firebase API + Algolia ──> src/server/server.ts (refresh every 10 min:
-                              top; day hourly; week every 6 h)
-                              └─> JSON DB (database.ts) + in-memory cachedData
-src/server/queries.ts (query() + "use server")
+hnSources.ts (HN Firebase items, Algolia lists) ──> server.ts refresh loop
+  (checks every 5 min; refreshes a list when older than top 10 min,
+   day 1 h, week 6 h; one run at a time; prunes to stories on a list)
+  └─> database.ts: one JSON file, one record per story id, lists = ids
+src/server/queries.ts (query() + "use server"; each calls ensureServerStarted)
   getStorySummariesByType  ── list pages, SSR: summaries only (~100 KB HTML)
   getStoryListByType       ── full stories + comment trees, client background fetch
   getStoryById             ── one story with comments
+  searchStories.ts         ── Algolia full-text search for the nav popover
 Client stores (src/stores, created in contexts/AppDataContext.tsx)
-  useDataStore      list + story loading, refresh, IndexedDB writes (raw_<id>)
+  useDataStore      STORY_SUMMARIES (one record per story), STORY_LIST_STORE
+                    (ids per page), raw_<id> full stories, refresh, purge
   createPersistedStore  Solid store mirrored to one localForage key
   useReadItemsStore READ_ITEMS, READ_COMMENT_COUNTS, READ_SETTINGS
   useCommentStore   COLLAPSED_COMMENTS
@@ -43,6 +49,14 @@ Client stores (src/stores, created in contexts/AppDataContext.tsx)
   storyUiStore      open story, author colors (memo), last visit time
 ```
 
+- One story, one record, on both sides. The server DB keys items by id and
+  lists hold ids. The client keeps `STORY_SUMMARIES` keyed by id (newest
+  `lastUpdated` wins) and `STORY_LIST_STORE` holds only ids. Never store a
+  per-list copy of story data; Top/Day/Week must show the same numbers.
+- Server state lives on `globalThis.__hnServer`. SolidStart bundles server
+  code twice (SSR and server functions); without this there are two DBs and
+  two refresh loops. Start work with `ensureServerStarted()`; bare
+  side-effect imports are dropped (`"sideEffects": false`).
 - List page: SSR shows summaries. After hydration, `syncStoryList` saves them
   and fetches the full stories in the background so every story on the page
   reads offline.
@@ -114,5 +128,5 @@ General:
   registers `/_build/sw.js`, but that file is not built since VitePWA was
   commented out in `app.config.ts`. `public/sw.js` is served at `/sw.js`.
   Pick one before you rely on offline first loads.
-- Server backlog: see `docs/backend-review-2026-01-27.md` (refresh overlap,
-  non-atomic DB writes, uptime-based cadence).
+- `docs/backend-review-2026-01-27.md` is historical. The server rework fixed
+  its refresh overlap, non-atomic writes, and uptime-based cadence.

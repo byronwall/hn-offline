@@ -45,16 +45,12 @@ export function SearchPopover() {
     if (words.length === 0) {
       return [];
     }
-    const seen = new Map<number, HnStorySummary>();
-    for (const list of Object.values(dataStore.storyListStore)) {
-      for (const story of list?.data ?? []) {
+    return Object.values(dataStore.storySummaries)
+      .filter((story) => {
         const title = story.title?.toLowerCase() ?? "";
-        if (words.every((w) => title.includes(w))) {
-          seen.set(story.id, story);
-        }
-      }
-    }
-    return [...seen.values()].slice(0, MAX_LOCAL);
+        return words.every((w) => title.includes(w));
+      })
+      .slice(0, MAX_LOCAL);
   });
 
   const remoteOnly = () => {

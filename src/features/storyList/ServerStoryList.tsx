@@ -38,13 +38,10 @@ export function ServerStoryList(props: { page: TopStoriesType }) {
     )
   );
 
+  // The shared story records win once saved; SSR data covers first paint.
   const listItems = createMemo(() => {
-    const persisted = dataStore.storyListStore[props.page as StoryPage];
-    if (persisted?.data && persisted.data.length > 0) {
-      return persisted.data;
-    }
-
-    return data()?.result?.data ?? [];
+    const saved = dataStore.listStories(props.page as StoryPage);
+    return saved.length > 0 ? saved : (data()?.result?.data ?? []);
   });
 
   return (
