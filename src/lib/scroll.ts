@@ -6,9 +6,9 @@ const prefersReducedMotion = () =>
 
 // Smooth scroll that never takes a long ride: far targets jump most of the
 // way at once, then glide the last ~half screen so the eye can follow.
-export function scrollToY(top: number) {
+export function scrollToY(top: number, smooth = !prefersReducedMotion()) {
   const target = Math.max(0, top);
-  if (prefersReducedMotion()) {
+  if (!smooth) {
     window.scrollTo({ top: target, behavior: "instant" });
     return;
   }
@@ -24,11 +24,35 @@ export function scrollToY(top: number) {
   window.scrollTo({ top: target, behavior: "smooth" });
 }
 
-export function scrollToElement(el: Element) {
+export function scrollToElement(el: Element, smooth?: boolean) {
   scrollToY(
-    window.scrollY + el.getBoundingClientRect().top - SCROLL_TOP_OFFSET
+    window.scrollY + el.getBoundingClientRect().top - SCROLL_TOP_OFFSET,
+    smooth
   );
 }
+
+// After a comment collapses, glide to what the reader likely reads next: the
+// next open sibling, else the next open sibling of the nearest ancestor that
+// has one. Comment cards nest directly, so the DOM mirrors the thread tree.
+// Always smooth, even with reduced motion, so the jump is easy to follow.
+// Returns false when nothing follows.
+export function scrollToNextComment(card: Element) {
+  let el: Element | null = card;
+  while (el) {
+    let next = el.nextElementSibling;
+    while (next && (!next.matches("[data-comment]") || isCollapsed(next))) {
+      next = next.nextElementSibling;
+    }
+    if (next) {
+      scrollToElement(next, true);
+      return true;
+    }
+    el = el.parentElement?.closest("[data-comment]") ?? null;
+  }
+  return false;
+}
+
+const isCollapsed = (el: Element) => el.classList.contains("collapsed");
 
 // Scroll to the first element matching `selector` below the current spot.
 export function scrollToNext(selector: string) {

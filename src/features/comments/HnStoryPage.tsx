@@ -26,7 +26,6 @@ import { HnStoryCommentBanner } from "./HnStoryCommentBanner";
 import { HnStoryContentCard } from "./HnStoryContentCard";
 import { HnStoryMetaRow } from "./HnStoryMetaRow";
 import { HnStoryTitle } from "./HnStoryTitle";
-import { HnThreadNav } from "./HnThreadNav";
 
 import type { HnItem } from "~/models/interfaces";
 
@@ -122,9 +121,6 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
               />
             </Match>
           </Switch>
-          <Show when={!showSkeleton() && comments().length > 1}>
-            <HnThreadNav newCount={newCount()} />
-          </Show>
         </Show>
       </div>
     </PullToRefresh>

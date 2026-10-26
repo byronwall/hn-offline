@@ -75,9 +75,11 @@ Client stores (src/stores, created in contexts/AppDataContext.tsx)
   (sort, hide-read filter, empty states), `HnStoryListHeader`, `HnListItem`.
 - `src/features/comments/`: `HnStoryPage`, `HnComment` (collapse, sticky
   reply connector), `HnCommentList` (top level renders 8 threads per frame;
-  nested lists render all), `HnThreadNav` (next thread / next new).
+  nested lists render all).
 - `src/lib/scroll.ts` handles every programmatic scroll: `scrollToY` (a short
-  glide, never a long ride), `keepInView` (after collapse/expand), and `flash`.
+  glide, never a long ride), `scrollToNextComment` (on collapse, glide to the
+  next open sibling, else up the tree; smooth even with reduced motion),
+  `keepInView` (after expand), and `flash`.
 - `src/createClickGuard.tsx` is one body click handler. HN item links open
   in the app; external links open in a new tab.
 - `docs/` holds Byron's blog drafts about the build (Coolify, PWA, the React
