@@ -1,5 +1,10 @@
 // @refresh reload
 import { createHandler, StartServer } from "@solidjs/start/server";
+import { Show } from "solid-js";
+
+// GA4 Measurement ID for the hn.byroni.us property.
+const GA_ID = "G-78J7910760";
+const gtagInit = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date());gtag("config","${GA_ID}");`;
 
 // Log instead of crashing the server on a stray async error.
 if (typeof process !== "undefined" && process?.on) {
@@ -28,11 +33,10 @@ export default createHandler(() => (
           <meta name="apple-mobile-web-app-status-bar-style" content="black" />
           <meta name="apple-mobile-web-app-title" content="HN Offline" />
           {assets}
-          <script
-            defer
-            src="https://as8ws0w.apps.byroni.us/script.js"
-            data-website-id="b0a4cc50-7c62-4999-b77f-e277452a636c"
-          />
+          <Show when={import.meta.env.PROD}>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
+            <script innerHTML={gtagInit} />
+          </Show>
         </head>
         <body class="relative bg-stone-100">
           <div id="app">{children}</div>
