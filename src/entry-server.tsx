@@ -2,8 +2,8 @@
 import { createHandler, StartServer } from "@solidjs/start/server";
 import { Show } from "solid-js";
 
-// GA4 Measurement ID. Swap this when hn.byroni.us gets its own property.
-const GA_ID = "G-GQQ3NPGZYD";
+// GA4 Measurement ID for the hn.byroni.us property.
+const GA_ID = "G-78J7910760";
 const gtagInit = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date());gtag("config","${GA_ID}");`;
 
 // Log instead of crashing the server on a stray async error.
