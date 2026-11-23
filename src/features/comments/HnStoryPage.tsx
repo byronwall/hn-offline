@@ -34,6 +34,9 @@ interface HnStoryPageProps {
   story?: HnItem | undefined;
   startedFromServer: boolean;
   notFound: boolean;
+  // Set when the server skipped this story; the page offers a button instead.
+  onLoadStory?: () => void;
+  loadingStory?: boolean;
 }
 
 export const HnStoryPage = (props: HnStoryPageProps) => {
@@ -91,6 +94,23 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
     </div>
   );
 
+  const loadMessage = (
+    <div class="py-16 text-center text-gray-600">
+      <p class="text-lg">This story is not saved on the server.</p>
+      <p class="mt-1 text-sm text-gray-500">
+        Load it from Hacker News to read it here.
+      </p>
+      <button
+        type="button"
+        class="bg-hn-ink mt-4 rounded px-4 py-2 text-sm text-white disabled:opacity-60"
+        disabled={props.loadingStory}
+        onClick={() => props.onLoadStory?.()}
+      >
+        {props.loadingStory ? "Loading story…" : "Load story"}
+      </button>
+    </div>
+  );
+
   const showSkeleton = () => props.startedFromServer && !isClientMounted();
 
   return (
@@ -99,7 +119,10 @@ export const HnStoryPage = (props: HnStoryPageProps) => {
       onRefresh={dataStore.refreshActive}
     >
       <div class="relative pb-[70vh]">
-        <Show when={!props.notFound} fallback={notFoundMessage}>
+        <Show
+          when={!props.notFound && !props.onLoadStory}
+          fallback={props.onLoadStory ? loadMessage : notFoundMessage}
+        >
           <HnStoryCommentBanner story={story()} />
           <HnStoryTitle story={story()} />
           <HnStoryMetaRow story={story()} newCount={newCount()} />

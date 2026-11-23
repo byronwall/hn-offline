@@ -72,6 +72,15 @@ export function getItem(
   return sinceFetch / ageAtFetch > 0.25 ? null : item;
 }
 
+// True when the story is saved here or sits on a current list. Page loads
+// for any other id skip the HN fetch until a person asks for it.
+export function isKnownStory(id: number) {
+  return (
+    id in state.db ||
+    STORY_TYPE.some((type) => getList(type)?.items.includes(id) ?? false)
+  );
+}
+
 export function putItem(item: ItemExt) {
   state.db[item.id] = item;
 }

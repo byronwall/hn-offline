@@ -5,6 +5,7 @@ import { mapStoriesToSummaries } from "~/lib/getSummaryViaFetch";
 import { HnItem, TopStoriesType } from "~/models/interfaces";
 import { ContentForPage } from "~/stores/useDataStore";
 
+import { isKnownStory } from "./database";
 import { getFullDataForIds } from "./getFullDataForIds";
 import { getTopStories } from "./getTopStories";
 import { ensureServerStarted } from "./server";
@@ -34,6 +35,22 @@ export const getStoryById = queryWithServerInfo(async (id: number) => {
 
   return story;
 }, "story-by-id");
+
+// Server render of /story/<id>. A crawler walks every story id, and each
+// unknown id cost a full comment-tree fetch from the HN API. Serve known
+// stories here; for the rest the page shows a "Load story" button that calls
+// getStoryById.
+export const getStoryForPage = queryWithServerInfo(async (id: number) => {
+  "use server";
+  ensureServerStarted();
+
+  if (!id || Number.isNaN(id) || !isKnownStory(id)) {
+    return { story: null, uncached: true };
+  }
+
+  const storyData = await getFullDataForIds([id]);
+  return { story: (storyData?.[0] as HnItem | null) ?? null, uncached: false };
+}, "story-for-page");
 
 // Server render uses this: list pages need only the summaries, and full
 // comment trees for 30+ stories made the HTML ~1.8 MB.
