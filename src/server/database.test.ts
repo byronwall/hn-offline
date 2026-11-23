@@ -51,6 +51,20 @@ describe("database startup recovery", () => {
     expect(database.getItem(1)?.id).toBe(1);
     expect(database.getItem(2)).toBeNull();
   });
+
+  it("knows only saved stories and stories on a list", async () => {
+    process.env.db_path = path.join(tmpDir, "db.json");
+
+    const database = await import("./database");
+
+    database.reloadDatabase();
+    database.putItem(createItem(1));
+    database.putList("day", [2]);
+
+    expect(database.isKnownStory(1)).toBe(true);
+    expect(database.isKnownStory(2)).toBe(true);
+    expect(database.isKnownStory(3)).toBe(false);
+  });
 });
 
 function createItem(id: number): ItemExt {
