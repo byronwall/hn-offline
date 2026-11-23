@@ -3,6 +3,7 @@ Disallow: /day
 Disallow: /week
 Disallow: /month
 Disallow: /offline
+Disallow: /story/
 Disallow: /_build/
 
 Sitemap: https://hn.byroni.us/sitemap.xml
